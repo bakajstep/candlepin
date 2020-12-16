@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2009 - 2012 Red Hat, Inc.
+ * Copyright (c) 2009 - 2020 Red Hat, Inc.
  *
  * This software is licensed to you under the GNU General Public License,
  * version 2 (GPLv2). There is NO WARRANTY for this software, express or
@@ -12,21 +12,21 @@
  * granted to use or replicate Red Hat trademarks that are incorporated
  * in this software or its documentation.
  */
-package org.candlepin.sync;
+package org.candlepin.common.exceptions;
 
-import org.candlepin.model.EntitlementCertificate;
+import javax.ws.rs.core.Response.Status;
 
-import java.io.IOException;
-import java.io.Writer;
 
 /**
- * EntitlementCertExporter
+ * NotImplementedException
+ * Represents a Not Implemented (HTTP 501) error.
  */
-public class EntitlementCertExporter {
+public class NotImplementedException extends CandlepinException {
+    public NotImplementedException(String message) {
+        super(Status.NOT_IMPLEMENTED, message);
+    }
 
-    void export(Writer writer, EntitlementCertificate cert)
-        throws IOException {
-        writer.write(cert.getCert());
-        writer.write(cert.getKey());
+    public NotImplementedException(String message, Throwable cause) {
+        super(Status.NOT_IMPLEMENTED, message, cause);
     }
 }

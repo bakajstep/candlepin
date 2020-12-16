@@ -14,7 +14,7 @@
 %global __jar_repack %{nil}
 
 Name: candlepin
-Version: 3.2.0
+Version: 3.2.9
 Release: 1%{?dist}
 #if $epoch
 Epoch: $epoch
@@ -40,7 +40,7 @@ BuildRequires: selinux-policy-doc
 BuildRequires: /usr/bin/pathfix.py
 %endif
 
-Requires: java >= 11
+Requires: java-11 >= 1:11.0.0
 Requires: wget
 ## tomcatjss itself depends on jss and tomcat/pki-servlet-container/pki-servlet-engine
 ## without having to worry about about the renaming of those packages.
@@ -235,6 +235,62 @@ fi
 
 #raw
 %changelog
+* Tue Dec 15 2020 candlepin-bot <3229038+candlepin-bot@users.noreply.github.com> 3.2.9-1
+- 
+
+* Mon Dec 14 2020 candlepin-bot <3229038+candlepin-bot@users.noreply.github.com> 3.2.8-1
+- ENT-3317:Drop the cp_job table  - Added a xml file to drop the table  -
+  Removed the `batch-bind-performance.rb` script because it    is no longer
+  useful in latest version. Table `cp_job` used    to check
+  consumer_compliance. Also, the functionality    `consume_pools` does not
+  exists. (sdhome@redhat.com)
+- Set the default consumer window size to zero in broker.xml (crog@redhat.com)
+- 1905199: Fixed bug with state filtering validation during job cleanup
+  (crog@redhat.com)
+- Fixed hash collision resolution bug with branding (crog@redhat.com)
+- Update build.gradle (60450074+jdhrh@users.noreply.github.com)
+- 1884047: Unable to unschedule trigger while deleting job during startup
+  (ENT-3129) (prakgupt@redhat.com)
+
+* Tue Dec 01 2020 candlepin-bot <3229038+candlepin-bot@users.noreply.github.com> 3.2.7-1
+- Added support for automated cloud registration (crog@redhat.com)
+
+* Fri Nov 20 2020 candlepin-bot <3229038+candlepin-bot@users.noreply.github.com> 3.2.6-1
+- Update rpm spec and cpsetup/cpdb for Java 11 (nmoumoul@redhat.com)
+- Updated organization migration tooling to allow multi-org imports
+  (crog@redhat.com)
+- ENT-2594: Mechanism to determine if SCA can be enabled for a consumer  - Add
+  a new endpoint GET /consumers/{consumer_uuid}/content_access  - Add a new
+  endpoint GET /owners/{owner_key}/content_access (ojanus@redhat.com)
+- 1884410: Fix for misleading exception message in auto-attach (ENT-3128)
+  (prakgupt@redhat.com)
+
+* Fri Nov 06 2020 candlepin-bot <3229038+candlepin-bot@users.noreply.github.com> 3.2.5-1
+- Set Java 11 specific mead target (nmoumoul@redhat.com)
+
+* Fri Nov 06 2020 candlepin-bot <3229038+candlepin-bot@users.noreply.github.com> 3.2.4-1
+- Make mead build install Java 11 (nmoumoul@redhat.com)
+
+* Thu Nov 05 2020 candlepin-bot <3229038+candlepin-bot@users.noreply.github.com> 3.2.3-1
+- 1894035: Fixed encoding of environment name in SCA certificates
+  (crog@redhat.com)
+- ENT-2806: Only add content from active pools on the SCA certificate
+  (prakgupt@redhat.com)
+
+* Tue Nov 03 2020 candlepin-bot <3229038+candlepin-bot@users.noreply.github.com> 3.2.2-1
+- 1884761: Exporting content access certs for a consumer (ENT-3127)
+  (prakgupt@redhat.com)
+
+* Wed Oct 21 2020 candlepin-bot <3229038+candlepin-bot@users.noreply.github.com> 3.2.1-1
+- Updated JUnit version from 4.13 to 4.13.1 (crog@redhat.com)
+- Updated JUnit version from 4.12 to 4.13 (vagrant@candlepin.example.com)
+- Convert warn to debug message & add details to reduce log noise
+  (bcourt@redhat.com)
+- ENT-1675: Upgrade candlepin to use Java 11 (prakgupt@redhat.com)
+- 1841591: Manifest delete takes 24 hours or more in large environment (60k
+  consumers in owner)  - Switch to a faster implementation of pool deletion.
+  (ojanus@redhat.com)
+
 * Thu Sep 24 2020 candlepin-bot <3229038+candlepin-bot@users.noreply.github.com> 3.2.0-1
 - 1854221: Validate early if executing job in RUNNING state
   (nmoumoul@redhat.com)

@@ -119,6 +119,7 @@ import org.candlepin.resource.ActivationKeyResource;
 import org.candlepin.resource.AdminResource;
 import org.candlepin.resource.CdnResource;
 import org.candlepin.resource.CertificateSerialResource;
+import org.candlepin.resource.CloudRegistrationResource;
 import org.candlepin.resource.ConsumerContentOverrideResource;
 import org.candlepin.resource.ConsumerResource;
 import org.candlepin.resource.ConsumerTypeResource;
@@ -163,7 +164,6 @@ import org.candlepin.service.impl.HypervisorUpdateAction;
 import org.candlepin.swagger.CandlepinSwaggerModelConverter;
 import org.candlepin.sync.ConsumerExporter;
 import org.candlepin.sync.ConsumerTypeExporter;
-import org.candlepin.sync.EntitlementCertExporter;
 import org.candlepin.sync.Exporter;
 import org.candlepin.sync.MetaExporter;
 import org.candlepin.sync.RulesExporter;
@@ -325,6 +325,7 @@ public class CandlepinModule extends AbstractModule {
         bind(AdminResource.class);
         bind(CdnResource.class);
         bind(CertificateSerialResource.class);
+        bind(CloudRegistrationResource.class);
         bind(CrlResource.class);
         bind(ConsumerContentOverrideResource.class);
         bind(ConsumerResource.class);
@@ -462,7 +463,6 @@ public class CandlepinModule extends AbstractModule {
         bind(ConsumerTypeExporter.class);
         bind(ConsumerExporter.class);
         bind(RulesExporter.class);
-        bind(EntitlementCertExporter.class);
     }
 
     private void configureSwagger() {

@@ -912,7 +912,18 @@ public class JobManager implements ModeChangeListener {
 
         // Unschedule dead/invalid jobs
         for (JobKey key : unschedule) {
-            this.scheduler.deleteJob(key);
+            List<Trigger> jobTriggers = (List<Trigger>) this.scheduler.getTriggersOfJob(key);
+
+            if (!jobTriggers.isEmpty()) {
+                this.scheduler.unscheduleJobs(jobTriggers
+                    .stream()
+                    .map(Trigger::getKey)
+                    .collect(Collectors.toList()));
+            }
+            else {
+                this.scheduler.deleteJob(key);
+            }
+
             log.info("Removed existing schedule for job: {}", key.getName());
         }
 
@@ -1777,11 +1788,8 @@ public class JobManager implements ModeChangeListener {
         states = stateStream.filter(state -> state != null && state.isTerminal())
             .collect(Collectors.toSet());
 
-        queryBuilder.setJobStates(states);
-
-        // Add any other sanity restrictions deemed necessary here
-
-        return this.jobCurator.deleteJobs(queryBuilder);
+        // Only delete jobs if we haven't filtered out every state provided
+        return !states.isEmpty() ? this.jobCurator.deleteJobs(queryBuilder.setJobStates(states)) : 0;
     }
 
     /**
