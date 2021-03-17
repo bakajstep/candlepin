@@ -29,6 +29,7 @@ import org.candlepin.model.ConsumerTypeCurator;
 import org.candlepin.model.Entitlement;
 import org.candlepin.model.Owner;
 import org.candlepin.model.Pool;
+import org.candlepin.model.PoolCurator;
 import org.candlepin.model.Product;
 import org.candlepin.test.TestUtil;
 
@@ -59,6 +60,7 @@ public class SystemPurposeComplianceRulesTest {
     @Mock private EventSink eventSink;
     @Mock private ConsumerCurator consumerCurator;
     @Mock private ConsumerTypeCurator consumerTypeCurator;
+    @Mock private PoolCurator poolCurator;
 
     @Before
     public void setUp() {
@@ -67,7 +69,7 @@ public class SystemPurposeComplianceRulesTest {
         I18n i18n = I18nFactory.getI18n(getClass(), "org.candlepin.i18n.Messages", locale,
             I18nFactory.FALLBACK);
         complianceRules = new SystemPurposeComplianceRules(eventSink, consumerCurator, consumerTypeCurator,
-                i18n);
+                i18n, poolCurator);
         owner = new Owner("test");
         owner.setId(TestUtil.randomString());
     }
@@ -89,23 +91,22 @@ public class SystemPurposeComplianceRulesTest {
     private Entitlement mockEntitlement(Consumer consumer, Product product, Date start, Date end,
         Product ... providedProducts) {
 
-        Set<Product> ppset = new HashSet<>(Arrays.asList(providedProducts));
+        product.setProvidedProducts(Arrays.asList(providedProducts));
 
-        Pool pool = new Pool(
-            owner,
-            product,
-            ppset,
-            1000L,
-            start,
-            end,
-            "1000",
-            "1000",
-            "1000"
-        );
+        Pool pool = new Pool()
+            .setId("pool-" + TestUtil.randomInt())
+            .setOwner(owner)
+            .setProduct(product)
+            .setQuantity(1000L)
+            .setStartDate(start)
+            .setEndDate(end)
+            .setContractNumber("1000")
+            .setAccountNumber("1000")
+            .setOrderNumber("1000");
 
-        pool.setId("pool_" + TestUtil.randomInt());
         pool.setUpdated(new Date());
         pool.setCreated(new Date());
+
         Entitlement e = new Entitlement(pool, consumer, owner, 1);
         e.setId("ent_" + TestUtil.randomInt());
         e.setUpdated(new Date());

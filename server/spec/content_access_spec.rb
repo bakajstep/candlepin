@@ -36,11 +36,14 @@ describe 'Content Access' do
 
     @product = create_product('test-product', 'some product')
     @cp.add_content_to_product(@owner['key'], @product['id'], @content_id)
-    @cp.create_pool(@owner['key'], @product['id'], {:quantity => 10})
+    @pool = @cp.create_pool(@owner['key'], @product['id'], {:quantity => 10})
+
+    # We need to sleep here to ensure enough time passes from the last content update to whatever
+    # cert fetching we do at the start of most of these tests.
+    sleep 1
   end
 
   it "does allow addition of the content access level" do
-
     @cp.update_owner(@owner['key'], {'contentAccessMode' => "entitlement"})
     @owner = @cp.get_owner(@owner['key'])
 
@@ -287,8 +290,9 @@ describe 'Content Access' do
     certs = @consumer.list_certificates
     json_body = extract_payload(certs[0]['cert'])
     content = json_body['products'][0]['content'][0]
-    certs[0]['serial']['serial'].should == serial_id
-    content['name'].should == 'cname-extreme'
+
+    expect(certs[0]['serial']['serial']).to_not eq(serial_id)
+    expect(content['name']).to eq('cname-extreme')
   end
 
   it "does update second existing content access cert content when product data changes" do
@@ -296,18 +300,32 @@ describe 'Content Access' do
     @consumer2 = consumer_client(@user, @consumername2, type=:system, username=nil, facts= {'system.certificate_version' => '3.3'})
     certs1 = @consumer1.list_certificates
     certs2 = @consumer2.list_certificates
-    certs2.length.should == 1
-    serial_id2 = certs2[0]['serial']['serial']
+
+    expect(certs1.length).to eq(1)
+    expect(certs2.length).to eq(1)
+
+    cert_serial_1 = certs1[0]['serial']['serial']
+    cert_serial_2 = certs2[0]['serial']['serial']
+
     sleep 1
 
     @cp.update_content(@owner['key'], @content_id, {:name=>'cname-extreme'})
 
     certs1 = @consumer1.list_certificates
     certs2 = @consumer2.list_certificates
+
+    expect(certs1.length).to eq(1)
+    expect(certs2.length).to eq(1)
+
     json_body = extract_payload(certs2[0]['cert'])
     content = json_body['products'][0]['content'][0]
-    certs2[0]['serial']['serial'].should == serial_id2
-    content['name'].should == 'cname-extreme'
+
+    # The cert should have changed due to the content change, but both consumers should still have the
+    # same cert
+    expect(certs1[0]['serial']['serial']).to_not eq(cert_serial_1)
+    expect(certs2[0]['serial']['serial']).to_not eq(cert_serial_2)
+
+    expect(content['name']).to eq('cname-extreme')
   end
 
   it "does not update existing content access cert content when no data changes" do
@@ -315,11 +333,12 @@ describe 'Content Access' do
     certs = @consumer1.list_certificates
     serial_id = certs[0]['serial']['serial']
     updated = certs[0]['updated']
+
     sleep 1
 
     certs = @consumer1.list_certificates
-    certs[0]['serial']['serial'].should == serial_id
-    certs[0]['updated'].should == updated
+    expect(certs[0]['serial']['serial']).to eq(serial_id)
+    expect(certs[0]['updated']).to eq(updated)
   end
 
   it "does include the content access cert serial in serial list" do
@@ -546,9 +565,9 @@ describe 'Content Access' do
         facts= {'system.certificate_version' => '3.3'})
     consumer_cp.update_consumer({:installedProducts => installed})
 
-    lambda do
-      consumer_cp.consume_product()
-    end.should raise_exception(RestClient::BadRequest)
+    consumer_cp.consume_product()
+    entitlements = consumer_cp.list_entitlements()
+    expect(entitlements.length).to eq(0)
 
     # confirm that there is a content access cert
     #  and only a content access cert
@@ -762,14 +781,24 @@ describe 'Content Access' do
   end
 
   it 'should include content from all products associated with active pool to SCA cert' do
-    mkt_product1 = create_product(random_string('productp1'), random_string('product'),
-        {:owner => @owner['key']})
-    eng_product = create_product(random_string('productp2'), random_string('product'),
-        {:owner => @owner['key']})
-    derived_product = create_product(random_string('productp4'), random_string('product'),
-        {:owner => @owner['key']})
-    dev_eng_product = create_product(random_string('productp3'), random_string('product'),
-        {:owner => @owner['key']})
+    dev_eng_product = create_product(random_string('productp3'), random_string('product'), {
+      :owner => @owner['key']
+    })
+
+    derived_product = create_product(random_string('productp4'), random_string('product'), {
+      :owner => @owner['key'],
+      :providedProducts => [dev_eng_product.id]
+    })
+
+    eng_product = create_product(random_string('productp2'), random_string('product'), {
+      :owner => @owner['key']
+    })
+
+    mkt_product1 = create_product(random_string('productp1'), random_string('product'), {
+      :owner => @owner['key'],
+      :providedProducts => [eng_product.id],
+      :derivedProduct => derived_product
+    })
 
     # Content enabled = true
     content_c1 = @cp.create_content(
@@ -792,13 +821,9 @@ describe 'Content Access' do
         {:content_url=> '/this/is/the/path',  :modified_products => [@modified_product["id"]]}, true)
     @cp.add_content_to_product(@owner['key'], dev_eng_product['id'], content_c4['id'], true)
 
-    @cp.create_pool(@owner['key'], mkt_product1['id'],
-        {:quantity => 10, :provided_products => [eng_product['id']],
-        :derived_product_id => derived_product['id'], :derived_provided_products => [dev_eng_product['id']]
-    })
+    @cp.create_pool(@owner['key'], mkt_product1['id'], { :quantity => 10 })
 
-    @consumer = consumer_client(@user, @consumername, type=:system, username=nil,
-        facts= {'system.certificate_version' => '3.3'})
+    @consumer = consumer_client(@user, @consumername, type=:system, username=nil, facts={'system.certificate_version' => '3.3'})
     certs = @consumer.list_certificates
 
     expect(certs.length).to eq(1)
@@ -806,6 +831,9 @@ describe 'Content Access' do
     cert = certs[0]['cert']
     json_body = extract_payload(cert)
 
+    expect(json_body['products']).to_not be_nil
+    expect(json_body['products'].length).to eq(1)
+    expect(json_body['products'][0]['content']).to_not be_nil
     expect(json_body['products'][0]['content'].length).to eq(5)
 
     returned_uuids = []
@@ -817,6 +845,55 @@ describe 'Content Access' do
     expect(returned_uuids).to include(content_c2.id)
     expect(returned_uuids).to include(content_c3.id)
     expect(returned_uuids).to include(content_c4.id)
+  end
+
+  def regenerate_cert_test(&updater)
+    consumer = consumer_client(@user, @consumername, type=:system, username=nil, facts= {'system.certificate_version' => '3.3'})
+    certs = consumer.list_certificates()
+    expect(certs.length).to eq(1)
+    cert_serial = certs[0]['serial']
+    expect(cert_serial).to_not be_nil
+
+    updater.call()
+
+    updated_certs = consumer.list_certificates()
+    expect(updated_certs.length).to eq(1)
+    updated_cert_serial = updated_certs[0]['serial']
+    expect(updated_cert_serial).to_not be_nil
+
+    expect(updated_cert_serial['serial']).to_not eq(cert_serial['serial'])
+  end
+
+  it 'should regenerate SCA cert when content changes affect content view' do
+    regenerate_cert_test do
+      @cp.update_content(@owner['key'], @content['id'], { 'content_url' => '/updated/path' })
+    end
+  end
+
+  it 'should regenerate SCA cert when product changes affect content view' do
+    regenerate_cert_test do
+      @cp.remove_content_from_product(@owner['key'], @product['id'], @content['id'])
+    end
+  end
+
+  it 'should regenerate SCA cert when pool changes affect content view' do
+    regenerate_cert_test do
+      @pool['start_date'] = (DateTime.now + 1)
+      @cp.update_pool(@owner['key'], @pool)
+    end
+  end
+
+  it 'should be disabled for owner in SCA mode' do
+    consumer = @user.register(random_string('testsystem'), :system, nil,
+               {'system.certificate_version' => '3.1'}, nil, nil, [], [], nil)
+
+    # System purpose status
+    status = @cp.get_purpose_compliance(consumer['uuid'])
+    expect(status['status']).to eq("disabled")
+
+    # compliance status
+    status = @cp.get_compliance(consumer['uuid'])
+    expect(status['status']).to eq("disabled")
   end
 
 end

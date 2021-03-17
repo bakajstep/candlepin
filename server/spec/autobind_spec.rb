@@ -35,7 +35,8 @@ describe 'Autobind On Owner' do
         "instance_multiplier" => 1,
         "multi-entitlement" => "yes",
         "host_limited" => "true"
-      }
+      },
+      :providedProducts => [prod.id]
     })
 
     prod2 = create_product(nil, nil, {
@@ -47,7 +48,8 @@ describe 'Autobind On Owner' do
         "instance_multiplier" => 1,
         "multi-entitlement" => "yes",
         "host_limited" => "true"
-      }
+      },
+      :providedProducts => [prod.id]
     })
 
     prod3 = create_product(nil, nil, {
@@ -59,7 +61,8 @@ describe 'Autobind On Owner' do
         "instance_multiplier" => 1,
         "multi-entitlement" => "yes",
         "host_limited" => "true"
-      }
+      },
+      :providedProducts => [prod.id]
     })
 
     # create 4 pools, all must provide product "prod" . none of them
@@ -215,16 +218,18 @@ describe 'Autobind On Owner' do
   end
 
   it 'pool with role should have priority over pool without' do
-    mkt_product1 = create_product(random_string('product'),
-                              random_string('product'),
-                              {:attributes => {:roles => "role1"},
-                               :owner => owner_key})
-    mkt_product2 = create_product(random_string('product'),
-                              random_string('product'),
-                              {:owner => owner_key})
     eng_product = create_product(random_string('product'),
                                  random_string('product'),
                                  {:owner => owner_key})
+    mkt_product1 = create_product(random_string('product'),
+                              random_string('product'),
+                              {:attributes => {:roles => "role1"},
+                               :owner => owner_key,
+                               :providedProducts => [eng_product.id]})
+    mkt_product2 = create_product(random_string('product'),
+                              random_string('product'),
+                              {:owner => owner_key,
+                               :providedProducts => [eng_product.id]})
     p1 = create_pool_and_subscription(owner_key, mkt_product1.id, 10, [eng_product.id])
     p2 = create_pool_and_subscription(owner_key, mkt_product2.id, 10, [eng_product.id])
 
@@ -249,16 +254,18 @@ describe 'Autobind On Owner' do
   end
 
   it 'pool with addon should have priority over pool without' do
-    mkt_product1 = create_product(random_string('product'),
-                                  random_string('product'),
-                                  {:attributes => {:addons => "addon1"},
-                                   :owner => owner_key})
-    mkt_product2 = create_product(random_string('product'),
-                                  random_string('product'),
-                                  {:owner => owner_key})
     eng_product = create_product(random_string('product'),
                                  random_string('product'),
                                  {:owner => owner_key})
+    mkt_product1 = create_product(random_string('product'),
+                                  random_string('product'),
+                                  {:attributes => {:addons => "addon1"},
+                                  :owner => owner_key,
+                                  :providedProducts => [eng_product.id]})
+    mkt_product2 = create_product(random_string('product'),
+                                  random_string('product'),
+                                  {:owner => owner_key,
+                                  :providedProducts => [eng_product.id]})
     p1 = create_pool_and_subscription(owner_key, mkt_product1.id, 10, [eng_product.id])
     p2 = create_pool_and_subscription(owner_key, mkt_product2.id, 10, [eng_product.id])
 
@@ -316,16 +323,18 @@ describe 'Autobind On Owner' do
   end
 
   it 'pool with usage should have priority over pool without' do
-    mkt_product1 = create_product(random_string('product'),
-                              random_string('product'),
-                              {:attributes => {:usage => "my_usage"},
-                               :owner => owner_key})
-    mkt_product2 = create_product(random_string('product'),
-                              random_string('product'),
-                              {:owner => owner_key})
     eng_product = create_product(random_string('product'),
                                  random_string('product'),
                                  {:owner => owner_key})
+    mkt_product1 = create_product(random_string('product'),
+                              random_string('product'),
+                              {:attributes => {:usage => "my_usage"},
+                              :owner => owner_key,
+                              :providedProducts => [eng_product.id]})
+    mkt_product2 = create_product(random_string('product'),
+                              random_string('product'),
+                              {:owner => owner_key,
+                              :providedProducts => [eng_product.id]})
     p1 = create_pool_and_subscription(owner_key, mkt_product1.id, 10, [eng_product.id])
     p2 = create_pool_and_subscription(owner_key, mkt_product2.id, 10, [eng_product.id])
 
@@ -487,7 +496,8 @@ describe 'Autobind On Owner' do
     mkt_prod_with_eng_product_only = create_product(random_string('product'),
                               random_string('product'),
                               {
-                               :owner => owner_key})
+                               :owner => owner_key,
+                               :providedProducts => [eng_product.id]})
     pool_with_eng_product_only = create_pool_and_subscription(owner_key, mkt_prod_with_eng_product_only.id,
                               10, [eng_product.id])
 
@@ -564,17 +574,19 @@ describe 'Autobind On Owner' do
   end
 
   it 'sla match should have a higher impact than socket mismatch or other syspurpose mismatches on a pool' do
+    eng_product = create_product(random_string('product'),
+                                 random_string('product'),
+                                 {:owner => owner_key})
     mkt_product1 = create_product(random_string('product'),
                                   random_string('product'),
                                   {:attributes => {:support_level => 'mysla', :sockets => 2,
                                   :roles => 'random_role', :usage => 'random_usage', :addons => 'one,two'},
-                                   :owner => owner_key})
+                                  :owner => owner_key,
+                                  :providedProducts => [eng_product.id]})
     mkt_product2 = create_product(random_string('product'),
                                   random_string('product'),
-                                  {:owner => owner_key})
-    eng_product = create_product(random_string('product'),
-                                 random_string('product'),
-                                 {:owner => owner_key})
+                                  {:owner => owner_key,
+                                  :providedProducts => [eng_product.id]})
     p1 = create_pool_and_subscription(owner_key, mkt_product1.id, 10, [eng_product.id])
     p2 = create_pool_and_subscription(owner_key, mkt_product2.id, 10, [eng_product.id])
 
@@ -592,17 +604,19 @@ describe 'Autobind On Owner' do
   end
 
   it 'pool with virt_only match should not overpower pool with usage match' do
-    mkt_product1 = create_product(random_string('product'),
-                                  random_string('product'),
-                                  {:attributes => {:usage => 'my_usage'},
-                                   :owner => owner_key})
-    mkt_product2 = create_product(random_string('product'),
-                                  random_string('product'),
-                                 {:attributes => {:virt_only => 'True'},
-                                 :owner => owner_key})
     eng_product = create_product(random_string('product'),
                                  random_string('product'),
                                  {:owner => owner_key})
+    mkt_product1 = create_product(random_string('product'),
+                                  random_string('product'),
+                                  {:attributes => {:usage => 'my_usage'},
+                                  :owner => owner_key,
+                                  :providedProducts => [eng_product.id]})
+    mkt_product2 = create_product(random_string('product'),
+                                  random_string('product'),
+                                 {:attributes => {:virt_only => 'True'},
+                                  :owner => owner_key,
+                                  :providedProducts => [eng_product.id]})
     p1 = create_pool_and_subscription(owner_key, mkt_product1.id, 10, [eng_product.id])
     p2 = create_pool_and_subscription(owner_key, mkt_product2.id, 10, [eng_product.id])
 
@@ -620,16 +634,18 @@ describe 'Autobind On Owner' do
   end
 
   it 'pool with virt_only match and syspurpose mismatches should not overpower physical pools without syspurpose matches or mismatches' do
-    mkt_product1 = create_product(random_string('product'),
-                                  random_string('product'),
-                                  {:owner => owner_key})
-    mkt_product2 = create_product(random_string('product'),
-                                  random_string('product'),
-                                 {:attributes => {:virt_only => 'True', :roles => "random_role", :support_level => "random_sla", :usage => "random_usage"},
-                                 :owner => owner_key})
     eng_product = create_product(random_string('product'),
                                  random_string('product'),
                                  {:owner => owner_key})
+    mkt_product1 = create_product(random_string('product'),
+                                  random_string('product'),
+                                  {:owner => owner_key,
+                                  :providedProducts => [eng_product.id]})
+    mkt_product2 = create_product(random_string('product'),
+                                  random_string('product'),
+                                 {:attributes => {:virt_only => 'True', :roles => "random_role", :support_level => "random_sla", :usage => "random_usage"},
+                                  :owner => owner_key,
+                                  :providedProducts => [eng_product.id]})
     p1 = create_pool_and_subscription(owner_key, mkt_product1.id, 10, [eng_product.id])
     p2 = create_pool_and_subscription(owner_key, mkt_product2.id, 10, [eng_product.id])
 
@@ -684,17 +700,20 @@ describe 'Autobind On Owner' do
   end
 
   it 'stacked pools that provide identical roles & addons the consumer has specified, should remove duplicates from the stack' do
-    mkt_product1 = create_product(random_string('product'),
-                                  random_string('product'),
-                                  {:attributes => {:roles => "my_role", :addons => "my_addon"},
-                                  :owner => owner_key})
-    mkt_product2 = create_product(random_string('product'),
-                                  random_string('product'),
-                                 {:attributes => {:roles => "my_role", :addons => "my_addon"},
-                                 :owner => owner_key})
     eng_product = create_product(random_string('product'),
                                  random_string('product'),
                                  {:owner => owner_key})
+    mkt_product1 = create_product(random_string('product'),
+                                  random_string('product'),
+                                  {:attributes => {:roles => "my_role", :addons => "my_addon"},
+                                  :owner => owner_key,
+                                  :providedProducts => [eng_product.id]})
+    mkt_product2 = create_product(random_string('product'),
+                                  random_string('product'),
+                                 {:attributes => {:roles => "my_role", :addons => "my_addon"},
+                                  :owner => owner_key,
+                                  :providedProducts => [eng_product.id]})
+
     create_pool_and_subscription(owner_key, mkt_product1.id, 10, [eng_product.id])
     create_pool_and_subscription(owner_key, mkt_product2.id, 10, [eng_product.id])
 
@@ -753,17 +772,20 @@ describe 'Autobind On Owner' do
   end
 
   it 'virtual system should bind to virt-only pool despite lacking syspurpose attribute matches' do
+    eng_product = create_product(random_string('product'),
+                                 random_string('product'),
+                                 {:owner => owner_key})
     mkt_product1 = create_product(random_string('product'),
                                   random_string('product'),
-                                  {:owner => owner_key})
+                                  {:owner => owner_key,
+                                  :providedProducts => [eng_product.id]})
     mkt_product2 = create_product(random_string('product'),
                                   random_string('product'),
                                   {:attributes => {:virt_only => "true", :support_level => "provided_sla",:usage => "Production",
                                   :roles => "SP Server", :addons => "provided_addon"},
-                                  :owner => owner_key})
-    eng_product = create_product(random_string('product'),
-                                 random_string('product'),
-                                 {:owner => owner_key})
+                                  :owner => owner_key,
+                                  :providedProducts => [eng_product.id]})
+
     p1 = create_pool_and_subscription(owner_key, mkt_product1.id, 10, [eng_product.id])
     p2 = create_pool_and_subscription(owner_key, mkt_product2.id, 10, [eng_product.id])
 
@@ -820,6 +842,56 @@ describe 'Autobind On Owner' do
     status['nonCompliantAddOns'].include?('ANOTHER_ADDON').should == true
     status['compliantAddOns']['PROVIDED_ADDON'][0]['pool']['id'].should == pool_with_addon_only.id
     status['compliantRole']['PROVIDED_ROLE'][0]['pool']['id'].should == pool_with_role_only.id
+  end
+
+  it 'should be not specified with consumer on auto attach when SLA of current entitlement is layered exempt' do
+    product1 = create_product(random_string('product'),
+                              random_string('product'),
+                              {:attributes => {:support_level => 'Standard'},
+                               :owner => owner_key})
+    product2 = create_product(random_string('product'),
+                              random_string('product'),
+                              {:attributes => {:support_level => 'Layered',
+                                               :support_level_exempt => 'true'},
+                               :owner => owner_key})
+
+    create_pool_and_subscription(owner_key, product1.id)
+    create_pool_and_subscription(owner_key, product2.id)
+
+    installed = [
+        {'productId' => product1.id, 'productName' => product1['name']},
+        {'productId' => product2.id, 'productName' => product2['name']}]
+
+    consumer = @cp.register(
+        random_string('system'), :system, nil, {}, nil, owner_key, [], installed, nil, [],
+        nil, [], nil, nil, nil, nil, nil, 0, nil, 'Layered')
+
+    @cp.consume_product(product2['id'], {:uuid => consumer.uuid})
+
+    status = @cp.get_purpose_compliance(consumer['uuid'])
+    expect(status['status']).to eq('not specified')
+
+    entitlements = @cp.list_entitlements(:uuid => consumer.uuid)
+
+    entitlements.each do |ent|
+      @cp.unbind_entitlement(ent.id, {:uuid => consumer.uuid})
+    end
+
+    # Trying to bind the product without SLA exempt and consumer with Layered SLA
+    # Then system purpose status should be not specified
+
+    product3 = create_product(random_string('product'),
+                              random_string('product'),
+                              {:attributes => {:support_level => 'Standard',
+                                               :support_level_exempt => 'false'},
+                               :owner => owner_key})
+
+    @cp.create_pool(owner_key, product3.id)
+
+    @cp.consume_product(product3['id'], {:uuid => consumer.uuid})
+
+    status = @cp.get_purpose_compliance(consumer['uuid'])
+    expect(status['status']).to eq('not specified')
   end
 
 end

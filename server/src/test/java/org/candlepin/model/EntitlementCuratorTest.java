@@ -44,7 +44,6 @@ import java.util.Set;
 import javax.inject.Inject;
 
 
-
 /**
  * EntitlementCuratorTest
  */
@@ -186,7 +185,7 @@ public class EntitlementCuratorTest extends DatabaseTestFixture {
     }
 
     private Date createFutureDate(int afterYears) {
-        return TestUtil.createFutureDate(afterYears);
+        return TestUtil.createDateOffset(afterYears, 0, 0);
     }
 
     private Entitlement setupListProvidingEntitlement() {
@@ -196,12 +195,13 @@ public class EntitlementCuratorTest extends DatabaseTestFixture {
     }
 
     private Entitlement setupListProvidingEntitlement(Product product, Date startDate, Date endDate) {
-        Pool testPool = createPool(owner, product, 1L,
-            startDate, endDate);
+        product.setProvidedProducts(Arrays.asList(providedProduct1, providedProduct2));
+
+        Pool testPool = createPool(owner, product, 1L, startDate, endDate);
 
         // Add some provided products to this pool:
-        testPool.addProvidedProduct(providedProduct1);
-        testPool.addProvidedProduct(providedProduct2);
+        product.addProvidedProduct(providedProduct1);
+        product.addProvidedProduct(providedProduct2);
         poolCurator.create(testPool);
 
         EntitlementCertificate cert = createEntitlementCertificate("key", "certificate");
@@ -223,14 +223,10 @@ public class EntitlementCuratorTest extends DatabaseTestFixture {
     }
 
     private Pool newPoolUsingProducts(Pool pool, Date startDate, Date endDate) {
-        Pool anotherPool = new Pool();
-        anotherPool.setProduct(pool.getProduct());
-        anotherPool.setProvidedProducts(pool.getProvidedProducts());
-        anotherPool.setDerivedProduct(pool.getDerivedProduct());
-        anotherPool.setDerivedProvidedProducts(pool.getDerivedProvidedProducts());
-        anotherPool.setStartDate(startDate);
-        anotherPool.setEndDate(endDate);
-        return anotherPool;
+        return new Pool()
+            .setProduct(pool.getProduct())
+            .setStartDate(startDate)
+            .setEndDate(endDate);
     }
 
     @Test
@@ -418,7 +414,7 @@ public class EntitlementCuratorTest extends DatabaseTestFixture {
         poolCurator.create(pool);
         Entitlement created = bind(consumer, pool);
 
-        List<Entitlement> results = entitlementCurator.findByStackId(consumer, stackingId).list();
+        List<Entitlement> results = entitlementCurator.findByStackId(consumer, stackingId);
         assertEquals(1, results.size());
         assertTrue(results.contains(created));
     }
@@ -441,7 +437,7 @@ public class EntitlementCuratorTest extends DatabaseTestFixture {
             Entitlement created = bind(consumer, pool);
         }
 
-        List<Entitlement> results = entitlementCurator.findByStackIds(consumer, stackingIds).list();
+        List<Entitlement> results = entitlementCurator.findByStackIds(consumer, stackingIds);
         assertEquals(3, results.size());
     }
 
@@ -460,7 +456,7 @@ public class EntitlementCuratorTest extends DatabaseTestFixture {
             createdEntitlements.add(bind(consumer, pool));
         }
 
-        List<Entitlement> results = entitlementCurator.findByStackId(consumer, stackingId).list();
+        List<Entitlement> results = entitlementCurator.findByStackId(consumer, stackingId);
         assertEquals(ents, results.size());
         assertTrue(results.containsAll(createdEntitlements) && createdEntitlements.containsAll(results));
     }
@@ -491,7 +487,7 @@ public class EntitlementCuratorTest extends DatabaseTestFixture {
             createdEntitlements.add(bind(consumer, pool));
         }
 
-        List<Entitlement> results = entitlementCurator.findByStackId(consumer, stackingId).list();
+        List<Entitlement> results = entitlementCurator.findByStackId(consumer, stackingId);
         assertEquals(1, results.size());
         assertEquals(createdEntitlements.get(4), results.get(0));
     }
@@ -677,9 +673,11 @@ public class EntitlementCuratorTest extends DatabaseTestFixture {
     }
 
     protected Pool createPoolWithProducts(Owner owner, String sku, Collection<Product> provided) {
-        Product skuProd = this.createProduct(sku, sku, owner);
+        Product skuProd = TestUtil.createProduct(sku, sku);
+        skuProd.setProvidedProducts(provided);
+        skuProd = this.createProduct(skuProd, owner);
 
-        Pool pool = this.createPool(owner, skuProd, provided, 1000L, TestUtil.createDate(2000, 1, 1),
+        Pool pool = this.createPool(owner, skuProd, 1000L, TestUtil.createDate(2000, 1, 1),
             TestUtil.createDate(2100, 1, 1));
 
         return pool;
@@ -999,8 +997,17 @@ public class EntitlementCuratorTest extends DatabaseTestFixture {
         List<Product> dependentProduct = this.createDependentProducts(owner, 1, "test_dep_prod_a",
             requiredProducts);
 
-        Pool requiredPool = this.createPool(owner, requiredProducts.get(0), providedProducts, 1000L,
-            TestUtil.createDate(2000, 1, 1), TestUtil.createDate(2100, 1, 1));
+        Product mktProduct = requiredProducts.get(0);
+        mktProduct.setProvidedProducts(providedProducts);
+
+        Pool requiredPool = new Pool()
+            .setOwner(owner)
+            .setProduct(mktProduct)
+            .setQuantity(1000L)
+            .setStartDate(TestUtil.createDateOffset(-3, 0, 0))
+            .setEndDate(TestUtil.createDateOffset(3, 0, 0));
+
+        requiredPool = this.poolCurator.create(requiredPool);
 
         Pool dependentPool = this.createPoolWithProducts(owner, "depPool1", dependentProduct);
 
@@ -1027,7 +1034,7 @@ public class EntitlementCuratorTest extends DatabaseTestFixture {
             requiredProducts);
 
         Pool requiredPool = this.createPoolWithProducts(owner, "reqPool1", providedProducts);
-        requiredPool.setDerivedProduct(requiredProducts.get(0));
+        requiredPool.getProduct().setDerivedProduct(requiredProducts.get(0));
         this.poolCurator.merge(requiredPool);
 
         Pool dependentPool = this.createPoolWithProducts(owner, "depPool1", dependentProduct);
@@ -1054,8 +1061,12 @@ public class EntitlementCuratorTest extends DatabaseTestFixture {
         List<Product> dependentProduct = this.createDependentProducts(owner, 1, "test_dep_prod_a",
             requiredProducts);
 
+        Product derivedProduct = TestUtil.createProduct("derivedProductId", "dProductName");
+        derivedProduct.setProvidedProducts(requiredProducts);
+        this.createProduct(derivedProduct, owner);
+
         Pool requiredPool = this.createPoolWithProducts(owner, "reqPool1", providedProducts);
-        requiredPool.setDerivedProvidedProducts(requiredProducts);
+        requiredPool.getProduct().setDerivedProduct(derivedProduct);
         this.poolCurator.merge(requiredPool);
 
         Pool dependentPool = this.createPoolWithProducts(owner, "depPool1", dependentProduct);
@@ -1104,9 +1115,12 @@ public class EntitlementCuratorTest extends DatabaseTestFixture {
         List<Product> providedProducts = this.createProducts(owner, 3, "test_prov_prod");
         List<Product> dependentProducts = this.createDependentProducts(owner, 1, "test_dep_prod_a",
             requiredProducts);
+        List<Product> productSet = new LinkedList<>();
 
-        Pool requiredPool = this.createPoolWithProducts(owner, "reqPool1", providedProducts);
-        requiredPool.addProvidedProduct(requiredProducts.get(0));
+        productSet.addAll(providedProducts);
+        productSet.add(requiredProducts.get(0));
+        Pool requiredPool = this.createPoolWithProducts(owner, "reqPool1", productSet);
+
         this.poolCurator.merge(requiredPool);
 
         Pool dependentPool = this.createPoolWithProducts(owner, "depPool1", dependentProducts);
@@ -1145,14 +1159,29 @@ public class EntitlementCuratorTest extends DatabaseTestFixture {
         Consumer distributor = this.createDistributor(owner);
 
         List<Product> requiredProducts = this.createProducts(owner, 3, "test_req_prod");
-        List<Product> providedProducts = this.createProducts(owner, 3, "test_prov_prod");
+
+        Product p1 = TestUtil.createProduct("p1", "p1");
+        p1.addProvidedProduct(requiredProducts.get(0));
+
+        p1 = this.createProduct(p1, owner);
+        Product p2 = this.createProduct("p2", "p2", owner);
+        Product p3 = this.createProduct("p3", "p3", owner);
+
+        List<Product> providedProducts = Arrays.asList(p1, p2, p3);
         List<Product> dependentProducts = this.createDependentProducts(owner, 1, "test_dep_prod_a",
             requiredProducts);
 
-        Pool requiredPool = this.createPoolWithProducts(owner, "reqPool1", providedProducts);
-        requiredPool.setDerivedProduct(providedProducts.get(0));
-        requiredPool.addDerivedProvidedProduct(requiredProducts.get(0));
-        this.poolCurator.merge(requiredPool);
+        Product skuProduct = TestUtil.createProduct("reqPool1", "reqPool1");
+        skuProduct.setProvidedProducts(providedProducts);
+        skuProduct.setDerivedProduct(p1);
+        skuProduct = this.createProduct(skuProduct, owner);
+
+        Pool requiredPool = this.poolCurator.create(new Pool()
+            .setOwner(owner)
+            .setProduct(skuProduct)
+            .setQuantity(1000L)
+            .setStartDate(TestUtil.createDate(2000, 1, 1))
+            .setEndDate(TestUtil.createDate(2100, 1, 1)));
 
         Pool dependentPool = this.createPoolWithProducts(owner, "depPool1", dependentProducts);
 
@@ -1163,9 +1192,9 @@ public class EntitlementCuratorTest extends DatabaseTestFixture {
 
         // A regular consumer should not have any dependent ents based on
         // derived products.
-        Collection<String> poolIds = entitlementCurator.getDependentEntitlementIdsForPools(consumer,
+        Collection<String> entIds = entitlementCurator.getDependentEntitlementIdsForPools(consumer,
             Arrays.asList(requiredPool.getId()));
-        assertEquals(0, poolIds.size());
+        assertEquals(0, entIds.size());
 
         // Bind the ents for the distributor consumer
         ConsumerType ctype = this.consumerTypeCurator.getConsumerType(distributor);
@@ -1177,10 +1206,10 @@ public class EntitlementCuratorTest extends DatabaseTestFixture {
         assertNotNull(distributorDependentEnt);
 
         // A distributor should have a dependent ent due to derived product match.
-        poolIds = entitlementCurator.getDependentEntitlementIdsForPools(distributor,
+        entIds = entitlementCurator.getDependentEntitlementIdsForPools(distributor,
             Arrays.asList(requiredPool.getId()));
-        assertEquals(1, poolIds.size());
-        assertTrue(poolIds.contains(distributorDependentEnt.getId()));
+        assertEquals(1, entIds.size());
+        assertTrue(entIds.contains(distributorDependentEnt.getId()));
     }
 
     @Test

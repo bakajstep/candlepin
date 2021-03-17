@@ -21,6 +21,7 @@ import org.candlepin.model.ConsumerType;
 import org.candlepin.model.ConsumerTypeCurator;
 import org.candlepin.model.Entitlement;
 import org.candlepin.model.Pool;
+import org.candlepin.model.PoolCurator;
 import org.candlepin.model.Product;
 import org.candlepin.policy.js.compliance.hash.ComplianceStatusHasher;
 
@@ -56,15 +57,17 @@ public class SystemPurposeComplianceRules {
     private ConsumerCurator consumerCurator;
     private ConsumerTypeCurator consumerTypeCurator;
     private I18n i18n;
+    private PoolCurator poolCurator;
 
     @Inject
     public SystemPurposeComplianceRules(EventSink eventSink, ConsumerCurator consumerCurator,
-        ConsumerTypeCurator consumerTypeCurator, I18n i18n) {
+        ConsumerTypeCurator consumerTypeCurator, I18n i18n, PoolCurator poolCurator) {
 
         this.eventSink = eventSink;
         this.consumerCurator = consumerCurator;
         this.consumerTypeCurator = consumerTypeCurator;
         this.i18n = i18n;
+        this.poolCurator = poolCurator;
     }
 
     /**
@@ -110,7 +113,7 @@ public class SystemPurposeComplianceRules {
             return status;
         }
 
-        if (consumer.getOwner() != null && consumer.getOwner().isContentAccessEnabled()) {
+        if (consumer.getOwner() != null && consumer.getOwner().isUsingSimpleContentAccess()) {
             status.setDisabled(true);
             applyStatus(consumer, status, updateConsumer);
             return status;
@@ -141,6 +144,14 @@ public class SystemPurposeComplianceRules {
         entitlements.removeIf(element -> finalDate.compareTo(element.getStartDate()) < 0 ||
             finalDate.compareTo(element.getEndDate()) > 0);
 
+        //fetch SLA of the Owner
+        Set<String> levels = poolCurator.retrieveServiceLevelsForOwner(consumer.getOwner(), true);
+        boolean slaExempted = false;
+        if (!levels.isEmpty() && levels.contains(consumer.getServiceLevel())) {
+                log.debug("Ignoring due to SLA is layered and exempted true");
+                slaExempted = true;
+        }
+
         for (Entitlement entitlement : entitlements) {
             String unsatisfedRole = consumer.getRole();
             Set<String> unsatisfiedAddons = new HashSet<>(consumer.getAddOns());
@@ -150,17 +161,28 @@ public class SystemPurposeComplianceRules {
 
             Set<Product> entitlementProducts = new HashSet<>();
 
-            if (entitlementPool.getProvidedProducts() != null) {
-                entitlementProducts.addAll(entitlementPool.getProvidedProducts());
-            }
+            // FIXME: This doesn't properly support N-tier, and will fail to get anything below the
+            // first set of children.
+            Product poolProduct = entitlementPool.getProduct();
+            if (poolProduct != null) {
+                entitlementProducts.add(poolProduct);
 
-            if (entitlementPool.getDerivedProvidedProducts() != null) {
-                entitlementProducts.addAll(entitlementPool.getDerivedProvidedProducts());
-            }
+                Collection<Product> provided = poolProduct.getProvidedProducts();
+                if (provided != null) {
+                    entitlementProducts.addAll(provided);
+                }
 
-            entitlementProducts.add(entitlementPool.getProduct());
-            entitlementProducts.add(entitlementPool.getDerivedProduct());
-            entitlementProducts.remove(null);
+                // FIXME: Do we actually want to fetch derived products and derived provided products here?
+                Product poolDerived = poolProduct.getDerivedProduct();
+                if (poolDerived != null) {
+                    entitlementProducts.add(poolDerived);
+
+                    provided = poolDerived.getProvidedProducts();
+                    if (provided != null) {
+                        entitlementProducts.addAll(provided);
+                    }
+                }
+            }
 
             for (Product product : entitlementProducts) {
                 if (StringUtils.isNotEmpty(unsatisfedRole) &&
@@ -192,7 +214,8 @@ public class SystemPurposeComplianceRules {
                 }
                 unsatisfiedAddons.removeAll(addonsFound);
 
-                if (StringUtils.isNotEmpty(preferredSla) &&
+                if (!slaExempted &&
+                    StringUtils.isNotEmpty(preferredSla) &&
                     product.hasAttribute(Product.Attributes.SUPPORT_LEVEL)) {
                     String sla = product.getAttributeValue(Product.Attributes.SUPPORT_LEVEL);
                     if (sla.equalsIgnoreCase(preferredSla)) {
@@ -224,7 +247,8 @@ public class SystemPurposeComplianceRules {
             }
         }
 
-        if (StringUtils.isNotEmpty(consumer.getServiceLevel()) && status.getCompliantSLA().isEmpty()) {
+        if (!slaExempted &&
+            StringUtils.isNotEmpty(consumer.getServiceLevel()) && status.getCompliantSLA().isEmpty()) {
             status.setNonCompliantSLA(consumer.getServiceLevel());
         }
 

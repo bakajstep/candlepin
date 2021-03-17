@@ -25,9 +25,9 @@ import org.candlepin.test.TestUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-
 
 
 public class PoolCuratorFilterTest extends DatabaseTestFixture {
@@ -63,19 +63,17 @@ public class PoolCuratorFilterTest extends DatabaseTestFixture {
 
         Product searchProduct = TestUtil.createProduct("awesomeos-server", "Awesome OS Server Premium");
         searchProduct.setAttribute(Product.Attributes.SUPPORT_LEVEL, "CustomSupportLevel");
+
+        Product provided1 = TestUtil.createProduct("101111", "Server Bits");
+        provided1.addContent(content, true);
+        provided1 = this.createProduct(provided1, owner);
+        Product provided2 = this.createProduct("202222", "Containers In This One", owner);
+        searchProduct.setProvidedProducts(Arrays.asList(provided1, provided2));
+
         searchProduct = this.createProduct(searchProduct, owner);
 
         Pool searchPool = createPool(owner, searchProduct, 100L, TestUtil.createDate(2005, 3, 2),
             TestUtil.createDate(2050, 3, 2));
-
-        Product provided = TestUtil.createProduct("101111", "Server Bits");
-        provided.addContent(content, true);
-        provided = this.createProduct(provided, owner);
-
-        searchPool.addProvidedProduct(provided);
-
-        provided = this.createProduct("202222", "Containers In This One", owner);
-        searchPool.addProvidedProduct(provided);
 
         searchPool.setContractNumber("mycontract");
         searchPool.setOrderNumber("myorder");
@@ -84,18 +82,18 @@ public class PoolCuratorFilterTest extends DatabaseTestFixture {
         poolCurator.create(searchPool);
 
         // Create another we don't intend to see in the results:
-        Product hideProduct = this.createProduct("hidden-product", "Not-So-Awesome OS Home Edition", owner);
+        Product hProduct = TestUtil.createProduct("hidden-product", "Not-So-Awesome OS Home Edition");
+        Product provided = this.createProduct("101", "Workstation Bits", owner);
+        hProduct.setProvidedProducts(Arrays.asList(provided));
+        Product hideProduct = this.createProduct(hProduct, owner);
+
         hidePool = createPool(owner, hideProduct, 100L, TestUtil.createDate(2005, 3, 2),
             TestUtil.createDate(2050, 3, 2));
-
-        provided = this.createProduct("101", "Workstation Bits", owner);
-        hidePool.addProvidedProduct(provided);
-        poolCurator.create(hidePool);
 
         return searchPool;
     }
 
-    private void searchTest(PoolFilterBuilder filters, int expectedResults, String ... expectedIds) {
+    private void searchTest(PoolFilterBuilder filters, int expectedResults, String... expectedIds) {
         Page<List<Pool>> page = poolCurator.listAvailableEntitlementPools(
             null, owner.getId(), (Collection<String>) null, null, null, filters, req, false,
             false, false, null);
@@ -114,14 +112,14 @@ public class PoolCuratorFilterTest extends DatabaseTestFixture {
         }
     }
 
-    private void searchTest(String searchFor, int expectedResults, String ... expectedIds) {
+    private void searchTest(String searchFor, int expectedResults, String... expectedIds) {
         PoolFilterBuilder filters = new PoolFilterBuilder();
         filters.addMatchesFilter(searchFor);
         searchTest(filters, expectedResults, expectedIds);
     }
 
     @Test
-    public void availablePoolsCanBeFilteredBySkuNameExactMatch() throws Exception {
+    public void availablePoolsCanBeFilteredBySkuNameExactMatch() {
         searchTest("Awesome OS Server Premium", 1, searchPool.getId());
     }
 
@@ -131,8 +129,8 @@ public class PoolCuratorFilterTest extends DatabaseTestFixture {
         poolCurator.merge(searchPool);
         searchTest("got_con%tract_", 1, searchPool.getId());
         searchTest("got_con%tract_*", 1, searchPool.getId());
-        searchTest("got_c%ct_", 0, new String [] {});
-        searchTest("got_con%tra_t_", 0, new String [] {});
+        searchTest("got_c%ct_", 0);
+        searchTest("got_con%tra_t_", 0);
     }
 
     @Test
@@ -141,24 +139,24 @@ public class PoolCuratorFilterTest extends DatabaseTestFixture {
     }
 
     @Test
-    public void availablePoolsCanBeFilteredBySkuName() throws Exception {
+    public void availablePoolsCanBeFilteredBySkuName() {
         searchTest("Awesome OS Server Premium", 1, searchPool.getId());
-        searchTest("Server", 0, new String [] {});
+        searchTest("Server", 0);
     }
 
     @Test
-    public void availablePoolsCanBeFilteredBySkuNameWildcard() throws Exception {
+    public void availablePoolsCanBeFilteredBySkuNameWildcard() {
         searchTest("*Ser*emium", 1, searchPool.getId());
         searchTest("*sER*emIum", 1, searchPool.getId()); // ignore case
-        searchTest("*Ser*emium?", 0, new String [] {});
+        searchTest("*Ser*emium?", 0);
         searchTest("*Ser*emiu?", 1, searchPool.getId());
-        searchTest("*Ser*emiumaroni", 0, new String [] {});
+        searchTest("*Ser*emiumaroni", 0);
         searchTest("*Ser*emium*", 1, searchPool.getId());
         searchTest("*Ser**emium", 1, searchPool.getId());
     }
 
     @Test
-    public void negationOfAKeyValueFilter() throws Exception {
+    public void negationOfAKeyValueFilter() {
         PoolFilterBuilder filter = new PoolFilterBuilder();
         filter.addAttributeFilter("hello", "true");
         searchTest(filter, 1, searchPool.getId());
@@ -169,18 +167,18 @@ public class PoolCuratorFilterTest extends DatabaseTestFixture {
     }
 
     @Test
-    public void availablePoolsCanBeFilteredBySkuNameSingleCharWildcard() throws Exception {
+    public void availablePoolsCanBeFilteredBySkuNameSingleCharWildcard() {
         searchTest("Awesome OS Ser?er P?emium", 1, searchPool.getId());
         searchTest("*Ser??? P?emium", 1, searchPool.getId());
     }
 
     @Test
-    public void availablePoolsCanBeFilteredBySku() throws Exception {
+    public void availablePoolsCanBeFilteredBySku() {
         searchTest("*os-ser*", 1, searchPool.getId());
     }
 
     @Test
-    public void availablePoolsCanBeFilteredByProvidedProducts() throws Exception {
+    public void availablePoolsCanBeFilteredByProvidedProducts() {
         searchTest("Server Bits", 1, searchPool.getId());
         searchTest("*erv???Bi?s", 1, searchPool.getId());
         searchTest("202222", 1, searchPool.getId());
@@ -189,38 +187,38 @@ public class PoolCuratorFilterTest extends DatabaseTestFixture {
     }
 
     @Test
-    public void availablePoolsCanBeFilteredByContractNumber() throws Exception {
+    public void availablePoolsCanBeFilteredByContractNumber() {
         searchTest("mycontract", 1, searchPool.getId());
         searchTest("my*cont??ct", 1, searchPool.getId());
     }
 
     @Test
-    public void availablePoolsCanBeFilteredByOrderNumber() throws Exception {
+    public void availablePoolsCanBeFilteredByOrderNumber() {
         searchTest("myorder", 1, searchPool.getId());
         searchTest("my*ord??", 1, searchPool.getId());
     }
 
     @Test
-    public void availablePoolsCanBeFilteredBySupportLevel() throws Exception {
+    public void availablePoolsCanBeFilteredBySupportLevel() {
         searchTest("CustomSupportLevel", 1, searchPool.getId());
         searchTest("*Cus*port*", 1, searchPool.getId());
         searchTest("*Cus???Su??ortLevel*", 1, searchPool.getId());
-        searchTest("*Self-Service*", 0, new String [] {});
+        searchTest("*Self-Service*", 0);
     }
 
     @Test
-    public void availablePoolsCanBeFilteredByContentName() throws Exception {
+    public void availablePoolsCanBeFilteredByContentName() {
         searchTest("Content One", 1, searchPool.getId());
         searchTest("*on*nt* one", 1, searchPool.getId());
         searchTest("*con???t??n*", 1, searchPool.getId());
-        searchTest("*New Content*", 0, new String [] {});
+        searchTest("*New Content*", 0);
     }
 
     @Test
-    public void availablePoolsCanBeFilteredByContentLabel() throws Exception {
+    public void availablePoolsCanBeFilteredByContentLabel() {
         searchTest("C-Label One", 1, searchPool.getId());
         searchTest("*-l*l*one", 1, searchPool.getId());
         searchTest("*c-l???l??n*", 1, searchPool.getId());
-        searchTest("*Content Label One*", 0, new String [] {});
+        searchTest("*Content Label One*", 0);
     }
 }

@@ -39,6 +39,12 @@ PACKAGES=(
     tomcat
     vim-enhanced
     wget
+    createrepo_c
+    rpm-build
+    rpm-sign
+    python-requests
+    expect
+    PyYAML
 )
 
 yum install -y ${PACKAGES[@]}

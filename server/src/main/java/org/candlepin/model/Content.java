@@ -53,6 +53,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
 
 
+
 /**
  * ProductContent
  */
@@ -272,9 +273,13 @@ public class Content extends AbstractHibernateObject implements SharedEntity, Cl
      *
      * @param uuid
      *  The object ID to assign to this content.
+     *
+     * @return
+     *  a reference to this content instance
      */
-    public void setUuid(String uuid) {
+    public Content setUuid(String uuid) {
         this.uuid = uuid;
+        return this;
     }
 
     /**
@@ -294,10 +299,14 @@ public class Content extends AbstractHibernateObject implements SharedEntity, Cl
      * be confused with the object ID.
      *
      * @param id
-     *  The new content ID for this content.
+     *  The new content ID for this content
+     *
+     * @return
+     *  a reference to this content instance
      */
-    public void setId(String id) {
+    public Content setId(String id) {
         this.id = id;
+        return this;
     }
 
     @Override
@@ -305,8 +314,9 @@ public class Content extends AbstractHibernateObject implements SharedEntity, Cl
         return type;
     }
 
-    public void setType(String type) {
+    public Content setType(String type) {
         this.type = type;
+        return this;
     }
 
     @Override
@@ -314,8 +324,9 @@ public class Content extends AbstractHibernateObject implements SharedEntity, Cl
         return label;
     }
 
-    public void setLabel(String label) {
+    public Content setLabel(String label) {
         this.label = label;
+        return this;
     }
 
     @Override
@@ -323,8 +334,9 @@ public class Content extends AbstractHibernateObject implements SharedEntity, Cl
         return name;
     }
 
-    public void setName(String name) {
+    public Content setName(String name) {
         this.name = name;
+        return this;
     }
 
     @Override
@@ -332,34 +344,40 @@ public class Content extends AbstractHibernateObject implements SharedEntity, Cl
         return vendor;
     }
 
-    public void setVendor(String vendor) {
+    public Content setVendor(String vendor) {
         this.vendor = vendor;
+        return this;
     }
 
     @Override
     public String getContentUrl() {
-        return contentUrl;
+        return this.contentUrl == null || this.contentUrl.isEmpty() ? null : this.contentUrl;
     }
 
-    public void setContentUrl(String contentUrl) {
+    public Content setContentUrl(String contentUrl) {
         this.contentUrl = contentUrl;
+        return this;
     }
 
     /**
-     * @return Comma separated list of tags this content set requires to be
-     *         enabled.
+     * @return
+     *  a comma-separated list of tags this content set requires to be enabled
      */
     @Override
     public String getRequiredTags() {
-        return requiredTags;
+        return this.requiredTags == null || this.requiredTags.isEmpty() ? null : this.requiredTags;
     }
 
     /**
-     * @param requiredTags Comma separated list of tags this content set
-     *        requires.
+     * @param requiredTags
+     *  a comma-separated list of tags this content set requires
+     *
+     * @return
+     *  a reference to this content instance
      */
-    public void setRequiredTags(String requiredTags) {
+    public Content setRequiredTags(String requiredTags) {
         this.requiredTags = requiredTags;
+        return this;
     }
 
     /**
@@ -367,23 +385,28 @@ public class Content extends AbstractHibernateObject implements SharedEntity, Cl
      */
     @Override
     public String getReleaseVersion() {
-        return releaseVer;
+        return this.releaseVer == null || this.releaseVer.isEmpty() ? null : this.releaseVer;
     }
 
     /**
      * @param releaseVer the releaseVer to set
+     *
+     * @return
+     *  a reference to this content instance
      */
-    public void setReleaseVersion(String releaseVer) {
+    public Content setReleaseVersion(String releaseVer) {
         this.releaseVer = releaseVer;
+        return this;
     }
 
     @Override
     public String getGpgUrl() {
-        return gpgUrl;
+        return this.gpgUrl == null || this.gpgUrl.isEmpty() ? null : this.gpgUrl;
     }
 
-    public void setGpgUrl(String gpgUrl) {
+    public Content setGpgUrl(String gpgUrl) {
         this.gpgUrl = gpgUrl;
+        return this;
     }
 
     @Override
@@ -391,8 +414,9 @@ public class Content extends AbstractHibernateObject implements SharedEntity, Cl
         return metadataExpire;
     }
 
-    public void setMetadataExpiration(Long metadataExpire) {
+    public Content setMetadataExpiration(Long metadataExpire) {
         this.metadataExpire = metadataExpire;
+        return this;
     }
 
     /**
@@ -478,13 +502,14 @@ public class Content extends AbstractHibernateObject implements SharedEntity, Cl
         return this;
     }
 
-    public void setArches(String arches) {
+    public Content setArches(String arches) {
         this.arches = arches;
+        return this;
     }
 
     @Override
     public String getArches() {
-        return arches;
+        return this.arches == null || this.arches.isEmpty() ? null : this.arches;
     }
 
     @XmlTransient
@@ -509,21 +534,25 @@ public class Content extends AbstractHibernateObject implements SharedEntity, Cl
             Content that = (Content) other;
 
             boolean equals = new EqualsBuilder()
-                .append(this.id, that.id)
-                .append(this.type, that.type)
-                .append(this.label, that.label)
-                .append(this.name, that.name)
-                .append(this.vendor, that.vendor)
-                .append(this.contentUrl, that.contentUrl)
-                .append(this.requiredTags, that.requiredTags)
-                .append(this.releaseVer, that.releaseVer)
-                .append(this.gpgUrl, that.gpgUrl)
-                .append(this.metadataExpire, that.metadataExpire)
-                .append(this.arches, that.arches)
+                .append(this.getId(), that.getId())
+                .append(this.getType(), that.getType())
+                .append(this.getLabel(), that.getLabel())
+                .append(this.getName(), that.getName())
+                .append(this.getVendor(), that.getVendor())
+                .append(this.getMetadataExpiration(), that.getMetadataExpiration())
+
+                // These fields require special consideration, as nulls and empty strings are
+                // considered identical for CP's purposes. The accessors should fix this for us,
+                // but if equality checks start failing in the future, this is something to check.
+                .append(this.getContentUrl(), that.getContentUrl())
+                .append(this.getRequiredTags(), that.getRequiredTags())
+                .append(this.getReleaseVersion(), that.getReleaseVersion())
+                .append(this.getGpgUrl(), that.getGpgUrl())
+                .append(this.getArches(), that.getArches())
                 .isEquals();
 
             if (equals) {
-                if (!Util.collectionsAreEqual(this.modifiedProductIds, that.modifiedProductIds)) {
+                if (!Util.collectionsAreEqual(this.getModifiedProductIds(), that.getModifiedProductIds())) {
                     return false;
                 }
             }
@@ -550,19 +579,27 @@ public class Content extends AbstractHibernateObject implements SharedEntity, Cl
      *  a version hash for this entity
      */
     public int getEntityVersion() {
+        return this.getEntityVersion(false);
+    }
+
+    public int getEntityVersion(boolean useCache) {
+        if (useCache && this.entityVersion != null) {
+            return this.entityVersion;
+        }
+
         // This must always be a subset of equals
         HashCodeBuilder builder = new HashCodeBuilder(37, 7)
-            .append(this.id)
-            .append(this.type)
-            .append(this.label)
-            .append(this.name)
-            .append(this.vendor)
-            .append(this.contentUrl)
-            .append(this.requiredTags)
-            .append(this.releaseVer)
-            .append(this.gpgUrl)
-            .append(this.metadataExpire)
-            .append(this.arches);
+            .append(this.getId())
+            .append(this.getType())
+            .append(this.getLabel())
+            .append(this.getName())
+            .append(this.getVendor())
+            .append(this.getContentUrl())
+            .append(this.getRequiredTags())
+            .append(this.getReleaseVersion())
+            .append(this.getGpgUrl())
+            .append(this.getMetadataExpiration())
+            .append(this.getArches());
 
         // Impl note:
         // We need to be certain that the hash code is calculated in a way that's order
@@ -571,7 +608,7 @@ public class Content extends AbstractHibernateObject implements SharedEntity, Cl
         int accumulator = 0;
 
         if (!this.modifiedProductIds.isEmpty()) {
-            for (String pid : this.modifiedProductIds) {
+            for (String pid : this.getModifiedProductIds()) {
                 accumulator += (pid != null ? pid.hashCode() : 0);
             }
 

@@ -25,6 +25,7 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.nullable;
@@ -46,7 +47,6 @@ import org.candlepin.common.exceptions.BadRequestException;
 import org.candlepin.common.exceptions.GoneException;
 import org.candlepin.common.exceptions.NotFoundException;
 import org.candlepin.config.CandlepinCommonTestConfig;
-import org.candlepin.controller.CandlepinPoolManager;
 import org.candlepin.controller.ContentAccessManager;
 import org.candlepin.controller.Entitler;
 import org.candlepin.controller.ManifestManager;
@@ -58,7 +58,6 @@ import org.candlepin.dto.api.v1.CertificateSerialDTO;
 import org.candlepin.dto.api.v1.ComplianceStatusDTO;
 import org.candlepin.dto.api.v1.ConsumerDTO;
 import org.candlepin.dto.api.v1.ContentAccessDTO;
-import org.candlepin.dto.api.v1.OwnerDTO;
 import org.candlepin.model.CandlepinQuery;
 import org.candlepin.model.Cdn;
 import org.candlepin.model.CdnCurator;
@@ -96,6 +95,7 @@ import org.candlepin.resource.util.ResourceDateParser;
 import org.candlepin.resteasy.parameter.KeyValueParameter;
 import org.candlepin.service.EntitlementCertServiceAdapter;
 import org.candlepin.service.IdentityCertServiceAdapter;
+import org.candlepin.service.ProductServiceAdapter;
 import org.candlepin.service.SubscriptionServiceAdapter;
 import org.candlepin.service.UserServiceAdapter;
 import org.candlepin.test.TestUtil;
@@ -158,6 +158,7 @@ public class ConsumerResourceTest {
     @Mock private OwnerCurator mockOwnerCurator;
     @Mock private EntitlementCertServiceAdapter mockEntitlementCertServiceAdapter;
     @Mock private SubscriptionServiceAdapter mockSubscriptionServiceAdapter;
+    @Mock private ProductServiceAdapter mockProductServiceAdapter;
     @Mock private PoolManager mockPoolManager;
     @Mock private EntitlementCurator mockEntitlementCurator;
     @Mock private ComplianceRules mockComplianceRules;
@@ -208,6 +209,7 @@ public class ConsumerResourceTest {
             mockConsumerTypeCurator,
             null,
             mockSubscriptionServiceAdapter,
+            mockProductServiceAdapter,
             mockEntitlementCurator,
             mockIdentityCertServiceAdapter,
             mockEntitlementCertServiceAdapter,
@@ -313,10 +315,6 @@ public class ConsumerResourceTest {
         return owner;
     }
 
-    protected OwnerDTO createOwnerDTO(String key) {
-        return translator.translate(createOwner(key), OwnerDTO.class);
-    }
-
     protected Consumer mockConsumer(Consumer consumer) {
         if (consumer != null) {
             consumer.ensureUUID();
@@ -381,6 +379,8 @@ public class ConsumerResourceTest {
         when(e.getPool()).thenReturn(p);
         when(p.getSubscriptionId()).thenReturn("4444");
 
+        doThrow(RuntimeException.class).when(mockPoolManager)
+            .regenerateCertificatesOf(any(Entitlement.class), anyBoolean());
         when(mockEntitlementCurator.get(eq("9999"))).thenReturn(e);
         when(mockSubscriptionServiceAdapter.getSubscription(eq("4444"))).thenReturn(s);
 
@@ -388,20 +388,15 @@ public class ConsumerResourceTest {
             any(Entitlement.class), any(Product.class)))
             .thenThrow(new IOException());
 
-        CandlepinPoolManager poolManager = new CandlepinPoolManager(
-            null, null, null, this.config, null, null, mockEntitlementCurator,
-            mockConsumerCurator, mockConsumerTypeCurator, null, null, null, null, null,
-            mockActivationKeyRules, null, null, null, null, null, null, null, null, null, null
-        );
-
         ConsumerResource consumerResource = new ConsumerResource(
-            mockConsumerCurator, mockConsumerTypeCurator, null, null, mockEntitlementCurator, null,
+            mockConsumerCurator, mockConsumerTypeCurator, null, null, null, mockEntitlementCurator, null,
             mockEntitlementCertServiceAdapter, null, null, null, null, null,
-            poolManager, null, null, null, null, null, null, null, null, null,
+            mockPoolManager, null, null, null, null, null, null, null, null, null,
             this.config, null, null, consumerBindUtil,
             null, null, this.factValidator, null, consumerEnricher, migrationProvider, translator,
             this.mockJobManager);
 
+        // Fixme throw custom exception from generator instead of generic RuntimeException
         assertThrows(RuntimeException.class, () ->
             consumerResource.regenerateEntitlementCertificates(consumer.getUuid(), "9999", false)
         );

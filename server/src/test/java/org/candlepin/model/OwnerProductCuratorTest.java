@@ -14,7 +14,13 @@
  */
 package org.candlepin.model;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.candlepin.model.activationkeys.ActivationKey;
 import org.candlepin.test.DatabaseTestFixture;
@@ -30,7 +36,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
 
 
 /**
@@ -217,7 +222,7 @@ public class OwnerProductCuratorTest extends DatabaseTestFixture {
         this.createOwnerProductMapping(owner, product1);
         this.createOwnerProductMapping(owner, product2);
 
-        Collection<String> ids = Collections.<String>emptyList();
+        Collection<String> ids = Collections.emptyList();
         Collection<Product> productsA = this.ownerProductCurator.getProductsByIds(owner, ids).list();
         Collection<Product> productsB = this.ownerProductCurator.getProductsByIds(owner.getId(), ids).list();
 
@@ -232,13 +237,13 @@ public class OwnerProductCuratorTest extends DatabaseTestFixture {
         Owner owner3 = this.createOwner();
         Product product = this.createProduct();
 
-        assertEquals(0L, (long) this.ownerProductCurator.getOwnerCount(product));
+        assertEquals(0L, this.ownerProductCurator.getOwnerCount(product));
 
         this.createOwnerProductMapping(owner1, product);
-        assertEquals(1L, (long) this.ownerProductCurator.getOwnerCount(product));
+        assertEquals(1L, this.ownerProductCurator.getOwnerCount(product));
 
         this.createOwnerProductMapping(owner2, product);
-        assertEquals(2L, (long) this.ownerProductCurator.getOwnerCount(product));
+        assertEquals(2L, this.ownerProductCurator.getOwnerCount(product));
     }
 
     @Test
@@ -513,30 +518,21 @@ public class OwnerProductCuratorTest extends DatabaseTestFixture {
         Owner owner = this.createOwner();
         Product original = this.createProduct();
         Product updated = this.createProduct();
+        Product untouched = this.createProduct();
         this.createOwnerProductMapping(owner, original);
+        this.createOwnerProductMapping(owner, untouched);
+
+        Pool pool = TestUtil.createPool(owner, original);
+        this.poolCurator.create(pool);
 
         ActivationKey key = TestUtil.createActivationKey(owner, null);
         key.setProducts(Util.asSet(original));
 
-        Pool pool1 = TestUtil.createPool(owner, original);
-        Pool pool2 = TestUtil.createPool(owner);
-        pool2.addProvidedProduct(original);
-        Pool pool3 = TestUtil.createPool(owner);
-        pool3.setDerivedProduct(original);
-        Pool pool4 = TestUtil.createPool(owner);
-        pool4.setDerivedProvidedProducts(Arrays.asList(original));
-
         this.activationKeyCurator.create(key);
-        this.poolCurator.create(pool1);
-        this.productCurator.create(pool2.getProduct());
-        this.poolCurator.create(pool2);
-        this.productCurator.create(pool3.getProduct());
-        this.poolCurator.create(pool3);
-        this.productCurator.create(pool4.getProduct());
-        this.poolCurator.create(pool4);
 
         assertTrue(this.isProductMappedToOwner(original, owner));
         assertFalse(this.isProductMappedToOwner(updated, owner));
+        assertTrue(this.isProductMappedToOwner(untouched, owner));
 
         Map<String, String> uuidMap = new HashMap<>();
         uuidMap.put(original.getUuid(), updated.getUuid());
@@ -545,30 +541,15 @@ public class OwnerProductCuratorTest extends DatabaseTestFixture {
 
         assertFalse(this.isProductMappedToOwner(original, owner));
         assertTrue(this.isProductMappedToOwner(updated, owner));
+        assertTrue(this.isProductMappedToOwner(untouched, owner));
 
         this.activationKeyCurator.refresh(key);
         Collection<Product> products = key.getProducts();
         assertEquals(1, products.size());
         assertEquals(updated.getUuid(), products.iterator().next().getUuid());
 
-        this.poolCurator.refresh(pool1);
-        assertEquals(updated.getUuid(), pool1.getProduct().getUuid());
-
-        this.poolCurator.refresh(pool2);
-        assertNotEquals(updated.getUuid(), pool2.getProduct().getUuid());
-        products = pool2.getProvidedProducts();
-        assertEquals(1, products.size());
-        assertEquals(updated.getUuid(), products.iterator().next().getUuid());
-
-        this.poolCurator.refresh(pool3);
-        assertNotEquals(updated.getUuid(), pool3.getProduct().getUuid());
-        assertEquals(updated.getUuid(), pool3.getDerivedProduct().getUuid());
-
-        this.poolCurator.refresh(pool4);
-        assertNotEquals(updated.getUuid(), pool4.getProduct().getUuid());
-        products = pool4.getDerivedProvidedProducts();
-        assertEquals(1, products.size());
-        assertEquals(updated.getUuid(), products.iterator().next().getUuid());
+        this.poolCurator.refresh(pool);
+        assertEquals(updated.getUuid(), pool.getProduct().getUuid());
     }
 
     @Test
@@ -605,9 +586,9 @@ public class OwnerProductCuratorTest extends DatabaseTestFixture {
         Product product4 = this.createProduct("p2", "p2", owner2);
 
         Map<String, List<Product>> productMap1 = this.ownerProductCurator.getProductsByVersions(owner1,
-            Collections.<String, Integer>singletonMap(product1.getId(), product1.getEntityVersion()));
+            Collections.singletonMap(product1.getId(), product1.getEntityVersion()));
         Map<String, List<Product>> productMap2 = this.ownerProductCurator.getProductsByVersions(owner2,
-            Collections.<String, Integer>singletonMap(product2.getId(), product2.getEntityVersion()));
+            Collections.singletonMap(product2.getId(), product2.getEntityVersion()));
 
         // productMap1 should contain only product2 and product3
         // productMap2 should contain only product1 and product3
@@ -645,9 +626,9 @@ public class OwnerProductCuratorTest extends DatabaseTestFixture {
         Product product4 = this.createProduct("p2", "p2", owner2);
 
         Map<String, List<Product>> productMap1 = this.ownerProductCurator.getProductsByVersions(null,
-            Collections.<String, Integer>singletonMap(product1.getId(), product1.getEntityVersion()));
+            Collections.singletonMap(product1.getId(), product1.getEntityVersion()));
         Map<String, List<Product>> productMap2 = this.ownerProductCurator.getProductsByVersions(null,
-            Collections.<String, Integer>singletonMap(product2.getId(), product2.getEntityVersion()));
+            Collections.singletonMap(product2.getId(), product2.getEntityVersion()));
 
         // Both maps should contain both products 1, 2 and 3
 
@@ -760,14 +741,28 @@ public class OwnerProductCuratorTest extends DatabaseTestFixture {
         assertEquals(0, productMap1.size());
 
         Map<String, List<Product>> productMap2 = this.ownerProductCurator
-            .getProductsByVersions(owner1, Collections.<String, Integer>emptyMap());
+            .getProductsByVersions(owner1, Collections.emptyMap());
         assertEquals(0, productMap2.size());
 
         Map<String, List<Product>> productMap3 = this.ownerProductCurator.getProductsByVersions(null, null);
         assertEquals(0, productMap3.size());
 
         Map<String, List<Product>> productMap4 = this.ownerProductCurator
-            .getProductsByVersions(null, Collections.<String, Integer>emptyMap());
+            .getProductsByVersions(null, Collections.emptyMap());
         assertEquals(0, productMap4.size());
+    }
+
+    @Test
+    public void testGetProductsByVersionsDoesntFailWithLargeDataSets() {
+        Owner owner = this.createOwner();
+
+        int versionCount = 10000;
+
+        Map<String, Integer> versionMap = new HashMap<>();
+        for (int i = 0; i < versionCount; ++i) {
+            versionMap.put("entity-" + i, i);
+        }
+
+        this.ownerProductCurator.getProductsByVersions(owner, versionMap);
     }
 }

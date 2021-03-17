@@ -22,7 +22,6 @@ import org.candlepin.model.activationkeys.ActivationKeyPool;
 
 import com.google.common.collect.Iterables;
 import com.google.inject.Inject;
-import com.google.inject.Injector;
 import com.google.inject.persist.Transactional;
 
 import org.hibernate.Criteria;
@@ -59,12 +58,13 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 import javax.inject.Singleton;
 import javax.persistence.TypedQuery;
-
 
 
 /**
@@ -76,18 +76,15 @@ public class PoolCurator extends AbstractHibernateCurator<Pool> {
     /** The recommended number of expired pools to fetch in a single call to listExpiredPools */
     public static final int EXPIRED_POOL_BLOCK_SIZE = 1000;
 
-    private static Logger log = LoggerFactory.getLogger(PoolCurator.class);
-    private ConsumerCurator consumerCurator;
-    private ConsumerTypeCurator consumerTypeCurator;
-
-    @Inject
-    protected Injector injector;
+    private static final Logger log = LoggerFactory.getLogger(PoolCurator.class);
+    private final ConsumerCurator consumerCurator;
+    private final ConsumerTypeCurator consumerTypeCurator;
 
     @Inject
     public PoolCurator(ConsumerCurator consumerCurator, ConsumerTypeCurator consumerTypeCurator) {
         super(Pool.class);
-        this.consumerCurator = consumerCurator;
-        this.consumerTypeCurator = consumerTypeCurator;
+        this.consumerCurator = Objects.requireNonNull(consumerCurator);
+        this.consumerTypeCurator = Objects.requireNonNull(consumerTypeCurator);
     }
 
     /**
@@ -117,16 +114,34 @@ public class PoolCurator extends AbstractHibernateCurator<Pool> {
                 .add(Restrictions.ge("endDate", activeOn));
         }
 
-        return this.cpQueryFactory.<Pool>buildQuery(this.currentSession(), criteria);
+        return this.cpQueryFactory.buildQuery(this.currentSession(), criteria);
     }
 
-    @Transactional
-    public CandlepinQuery<Pool> listByOwnerAndType(Owner owner, PoolType type) {
-        DetachedCriteria criteria = DetachedCriteria.forClass(Pool.class)
-            .add(Restrictions.eq("owner", owner))
-            .add(Restrictions.eq("type", type));
+    /**
+     * Fetches all pools for the given owner of the specified pool types. If no pools match the
+     * given inputs, this method returns an empty list.
+     *
+     * @param ownerId
+     *  the ID of the owner to use to match pools
+     *
+     * @param types
+     *  a collection of pool types to use to match pools
+     *
+     * @return
+     *  a list of pools matching the given owner and pool types
+     */
+    public List<Pool> listByOwnerAndTypes(String ownerId, PoolType... types) {
+        if (types != null && types.length > 0) {
+            String jpql = "SELECT p FROM Pool p WHERE p.owner.id = :owner_id AND p.type IN (:pool_types)";
 
-        return this.cpQueryFactory.<Pool>buildQuery(this.currentSession(), criteria);
+            return this.getEntityManager()
+                .createQuery(jpql, Pool.class)
+                .setParameter("owner_id", ownerId)
+                .setParameter("pool_types", Arrays.asList(types))
+                .getResultList();
+        }
+
+        return new ArrayList<>();
     }
 
     /**
@@ -139,7 +154,7 @@ public class PoolCurator extends AbstractHibernateCurator<Pool> {
         DetachedCriteria criteria = this.createSecureDetachedCriteria()
             .add(Restrictions.eq("sourceEntitlement", e));
 
-        return this.cpQueryFactory.<Pool>buildQuery(this.currentSession(), criteria);
+        return this.cpQueryFactory.buildQuery(this.currentSession(), criteria);
     }
 
     /**
@@ -377,11 +392,7 @@ public class PoolCurator extends AbstractHibernateCurator<Pool> {
                 log.warn("Attempting to filter entitlement pools by owner and a consumer belonging to a " +
                     "different owner: {}, {}", ownerId, consumer);
 
-                Page<List<Pool>> output = new Page<>();
-                output.setPageData(Collections.<Pool>emptyList());
-                output.setMaxRecords(0);
-
-                return output;
+                return emptyPage();
             }
 
             // We'll set the owner restriction later
@@ -474,7 +485,7 @@ public class PoolCurator extends AbstractHibernateCurator<Pool> {
 
         if (values != null && !values.isEmpty()) {
             if (!joinedProvided) {
-                criteria.createAlias("Pool.providedProducts", "Provided", JoinType.LEFT_OUTER_JOIN);
+                criteria.createAlias("Product.providedProducts", "Provided", JoinType.LEFT_OUTER_JOIN);
                 joinedProvided = true;
             }
 
@@ -497,7 +508,8 @@ public class PoolCurator extends AbstractHibernateCurator<Pool> {
             if (values != null && !values.isEmpty()) {
                 if (!joinedProvided) {
                     // This was an inner join -- might end up being important later
-                    criteria.createAlias("Pool.providedProducts", "Provided", JoinType.LEFT_OUTER_JOIN);
+                    criteria.createAlias("Product.providedProducts", "Provided",
+                        JoinType.LEFT_OUTER_JOIN);
                     joinedProvided = true;
                 }
 
@@ -584,10 +596,13 @@ public class PoolCurator extends AbstractHibernateCurator<Pool> {
             return this.listByCriteria(criteria, pageRequest, postFilter);
         }
 
-        Page<List<Pool>> output = new Page<>();
-        output.setPageData(Collections.<Pool>emptyList());
-        output.setMaxRecords(0);
+        return emptyPage();
+    }
 
+    private Page<List<Pool>> emptyPage() {
+        Page<List<Pool>> output = new Page<>();
+        output.setPageData(Collections.emptyList());
+        output.setMaxRecords(0);
         return output;
     }
 
@@ -1128,21 +1143,70 @@ public class PoolCurator extends AbstractHibernateCurator<Pool> {
     }
 
     /**
+     * Fetches the pools associated with the given consumer with the provided stack IDs. If no
+     * consumer is provided or no stack IDs are provided, this method returns an empty list.
+     *
      * @param consumer
+     *  the consumer for which to find stacked pools
+     *
      * @param stackIds
-     * @return Derived pools which exist for the given consumer and stack ids
+     *  a collection of stack IDs representing the stacks of pools to fetch
+     *
+     * @return
+     *  a list containing all of the stacked pools with the given stack IDs owned by the specified
+     *  consumer
      */
-    @SuppressWarnings("checkstyle:indentation")
-    public List<Pool> getSubPoolForStackIds(Consumer consumer, Collection stackIds) {
-        Criteria getPools = createSecureCriteria()
-            .createAlias("sourceStack", "ss")
-            .add(Restrictions.eq("ss.sourceConsumer", consumer))
-            .add(Restrictions.and(
-                Restrictions.isNotNull("ss.sourceStackId"),
-                CPRestrictions.in("ss.sourceStackId", stackIds))
-            );
+    public List<Pool> getSubPoolsForStackIds(Consumer consumer, Collection<String> stackIds) {
+        return consumer != null ?
+            this.getSubPoolsForStackIds(Arrays.asList(consumer), stackIds) :
+            new ArrayList<>();
+    }
 
-        return (List<Pool>) getPools.list();
+    /**
+     * Fetches the pools associated with the given consumers with the provided stack IDs. If no
+     * consumers are provided or no stack IDs are provided, this method returns an empty list.
+     *
+     * @param consumers
+     *  a collection of consumers for which to find stacked pools
+     *
+     * @param stackIds
+     *  a collection of stack IDs representing the stacks of pools to fetch
+     *
+     * @return
+     *  a list containing all of the stacked pools with the given stack IDs owned by any of the
+     *  specified consumer
+     */
+    public List<Pool> getSubPoolsForStackIds(Collection<Consumer> consumers, Collection<String> stackIds) {
+        List<Pool> output = new ArrayList<>();
+
+        if (consumers == null || consumers.isEmpty()) {
+            return output;
+        }
+
+        if (stackIds == null || stackIds.isEmpty()) {
+            return output;
+        }
+
+        // Impl note: There is some optimization that could be done here to determine the best way
+        // to chunk the two collections here to minimize the number of queries, but in the general
+        // case, this is likely sufficient. For now.
+        int blockSize = Math.min(this.getQueryParameterLimit() / 2, this.getInBlockSize());
+
+        String jpql = "SELECT pool FROM Pool pool JOIN pool.sourceStack stack " +
+            "WHERE stack.sourceStackId IN (:stackIds) AND stack.sourceConsumer IN (:consumers)";
+
+        TypedQuery<Pool> query = this.getEntityManager()
+            .createQuery(jpql, Pool.class);
+
+        for (List<Consumer> consumerBlock : this.partition(consumers, blockSize)) {
+            for (List<String> stackIdBlock : this.partition(stackIds, blockSize)) {
+                output.addAll(query.setParameter("stackIds", stackIdBlock)
+                    .setParameter("consumers", consumerBlock)
+                    .getResultList());
+            }
+        }
+
+        return output;
     }
 
     @SuppressWarnings("unchecked")
@@ -1308,10 +1372,10 @@ public class PoolCurator extends AbstractHibernateCurator<Pool> {
                 .add(CPRestrictions.in("id", ids))
                 .addOrder(Order.asc("id"));
 
-            return this.cpQueryFactory.<Pool>buildQuery(this.currentSession(), criteria);
+            return this.cpQueryFactory.buildQuery(this.currentSession(), criteria);
         }
 
-        return this.cpQueryFactory.<Pool>buildQuery();
+        return this.cpQueryFactory.buildQuery();
     }
 
     @SuppressWarnings("unchecked")
@@ -1329,11 +1393,11 @@ public class PoolCurator extends AbstractHibernateCurator<Pool> {
                     .add(CPRestrictions.in("id", ids))
                     .addOrder(Order.asc("id"));
 
-                return this.cpQueryFactory.<Pool>buildQuery(session, criteria);
+                return this.cpQueryFactory.buildQuery(session, criteria);
             }
         }
 
-        return this.cpQueryFactory.<Pool>buildQuery();
+        return this.cpQueryFactory.buildQuery();
     }
 
     @SuppressWarnings("unchecked")
@@ -1357,7 +1421,7 @@ public class PoolCurator extends AbstractHibernateCurator<Pool> {
             .createAlias("sourceSubscription", "srcsub")
             .add(Restrictions.eq("srcsub.subscriptionSubKey", "master"));
 
-        return this.cpQueryFactory.<Pool>buildQuery(this.currentSession(), criteria);
+        return this.cpQueryFactory.buildQuery(this.currentSession(), criteria);
     }
 
     /**
@@ -1375,7 +1439,7 @@ public class PoolCurator extends AbstractHibernateCurator<Pool> {
             .add(Restrictions.eq("owner", owner))
             .add(Restrictions.eq("srcsub.subscriptionSubKey", "master"));
 
-        return this.cpQueryFactory.<Pool>buildQuery(this.currentSession(), criteria);
+        return this.cpQueryFactory.buildQuery(this.currentSession(), criteria);
     }
 
     /**
@@ -1401,113 +1465,11 @@ public class PoolCurator extends AbstractHibernateCurator<Pool> {
                 .add(Restrictions.eq("srcsub.subscriptionSubKey", "master"))
                 .add(Restrictions.not(CPRestrictions.in("srcsub.subscriptionId", excludedSubIds)));
 
-            return this.cpQueryFactory.<Pool>buildQuery(this.currentSession(), criteria);
+            return this.cpQueryFactory.buildQuery(this.currentSession(), criteria);
         }
         else {
             return this.getMasterPoolsForOwner(owner);
         }
-    }
-
-    /**
-     * Retrieves the set of all known product IDs, as determined by looking only at pool data. If
-     * there are no known products, this method returns an empty set.
-     *
-     * @return
-     *  a set of all known product IDs.
-     */
-    @SuppressWarnings("unchecked")
-    public Set<String> getAllKnownProductIds() {
-        // Impl note:
-        // HQL does not (properly) support unions, so we have to do this query multiple times.
-        Set<String> result = new HashSet<>();
-
-        Query query = this.currentSession().createQuery(
-            "SELECT DISTINCT P.product.id " +
-            "FROM Pool P " +
-            "WHERE NULLIF(P.product.id, '') IS NOT NULL"
-        );
-        result.addAll(query.list());
-
-        query = this.currentSession().createQuery(
-            "SELECT DISTINCT P.derivedProduct.id " +
-            "FROM Pool P " +
-            "WHERE NULLIF(P.derivedProduct.id, '') IS NOT NULL"
-        );
-        result.addAll(query.list());
-
-        query = this.currentSession().createQuery(
-            "SELECT DISTINCT PP.id " +
-            "FROM Pool P INNER JOIN P.providedProducts AS PP " +
-            "WHERE NULLIF(PP.id, '') IS NOT NULL"
-        );
-        result.addAll(query.list());
-
-        query = this.currentSession().createQuery(
-            "SELECT DISTINCT DPP.id " +
-            "FROM Pool P INNER JOIN P.derivedProvidedProducts AS DPP " +
-            "WHERE NULLIF(DPP.id, '') IS NOT NULL"
-        );
-        result.addAll(query.list());
-
-        // Return!
-        return result;
-    }
-
-    /**
-     * Retrieves the set of all known product IDs for the specified owner, as determined by looking
-     * only at pool data. If there are no known products for the given owner, this method returns an
-     * empty set.
-     *
-     * @param owner
-     *  The owner for which to retrieve all known product IDs
-     *
-     * @return
-     *  a set of all known product IDs for the specified owner
-     */
-    @SuppressWarnings("unchecked")
-    public Set<String> getAllKnownProductIdsForOwner(Owner owner) {
-        // Impl note:
-        // HQL does not (properly) support unions, so we have to do this query multiple times.
-        Set<String> result = new HashSet<>();
-
-        Query query = this.currentSession().createQuery(
-            "SELECT DISTINCT P.product.id " +
-            "FROM Pool P " +
-            "WHERE NULLIF(P.product.id, '') IS NOT NULL " +
-            "AND P.owner = :owner"
-        );
-        query.setParameter("owner", owner);
-        result.addAll(query.list());
-
-        query = this.currentSession().createQuery(
-            "SELECT DISTINCT P.derivedProduct.id " +
-            "FROM Pool P " +
-            "WHERE NULLIF(P.derivedProduct.id, '') IS NOT NULL " +
-            "AND P.owner = :owner"
-        );
-        query.setParameter("owner", owner);
-        result.addAll(query.list());
-
-        query = this.currentSession().createQuery(
-            "SELECT DISTINCT PP.id " +
-            "FROM Pool P INNER JOIN P.providedProducts AS PP " +
-            "WHERE NULLIF(PP.id, '') IS NOT NULL " +
-            "AND P.owner = :owner"
-        );
-        query.setParameter("owner", owner);
-        result.addAll(query.list());
-
-        query = this.currentSession().createQuery(
-            "SELECT DISTINCT DPP.id " +
-            "FROM Pool P INNER JOIN P.derivedProvidedProducts AS DPP " +
-            "WHERE NULLIF(DPP.id, '') IS NOT NULL " +
-            "AND P.owner = :owner"
-        );
-        query.setParameter("owner", owner);
-        result.addAll(query.list());
-
-        // Return!
-        return result;
     }
 
     @SuppressWarnings("checkstyle:indentation")
@@ -1604,62 +1566,12 @@ public class PoolCurator extends AbstractHibernateCurator<Pool> {
         Collection<String> productIds) {
 
         String statement = "update Entitlement e set e.dirty=true where e.pool.id in " +
-            "(select p.id from Pool p join p.providedProducts pp where pp.id in :productIds)" +
+            "(select p.id from Pool p join p.product.providedProducts pp where pp.id in :productIds)" +
             "and e.owner = :owner";
         Query query = currentSession().createQuery(statement);
         query.setParameter("owner", owner);
         query.setParameterList("productIds", productIds);
         query.executeUpdate();
-    }
-
-    /**
-     * Check if this pool provides the given product
-     *
-     * Figures out if the pool with poolId provides a product providedProductId.
-     * 'provides' means that the product is either Pool product or is linked through
-     * cp2_pool_provided_products table
-     * @param pool
-     * @param providedProductId
-     * @return True if and only if providedProductId is provided product or pool product
-     */
-    public Boolean provides(Pool pool, String providedProductId) {
-        TypedQuery<Long> query = getEntityManager().createQuery(
-            "SELECT count(product.uuid) FROM Pool p " +
-            "LEFT JOIN p.providedProducts pproduct " +
-            "LEFT JOIN p.product product " +
-            "WHERE p.id = :poolid and (pproduct.id = :providedProductId OR product.id = :providedProductId)",
-            Long.class);
-        query.setParameter("poolid", pool.getId());
-        query.setParameter("providedProductId", providedProductId);
-        return query.getSingleResult() > 0;
-    }
-
-    /**
-     * Check if this pool provides the given product ID as a derived provided product.
-     * Used when we're looking for pools we could give to a host that will create
-     * sub-pools for guest products.
-     *
-     * If derived product ID is not set, we just use the normal set of products.
-     *
-     * @param pool
-     * @param derivedProvidedProductId
-     * @return True if and only if derivedProvidedProductId is provided product or derived product
-     */
-    public Boolean providesDerived(Pool pool, String derivedProvidedProductId) {
-        if (pool.getDerivedProduct() != null) {
-            TypedQuery<Long> query = getEntityManager().createQuery(
-                "SELECT count(product.uuid) FROM Pool p " +
-                "LEFT JOIN p.derivedProvidedProducts pproduct " +
-                "LEFT JOIN p.derivedProduct product " + "WHERE p.id = :poolid and " +
-                "(pproduct.id = :providedProductId OR product.id = :providedProductId)",
-                Long.class);
-            query.setParameter("poolid", pool.getId());
-            query.setParameter("providedProductId", derivedProvidedProductId);
-            return query.getSingleResult() > 0;
-        }
-        else {
-            return provides(pool, derivedProvidedProductId);
-        }
     }
 
     /**
@@ -1673,7 +1585,7 @@ public class PoolCurator extends AbstractHibernateCurator<Pool> {
      * @return
      *  A mapping of pool IDs to provided product IDs
      */
-    public Map<String, Set<String>> getProvidedProductIds(Collection<Pool> pools) {
+    public Map<String, Set<String>> getProvidedProductIdsByPools(Collection<Pool> pools) {
         Set<String> poolIds = new HashSet<>();
 
         if (pools != null && !pools.isEmpty()) {
@@ -1699,54 +1611,29 @@ public class PoolCurator extends AbstractHibernateCurator<Pool> {
      *  A mapping of pool IDs to provided product IDs
      */
     public Map<String, Set<String>> getProvidedProductIdsByPoolIds(Collection<String> poolIds) {
-        Map<String, Set<String>> providedProductMap = new HashMap<>();
+        Map<String, Set<String>> ppMap = new HashMap<>();
+
+        // FIXME: This does not properly handle true N-tier; update as necessary
+        String sql = "SELECT pool.id, prod.product_id FROM cp_pool pool " +
+            "JOIN cp2_product_provided_products ppp ON pool.product_uuid = ppp.product_uuid " +
+            "JOIN cp2_products prod ON prod.uuid = ppp.provided_product_uuid " +
+            "WHERE pool.id IN (:pool_ids)";
 
         if (poolIds != null && !poolIds.isEmpty()) {
-            StringBuilder builder =
-                new StringBuilder("SELECT p.id, pp.id FROM Pool p JOIN p.providedProducts pp WHERE");
-            javax.persistence.Query query = null;
+            javax.persistence.Query query = this.getEntityManager()
+                .createNativeQuery(sql);
 
-            int blockSize = getInBlockSize();
-            int blockCount = (int) Math.ceil(poolIds.size() / (float) blockSize);
+            for (List<String> block : this.partition(poolIds)) {
+                query.setParameter("pool_ids", block);
 
-            if (blockCount > 1) {
-                Iterable<List<String>> blocks = Iterables.partition(poolIds, blockSize);
-
-                for (int i = 0; i < blockCount; ++i) {
-                    if (i != 0) {
-                        builder.append(" OR");
-                    }
-
-                    builder.append(" p.id IN (:block").append(i).append(')');
+                for (Object[] cols : (List<Object[]>) query.getResultList()) {
+                    ppMap.computeIfAbsent((String) cols[0], key -> new HashSet<>())
+                        .add((String) cols[1]);
                 }
-
-                query = this.getEntityManager().createQuery(builder.toString());
-                int i = -1;
-
-                for (List<String> block : blocks) {
-                    query.setParameter("block" + ++i, block);
-                }
-            }
-            else {
-                builder.append(" p.id IN (:pids)");
-
-                query = this.getEntityManager().createQuery(builder.toString())
-                    .setParameter("pids", poolIds);
-            }
-
-            for (Object[] cols : (List<Object[]>) query.getResultList()) {
-                Set<String> providedProducts = providedProductMap.get((String) cols[0]);
-
-                if (providedProducts == null) {
-                    providedProducts = new HashSet<>();
-                    providedProductMap.put((String) cols[0], providedProducts);
-                }
-
-                providedProducts.add((String) cols[1]);
             }
         }
 
-        return providedProductMap;
+        return ppMap;
     }
 
 
@@ -1761,16 +1648,15 @@ public class PoolCurator extends AbstractHibernateCurator<Pool> {
      * @return
      *  A mapping of pool IDs to provided product IDs
      */
-    public Map<String, Set<String>> getDerivedProvidedProductIds(Collection<Pool> pools) {
-        Set<String> poolIds = new HashSet<>();
-
-        if (pools != null && !pools.isEmpty()) {
-            for (Pool pool : pools) {
-                if (pool != null && pool.getId() != null) {
-                    poolIds.add(pool.getId());
-                }
-            }
+    public Map<String, Set<String>> getDerivedProvidedProductIdsByPools(Collection<Pool> pools) {
+        if (pools == null || pools.isEmpty()) {
+            return new HashMap<>();
         }
+
+        Set<String> poolIds = pools.stream()
+            .filter(pool -> pool != null && pool.getId() != null)
+            .map(Pool::getId)
+            .collect(Collectors.toSet());
 
         return this.getDerivedProvidedProductIdsByPoolIds(poolIds);
     }
@@ -1787,55 +1673,30 @@ public class PoolCurator extends AbstractHibernateCurator<Pool> {
      *  A mapping of pool IDs to provided product IDs
      */
     public Map<String, Set<String>> getDerivedProvidedProductIdsByPoolIds(Collection<String> poolIds) {
-        Map<String, Set<String>> providedProductMap = new HashMap<>();
+        Map<String, Set<String>> dppMap = new HashMap<>();
+
+        // FIXME: This does not properly handle true N-tier; update as necessary
+        String sql = "SELECT pool.id, dprod.product_id FROM cp_pool pool " +
+            "JOIN cp2_products prod ON prod.uuid = pool.product_uuid " +
+            "JOIN cp2_product_provided_products ppp ON prod.derived_product_uuid = ppp.product_uuid " +
+            "JOIN cp2_products dprod ON dprod.uuid = ppp.provided_product_uuid " +
+            "WHERE pool.id IN (:pool_ids)";
 
         if (poolIds != null && !poolIds.isEmpty()) {
-            StringBuilder builder =
-                new StringBuilder("SELECT p.id, dpp.id FROM Pool p JOIN p.derivedProvidedProducts dpp WHERE");
+            javax.persistence.Query query = this.getEntityManager()
+                .createNativeQuery(sql);
 
-            javax.persistence.Query query = null;
+            for (List<String> block : this.partition(poolIds)) {
+                query.setParameter("pool_ids", block);
 
-            int blockSize = getInBlockSize();
-            int blockCount = (int) Math.ceil(poolIds.size() / (float) blockSize);
-
-            if (blockCount > 1) {
-                Iterable<List<String>> blocks = Iterables.partition(poolIds, blockSize);
-
-                for (int i = 0; i < blockCount; ++i) {
-                    if (i != 0) {
-                        builder.append(" OR");
-                    }
-
-                    builder.append(" p.id IN (:block").append(i).append(')');
+                for (Object[] cols : (List<Object[]>) query.getResultList()) {
+                    dppMap.computeIfAbsent((String) cols[0], key -> new HashSet<>())
+                        .add((String) cols[1]);
                 }
-
-                query = this.getEntityManager().createQuery(builder.toString());
-                int i = -1;
-
-                for (List<String> block : blocks) {
-                    query.setParameter("block" + ++i, block);
-                }
-            }
-            else {
-                builder.append(" p.id IN (:pids)");
-
-                query = this.getEntityManager().createQuery(builder.toString())
-                    .setParameter("pids", poolIds);
-            }
-
-            for (Object[] cols : (List<Object[]>) query.getResultList()) {
-                Set<String> providedProducts = providedProductMap.get((String) cols[0]);
-
-                if (providedProducts == null) {
-                    providedProducts = new HashSet<>();
-                    providedProductMap.put((String) cols[0], providedProducts);
-                }
-
-                providedProducts.add((String) cols[1]);
             }
         }
 
-        return providedProductMap;
+        return dppMap;
     }
 
     @Transactional
@@ -2006,4 +1867,33 @@ public class PoolCurator extends AbstractHibernateCurator<Pool> {
 
         return output;
     }
+
+    /**
+     * Fetches a list of pool IDs for pools that are referencing products which are no longer linked
+     * to the pool's owning organization. If no such pools exist, this method returns an empty list.
+     *
+     * @param ownerId
+     *  the ID of the organization owning the pools to check.
+     *
+     * @return
+     *  a list of pools using products which are not owned by the owning organization.
+     */
+    public List<String> getPoolsUsingOrphanedProducts(String ownerId) {
+        if (ownerId == null || ownerId.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        // We use native SQL here since we do a multi-field join
+        String sql = "SELECT p.id FROM cp_pool p " +
+            "LEFT JOIN cp2_owner_products op1 ON op1.owner_id = p.owner_id " +
+            "  AND p.product_uuid = op1.product_uuid " +
+            "WHERE p.owner_id = :owner_id AND " +
+            "  (p.product_uuid IS NOT NULL AND op1.product_uuid IS NULL)";
+
+        return this.getEntityManager()
+            .createNativeQuery(sql)
+            .setParameter("owner_id", ownerId)
+            .getResultList();
+    }
+
 }

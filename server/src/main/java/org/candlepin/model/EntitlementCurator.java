@@ -36,7 +36,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -129,7 +128,8 @@ public class EntitlementCurator extends AbstractHibernateCurator<Entitlement> {
             Collection<String> productIdFilters = filterBuilder.getProductIdFilter();
 
             if (productIdFilters != null && !productIdFilters.isEmpty()) {
-                SetJoin<Pool, Product> providedProducts = pool.join(Pool_.providedProducts, JoinType.LEFT);
+                SetJoin<Product, Product> providedProducts = product
+                    .join(Product_.providedProducts, JoinType.LEFT);
 
                 predicates.add(cb.or(
                     inPredicate(cb, product.get(Product_.id), productIdFilters),
@@ -148,7 +148,8 @@ public class EntitlementCurator extends AbstractHibernateCurator<Entitlement> {
             // Matches stuff
             Collection<String> matchesFilters = filterBuilder.getMatchesFilters();
             if (matchesFilters != null && !matchesFilters.isEmpty()) {
-                SetJoin<Pool, Product> providedProducts = pool.join(Pool_.providedProducts, JoinType.LEFT);
+                SetJoin<Product, Product> providedProducts = product
+                    .join(Product_.providedProducts, JoinType.LEFT);
                 ListJoin<Product, ProductContent> productContent = providedProducts
                     .join(Product_.productContent, JoinType.LEFT);
                 Join<ProductContent, Content> content = productContent
@@ -583,7 +584,7 @@ public class EntitlementCurator extends AbstractHibernateCurator<Entitlement> {
             .add(Restrictions.le("startDate", activeOn))
             .add(Restrictions.ge("endDate", activeOn));
 
-        return this.cpQueryFactory.<Entitlement>buildQuery(this.currentSession(), criteria);
+        return this.cpQueryFactory.buildQuery(this.currentSession(), criteria);
     }
 
     /**
@@ -608,7 +609,7 @@ public class EntitlementCurator extends AbstractHibernateCurator<Entitlement> {
                 .getResultList();
         }
 
-        return Collections.<Entitlement>emptyList();
+        return Collections.emptyList();
     }
 
     /**
@@ -645,7 +646,7 @@ public class EntitlementCurator extends AbstractHibernateCurator<Entitlement> {
             }
 
             entitledProductIds.add(p.getProduct().getId());
-            for (Product pp : productCurator.getPoolProvidedProductsCached(p)) {
+            for (Product pp : p.getProduct().getProvidedProducts()) {
                 entitledProductIds.add(pp.getId());
             }
 
@@ -654,7 +655,7 @@ public class EntitlementCurator extends AbstractHibernateCurator<Entitlement> {
             if (ctype.isManifest() && p.getDerivedProduct() != null) {
                 entitledProductIds.add(p.getDerivedProduct().getId());
 
-                for (Product dpp : productCurator.getPoolDerivedProvidedProductsCached(p)) {
+                for (Product dpp : p.getDerivedProduct().getProvidedProducts()) {
                     entitledProductIds.add(dpp.getId());
                 }
             }
@@ -769,27 +770,6 @@ public class EntitlementCurator extends AbstractHibernateCurator<Entitlement> {
         return count;
     }
 
-    /**
-     * @deprecated
-     *  This method is a utility method for revokeEntitlements and, as it has no communication with
-     *  the database, does not belong in this curator
-     *
-     * @return a map of consumers to their entitlements
-     */
-    @Deprecated
-    public Map<Consumer, List<Entitlement>> getDistinctConsumers(List<Entitlement> entsToRevoke) {
-        Map<Consumer, List<Entitlement>> result = new HashMap<>();
-        for (Entitlement ent : entsToRevoke) {
-            List<Entitlement> ents = result.get(ent.getConsumer());
-            if (ents == null) {
-                ents = new ArrayList<>();
-                result.put(ent.getConsumer(), ents);
-            }
-            ents.add(ent);
-        }
-        return result;
-    }
-
     @Transactional
     private Page<List<Entitlement>> listByProduct(
         AbstractHibernateObject object, String objectType, String productId, PageRequest pageRequest) {
@@ -821,7 +801,7 @@ public class EntitlementCurator extends AbstractHibernateCurator<Entitlement> {
 
         Join<Entitlement, Pool> pool = entitlement.join(Entitlement_.pool);
         Join<Pool, Product> product = pool.join(Pool_.product);
-        Join<Pool, Product> providedProducts = pool.join(Pool_.providedProducts, JoinType.LEFT);
+        Join<Product, Product> providedProducts = product.join(Product_.providedProducts, JoinType.LEFT);
 
         return cb.and(
             cb.equal(entitlement.get(objectType), object),
@@ -971,8 +951,7 @@ public class EntitlementCurator extends AbstractHibernateCurator<Entitlement> {
      * @param stackId the ID of the stack
      * @return the list of entitlements for the consumer that are in the stack.
      */
-    @SuppressWarnings("unchecked")
-    public CandlepinQuery<Entitlement> findByStackId(Consumer consumer, String stackId) {
+    public List<Entitlement> findByStackId(Consumer consumer, String stackId) {
         return findByStackIds(consumer, Arrays.asList(stackId));
     }
 
@@ -984,23 +963,36 @@ public class EntitlementCurator extends AbstractHibernateCurator<Entitlement> {
      * @param stackIds the IDs of the stacks
      * @return the list of entitlements for the consumer that are in the stack.
      */
+    public List<Entitlement> findByStackIds(Consumer consumer, Collection<String> stackIds) {
+        List<Entitlement> result = new ArrayList<>();
+        for (List<String> block: this.partition(stackIds, this.getInBlockSize())) {
+            result.addAll(findByStackIds(consumer, block));
+        }
+        return result;
+    }
+
     @SuppressWarnings("unchecked")
-    public CandlepinQuery<Entitlement> findByStackIds(Consumer consumer, Collection stackIds) {
-        DetachedCriteria criteria = DetachedCriteria.forClass(Entitlement.class)
-            .add(Restrictions.eq("consumer", consumer))
+    private List<Entitlement> findByStackIds(Consumer consumer, List<String> stackIds) {
+        if (stackIds == null || stackIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+        Criteria criteria = currentSession().createCriteria(Entitlement.class)
             .createAlias("pool", "ent_pool")
             .createAlias("ent_pool.product", "product")
             .createAlias("product.attributes", "attrs")
             .add(Restrictions.eq("attrs.indices", Product.Attributes.STACKING_ID))
-            .add(CPRestrictions.in("attrs.elements", stackIds))
+            .add(Restrictions.in("attrs.elements", stackIds))
             .add(Restrictions.isNull("ent_pool.sourceEntitlement"))
             .createAlias("ent_pool.sourceStack", "ss", org.hibernate.sql.JoinType.LEFT_OUTER_JOIN)
             .add(Restrictions.isNull("ss.id"));
 
-        return this.cpQueryFactory.<Entitlement>buildQuery(this.currentSession(), criteria);
+        if (consumer != null) {
+            criteria.add(Restrictions.eq("consumer", consumer));
+        }
+
+        return (List<Entitlement>) criteria.list();
     }
 
-    @SuppressWarnings("unchecked")
     public CandlepinQuery<Entitlement> findByPoolAttribute(Consumer consumer, String attributeName,
         String value) {
 
@@ -1014,7 +1006,7 @@ public class EntitlementCurator extends AbstractHibernateCurator<Entitlement> {
             criteria.add(Restrictions.eq("consumer", consumer));
         }
 
-        return this.cpQueryFactory.<Entitlement>buildQuery(this.currentSession(), criteria);
+        return this.cpQueryFactory.buildQuery(this.currentSession(), criteria);
     }
 
     public CandlepinQuery<Entitlement> findByPoolAttribute(String attributeName, String value) {
@@ -1056,6 +1048,8 @@ public class EntitlementCurator extends AbstractHibernateCurator<Entitlement> {
      * on provided products only. Dependent entitlements are those who's
      * content are being modified by the consumption of another entitlement.
      *
+     * Note : This method does not support N-tier product hierarchy.
+     *
      * @param entitlementIds the entitlements to match on.
      * @return the set of entitlement IDs for the matched modifier entitlements.
      */
@@ -1063,18 +1057,21 @@ public class EntitlementCurator extends AbstractHibernateCurator<Entitlement> {
         String queryStr = "SELECT DISTINCT e2.id " +
             // Required entitlement
             "FROM cp_entitlement e1 " +
-            // Required entitlement => required pool
-            "JOIN cp2_pool_provided_products ppp1 ON ppp1.pool_id = e1.pool_id " +
             // Required pool => required product
-            "JOIN cp2_products p ON p.uuid = ppp1.product_uuid " +
+            "JOIN cp_pool pl1 on pl1.id = e1.pool_id " +
+            // Pools Product => Provided product
+            "JOIN cp2_product_provided_products ppp1 ON ppp1.product_uuid = pl1.product_uuid " +
+            // Provided product => Product
+            "JOIN cp2_products p ON p.uuid = ppp1.provided_product_uuid " +
             // Required product => conditional content
             "JOIN cp2_content_modified_products cmp ON cmp.element = p.product_id " +
             // Conditional content => dependent product
             "JOIN cp2_product_content pc ON pc.content_uuid = cmp.content_uuid " +
-            // Dependent product => dependent pool
-            "JOIN cp2_pool_provided_products ppp2 ON ppp2.product_uuid = pc.product_uuid " +
+            // Provided Product => Dependent product => dependent pool
+            "JOIN cp2_product_provided_products ppp2 ON ppp2.provided_product_uuid = pc.product_uuid " +
+            "JOIN cp_pool pl2 on pl2.product_uuid = ppp2.product_uuid " +
             // Dependent pool => dependent entitlement
-            "JOIN cp_entitlement e2 ON e2.pool_id = ppp2.pool_id " +
+            "JOIN cp_entitlement e2 ON e2.pool_id = pl2.id " +
             "WHERE e1.consumer_id = e2.consumer_id " +
             "  AND e1.id != e2.id " +
             "  AND e2.dirty = false " +
@@ -1100,6 +1097,8 @@ public class EntitlementCurator extends AbstractHibernateCurator<Entitlement> {
      * on derived provided products only. Dependent entitlements are those who's
      * content are being modified by the consumption of another entitlement.
      *
+     * Note : This method does not support N-tier product hierarchy.
+     *
      * @param entitlementIds the entitlements to match on.
      * @return the set of entitlement IDs for the matched modifier entitlements.
      */
@@ -1107,18 +1106,20 @@ public class EntitlementCurator extends AbstractHibernateCurator<Entitlement> {
         String queryStr = "SELECT DISTINCT e2.id " +
             // Required entitlement
             "FROM cp_entitlement e1 " +
-            // Required entitlement => required pool
-            "JOIN cp2_pool_derprov_products ppp1 ON ppp1.pool_id = e1.pool_id " +
-            // Required pool => required product
-            "JOIN cp2_products p ON p.uuid = ppp1.product_uuid " +
+            "JOIN cp_pool pl1 ON pl1.id = e1.pool_id " +
+            "JOIN cp2_products pp ON pp.uuid = pl1.product_uuid " +
+            // Required entitlement => required pool => derived product => provided product
+            "JOIN cp2_product_provided_products ppp1 ON ppp1.product_uuid = pp.derived_product_uuid " +
+            "JOIN cp2_products p ON p.uuid = ppp1.provided_product_uuid " +
             // Required product => conditional content
             "JOIN cp2_content_modified_products cmp ON cmp.element = p.product_id " +
             // Conditional content => dependent product
             "JOIN cp2_product_content pc ON pc.content_uuid = cmp.content_uuid " +
             // Dependent product => dependent pool
-            "JOIN cp2_pool_provided_products ppp2 ON ppp2.product_uuid = pc.product_uuid " +
+            "JOIN cp2_product_provided_products ppp2 ON ppp2.provided_product_uuid = pc.product_uuid " +
+            "JOIN cp_pool pl2 on pl2.product_uuid = ppp2.product_uuid " +
             // Dependent pool => dependent entitlement
-            "JOIN cp_entitlement e2 ON e2.pool_id = ppp2.pool_id " +
+            "JOIN cp_entitlement e2 ON e2.pool_id = pl2.id " +
             "WHERE e1.consumer_id = e2.consumer_id " +
             "  AND e1.id != e2.id " +
             "  AND e2.dirty = false " +
@@ -1143,6 +1144,8 @@ public class EntitlementCurator extends AbstractHibernateCurator<Entitlement> {
      * given consumer. Dependent entitlements are those who's content are being modified by the
      * consumption of another entitlement.
      *
+     * Note : This method does not support N-tier product hierarchy.
+     *
      * @param consumer
      *  The consumer for which to find dependent entitlement IDs
      *
@@ -1165,20 +1168,22 @@ public class EntitlementCurator extends AbstractHibernateCurator<Entitlement> {
             // entitlements, rather than the lunacy that would be required with HQL, JPQL or
             // CriteriaBuilder.
             String querySql = "SELECT DISTINCT e.id " +
-                // Required pool
-                "FROM cp2_pool_provided_products ppp1 " +
                 // Required pool => required product
-                "JOIN cp2_products p ON p.uuid = ppp1.product_uuid " +
+                "FROM cp_pool pl1 " +
+                "JOIN cp2_product_provided_products ppp1 on ppp1.product_uuid = pl1.product_uuid " +
+                // Provided product => Product
+                "JOIN cp2_products p ON p.uuid = ppp1.provided_product_uuid " +
                 // Required product => conditional content
                 "JOIN cp2_content_modified_products cmp ON cmp.element = p.product_id " +
                 // Conditional content => dependent product
                 "JOIN cp2_product_content pc ON pc.content_uuid = cmp.content_uuid " +
                 // Dependent product => dependent pool
-                "JOIN cp2_pool_provided_products ppp2 ON ppp2.product_uuid = pc.product_uuid " +
+                "JOIN cp2_product_provided_products ppp2 ON ppp2.provided_product_uuid = pc.product_uuid " +
+                "JOIN cp_pool pl2 on pl2.product_uuid = ppp2.product_uuid " +
                 // Dependent pool => dependent entitlement
-                "JOIN cp_entitlement e ON e.pool_id = ppp2.pool_id " +
+                "JOIN cp_entitlement e ON e.pool_id = pl2.id " +
                 "WHERE e.consumer_id = :consumer_id " +
-                "  AND ppp1.pool_id IN (:pool_ids) ";
+                "  AND pl1.id IN (:pool_ids) ";
 
 
             int blockSize = Math.min(this.getInBlockSize(), this.getQueryParameterLimit() - 1);
@@ -1195,20 +1200,26 @@ public class EntitlementCurator extends AbstractHibernateCurator<Entitlement> {
             // avoid unnecessary query overhead when we are not dealing with a distributor.
             if (ctype.isManifest()) {
                 querySql = "SELECT DISTINCT e.id " +
-                    // Required pool
-                    "FROM cp2_pool_derprov_products ppp1 " +
                     // Required pool => required product
-                    "JOIN cp2_products p ON p.uuid = ppp1.product_uuid " +
+                    "FROM cp_pool pl1 " +
+                    "JOIN cp2_products prod1 ON pl1.product_uuid = prod1.uuid " +
+                    // product => derived provided products
+                    "JOIN cp2_product_provided_products ppp1 " +
+                    "  ON ppp1.product_uuid = prod1.derived_product_uuid " +
+                    // Provided product => Product
+                    "JOIN cp2_products prod2 ON prod2.uuid = ppp1.provided_product_uuid " +
                     // Required product => conditional content
-                    "JOIN cp2_content_modified_products cmp ON cmp.element = p.product_id " +
+                    "JOIN cp2_content_modified_products cmp ON cmp.element = prod2.product_id " +
                     // Conditional content => dependent product
                     "JOIN cp2_product_content pc ON pc.content_uuid = cmp.content_uuid " +
                     // Dependent product => dependent pool
-                    "JOIN cp2_pool_provided_products ppp2 ON ppp2.product_uuid = pc.product_uuid " +
+                    "JOIN cp2_product_provided_products ppp2 " +
+                    "  ON ppp2.provided_product_uuid = pc.product_uuid " +
+                    "JOIN cp_pool pl2 on pl2.product_uuid = ppp2.product_uuid " +
                     // Dependent pool => dependent entitlement
-                    "JOIN cp_entitlement e ON e.pool_id = ppp2.pool_id " +
+                    "JOIN cp_entitlement e ON e.pool_id = pl2.id " +
                     "WHERE e.consumer_id = :consumer_id " +
-                    "  AND ppp1.pool_id IN (:pool_ids) ";
+                    "  AND pl1.id IN (:pool_ids) ";
 
                 query = getEntityManager().createNativeQuery(querySql)
                     .setParameter("consumer_id", consumer.getId());
@@ -1237,5 +1248,4 @@ public class EntitlementCurator extends AbstractHibernateCurator<Entitlement> {
         Predicate[] array = new Predicate[predicates.size()];
         return predicates.toArray(array);
     }
-
 }

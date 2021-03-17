@@ -4,12 +4,6 @@ require 'hostedtest_api'
 require 'pp'
 require 'zip'
 
-begin
-  require 'qpid_proton'
-rescue LoadError
-  # This is okay
-end
-
 module CandlepinMethods
 
   include HostedTest
@@ -517,8 +511,19 @@ class StandardExporter < Exporter
         }
     ]
 
+    @products[:derived_provided_prod] = create_product(random_string(nil, true), random_string());
+
+    @products[:derived_product] = create_product(random_string('sub-prov-prod'), random_string(), {
+        "sockets" => "2",
+        :providedProducts => [@products[:derived_provided_prod]['id']]
+    })
+
     @products[:product1] = create_product(random_string('prod1'), random_string, {
-        :multiplier => 2, :branding => brandings})
+        :multiplier => 2,
+        :branding => brandings,
+        :providedProducts => [@products[:eng_product]['id']]
+    })
+
     @products[:product2] = create_product(random_string('prod2'), random_string())
     @products[:virt_product] = create_product(random_string('virt_product'), random_string('virt_product'), {
         :attributes => {
@@ -527,16 +532,10 @@ class StandardExporter < Exporter
     })
 
     @products[:product3] = create_product(random_string('sub-prod'), random_string(), {
+        :derivedProduct => @products[:derived_product],
         :attributes => {
             :arch => "x86_64",
             :virt_limit => "unlimited"
-        }
-    })
-
-    @products[:product_vdc] = create_product(random_string('prod-vdc'), random_string(), {
-        :attributes => {
-            :arch => "x86_64",
-            :virt_limit => "unlimited", 'stacking_id' => 'stack-vdc'
         }
     })
 
@@ -546,21 +545,28 @@ class StandardExporter < Exporter
         }
     })
 
-    @products[:derived_product] = create_product(random_string('sub-prov-prod'), random_string(), {
-        "sockets" => "2"
+    @products[:product_vdc] = create_product(random_string('prod-vdc'), random_string(), {
+        :derivedProduct => @products[:product_dc],
+        :attributes => {
+            :arch => "x86_64",
+            :virt_limit => "unlimited", 'stacking_id' => 'stack-vdc'
+        }
     })
-
-    @products[:derived_provided_prod] = create_product(random_string(nil, true), random_string());
 
     #this is for the update process
     @products[:product_up] = create_product(random_string('product_up'), random_string('product_up'))
 
-    @content[:content1] = create_content({:metadata_expire => 6000,
-                              :required_tags => "TAG1,TAG2"})
-    @content[:arch_content] = create_content({:metadata_expire => 6000,
-                                   :content_url => "/path/to/arch/specific/content",
-                                   :required_tags => "TAG1,TAG2",
-                                   :arches => "i386,x86_64"})
+    @content[:content1] = create_content({
+        :metadata_expire => 6000,
+        :required_tags => "TAG1,TAG2"
+    })
+
+    @content[:arch_content] = create_content({
+        :metadata_expire => 6000,
+        :content_url => "/path/to/arch/specific/content",
+        :required_tags => "TAG1,TAG2",
+        :arches => "i386,x86_64"
+    })
 
     @cp.add_content_to_product(@owner['key'], @products[:product1].id, @content[:content1].id)
     @cp.add_content_to_product(@owner['key'], @products[:product2].id, @content[:content1].id)
@@ -571,7 +577,6 @@ class StandardExporter < Exporter
 
     @cp.create_pool(@owner['key'], @products[:product1].id, {
         :quantity => 2,
-        :provided_products => [@products[:eng_product]['id']],
         :contract_number => '',
         :account_number => '12345',
         :order_number => '6789',
@@ -610,8 +615,6 @@ class StandardExporter < Exporter
         :account_number => '12345',
         :order_number => '6789',
         :end_date => end_date,
-        :derived_product_id => @products[:derived_product]['id'],
-        :derived_provided_products => [@products[:derived_provided_prod]['id']],
         :subscription_id => random_str('source_sub'),
         :upstream_pool_id => random_str('upstream')
     })
@@ -634,7 +637,6 @@ class StandardExporter < Exporter
         :account_number => '12345',
         :order_number => '6789',
         :end_date => end_date,
-        :derived_product_id => @products[:product_dc]['id'],
         :subscription_id => random_str('source_sub'),
         :upstream_pool_id => random_str('upstream')
     })
@@ -688,7 +690,6 @@ class StandardExporter < Exporter
     end_date = Date.new(2025, 5, 29)
     pool1 = @cp.create_pool(@owner['key'], product1.id, {
         :quantity => 12,
-        :provided_products => [],
         :contract_number => '',
         :account_number => '12345',
         :order_number => '6789',
@@ -699,7 +700,6 @@ class StandardExporter < Exporter
 
     pool2 = @cp.create_pool(@owner['key'], product2.id, {
         :quantity => 14,
-        :provided_products => [],
         :contract_number => '',
         :account_number => '12345',
         :order_number => '6789',
@@ -791,74 +791,5 @@ class AsyncStandardExporter < StandardExporter
 
     result = status["resultData"]
     client.download_consumer_export(result["exportedConsumer"], result["exportId"], dest_dir)
-  end
-end
-
-# We assume existence of queue allmsg that is bound to event exchange
-class CandlepinQpid
-  def initialize(address, cert, key)
-    @address = address
-    @qpid_crt = cert
-    @qpid_key = key
-  end
-
-  def no_keys?
-    !File.file?(@qpid_crt) or !File.file?(@qpid_key)
-  end
-
-  def stop
-    `if which supervisorctl > /dev/null 2>&1; then sudo supervisorctl stop qpidd; else sudo systemctl stop qpidd; fi`
-  end
-
-  def start
-    `if which supervisorctl > /dev/null 2>&1; then sudo supervisorctl start qpidd; else sudo systemctl start qpidd; fi`
-  end
-
-  #Create non-durable queue and bind it to an exchange
-  def create_queue(qname, exchange, args = '')
-    `sudo qpid-config -b amqps://localhost:5671 --ssl-certificate #{@qpid_crt} --ssl-key #{@qpid_key} add queue #{qname} #{args}`
-    `sudo qpid-config -b amqps://localhost:5671 --ssl-certificate #{@qpid_crt} --ssl-key #{@qpid_key} bind #{exchange} #{qname} "#"`
-  end
-
-  #Force removes the queue
-  def delete_queue(qname)
-    `sudo qpid-config -b amqps://localhost:5671 --ssl-certificate #{@qpid_crt} --ssl-key #{@qpid_key} del queue #{qname} --force`
-  end
-
-  def receive(messages = -1, blocking = true, timeout = 90)
-    if (no_keys?)
-      raise "One or more Qpid keys were not found"
-    end
-
-    messenger = Qpid::Proton::Messenger::Messenger.new
-
-    messenger.certificate = @qpid_crt
-    messenger.private_key = @qpid_key
-    messenger.blocking = blocking
-    messenger.timeout = (timeout * 1000).to_i
-
-    messenger.start
-    messenger.subscribe(@address)
-
-    msgs = []
-    received = 0
-
-    loop do
-      messenger.receive(messages)
-
-      while messenger.incoming.nonzero?
-        msg = Qpid::Proton::Message.new
-        messenger.get(msg)
-        msgs << msg
-
-        received += 1
-      end
-
-      break if received >= messages
-    end
-
-    messenger.stop
-
-    return msgs
   end
 end

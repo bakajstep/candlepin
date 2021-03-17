@@ -31,7 +31,7 @@ describe 'Autobind Disabled On Owner' do
     exception_thrown.should be true
   end
 
-  it 'autobind should fail when owner is in SCA mode' do
+  it 'autobind should not attach entitlements when owner is in SCA mode' do
     skip("candlepin running in standalone mode") if not is_hosted?
 
     exception_thrown = false
@@ -48,17 +48,10 @@ describe 'Autobind Disabled On Owner' do
       {'cpu.cpu_socket(s)' => '8'}, nil, owner['key'], [], [])
     consumer_cp = Candlepin.new(nil, nil, consumer.idCert.cert, consumer.idCert['key'])
 
-    begin
-      consumer_cp.consume_product()
-    rescue RestClient::BadRequest => e
-      exception_thrown = true
-      ex_message = "Ignoring request to auto-attach. " +
-        "It is disabled for org \"#{owner['key']}\" because of the content access mode setting."
-      data = JSON.parse(e.response)
-      expect(data['displayMessage']).to eq(ex_message)
-    end
+    consumer_cp.consume_product()
+    entitlements = consumer_cp.list_entitlements()
+    expect(entitlements.length).to eq(0)
 
-    expect(exception_thrown).to eq(true)
   end
 
   it 'autobind fails when hypervisor autobind disabled on owner' do
@@ -86,28 +79,38 @@ describe 'Autobind Disabled On Owner' do
 
     # active subscription to allow this all to work
     active_prod = create_product()
-    active_sub = create_pool_and_subscription(@owner['key'], active_prod.id, 10)
-    @cp.refresh_pools(@owner['key'])
+    active_sub = @cp.create_pool(@owner['key'], active_prod.id, {
+      :quantity => 10,
+      :subscription_id => random_str('source_sub'),
+      :upstream_pool_id => random_str('upstream')
+    })
 
-    dev_product = create_product("dev_product", "Dev Product", {:attributes => { :expires_after => "60"}})
-    dev_product_2 = create_product("2nd_dev_product", "Dev Product", {:attributes => { :expires_after => "60"}})
-    p_product1 = create_product("p_product_1", "Provided Product 1")
-    p_product2 = create_product("p_product", "Provided Product 2")
+    provided_product_1 = create_upstream_product("prov_product_1", { :name => "provided product 1" })
+    provided_product_2 = create_upstream_product("prov_product_2", { :name => "provided product 2" })
+    dev_product = create_upstream_product("dev_product", {
+        :name => "Dev Product",
+        :attributes => {
+            :expires_after => "60"
+        },
+        :providedProducts => [provided_product_1, provided_product_2]
+    })
 
     installed = [
-        {'productId' => p_product1.id, 'productName' => p_product1.name},
-        {'productId' => p_product2.id, 'productName' => p_product2.name}
+        {'productId' => provided_product_1.id, 'productName' => provided_product_1.name},
+        {'productId' => provided_product_2.id, 'productName' => provided_product_2.name}
     ]
-    consumer = @user_cp.register("foofy_dev", :system, nil, {'dev_sku'=> "dev_product"}, nil, @owner['key'], [], installed)
-    consumer_cp = Candlepin.new(nil, nil, consumer.idCert.cert, consumer.idCert['key'])
 
+    consumer = @user_cp.register("foofy_dev", :system, nil, { 'dev_sku' => dev_product.id }, nil, @owner['key'], [], installed)
+    consumer_cp = Candlepin.new(nil, nil, consumer.idCert.cert, consumer.idCert['key'])
     consumer_cp.consume_product()
+
     entitlements = consumer_cp.list_entitlements()
-    entitlements.length.should == 1
+    expect(entitlements.length).to eq(1)
+
     new_pool = entitlements[0].pool
-    new_pool.type.should == "DEVELOPMENT"
-    new_pool.productId.should == dev_product['id']
-    new_pool.providedProducts.length.should == 2
+    expect(new_pool.type).to eq("DEVELOPMENT")
+    expect(new_pool.productId).to eq(dev_product.id)
+    expect(new_pool.providedProducts.length).to eq(2)
   end
 
   it 'will still register when activation key has autobind enabled' do
@@ -150,5 +153,26 @@ describe 'Autobind Disabled On Owner' do
     job = @cp.get_job(job['id'], true)
     job['state'].should == "FAILED"
     job['resultData'].should == "org.candlepin.async.JobExecutionException: Auto-attach is disabled for owner #{owner['key']} because of the content access mode setting."
+  end
+
+  it "dry-run-auto-attach returns 200 when on SCA mode" do
+    skip("candlepin running in standalone mode") if not is_hosted?
+
+    owner = create_owner(random_string("test_owner"), nil, {
+        'contentAccessModeList' => 'org_environment,entitlement',
+        'contentAccessMode' => "org_environment"
+    })
+
+    owner = @cp.get_owner(owner['key'])
+    owner['autobindDisabled'] = true
+    @cp.update_owner(owner['key'], owner)
+
+    cp_user = user_client(owner, random_string("testing-user"))
+    consumer = cp_user.register("foofy_test", :system, nil,
+                                {'cpu.cpu_socket(s)' => '8'}, nil, owner['key'], [], [])
+    consumer_cp = Candlepin.new(nil, nil, consumer.idCert.cert, consumer.idCert['key'])
+    pools = consumer_cp.autobind_dryrun(consumer.uuid)
+    expect(pools.length).to eq(0)
+
   end
 end

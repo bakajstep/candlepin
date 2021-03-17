@@ -70,6 +70,7 @@ import org.candlepin.model.CandlepinQuery;
 import org.candlepin.model.CdnCurator;
 import org.candlepin.model.Certificate;
 import org.candlepin.model.Consumer;
+import org.candlepin.model.ConsumerActivationKey;
 import org.candlepin.model.ConsumerCapability;
 import org.candlepin.model.ConsumerCurator;
 import org.candlepin.model.ConsumerInstalledProduct;
@@ -118,6 +119,7 @@ import org.candlepin.resteasy.DateFormat;
 import org.candlepin.resteasy.parameter.KeyValueParameter;
 import org.candlepin.service.EntitlementCertServiceAdapter;
 import org.candlepin.service.IdentityCertServiceAdapter;
+import org.candlepin.service.ProductServiceAdapter;
 import org.candlepin.service.SubscriptionServiceAdapter;
 import org.candlepin.service.UserServiceAdapter;
 import org.candlepin.service.model.UserInfo;
@@ -160,6 +162,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 import javax.inject.Provider;
@@ -196,6 +199,7 @@ public class ConsumerResource {
     private ConsumerTypeCurator consumerTypeCurator;
     private OwnerProductCurator ownerProductCurator;
     private SubscriptionServiceAdapter subAdapter;
+    private ProductServiceAdapter prodAdapter;
     private EntitlementCurator entitlementCurator;
     private IdentityCertServiceAdapter identityCertService;
     private EntitlementCertServiceAdapter entCertService;
@@ -233,6 +237,7 @@ public class ConsumerResource {
         ConsumerTypeCurator consumerTypeCurator,
         OwnerProductCurator ownerProductCurator,
         SubscriptionServiceAdapter subAdapter,
+        ProductServiceAdapter prodAdapter,
         EntitlementCurator entitlementCurator,
         IdentityCertServiceAdapter identityCertService,
         EntitlementCertServiceAdapter entCertServiceAdapter,
@@ -268,6 +273,7 @@ public class ConsumerResource {
         this.consumerTypeCurator = consumerTypeCurator;
         this.ownerProductCurator = ownerProductCurator;
         this.subAdapter = subAdapter;
+        this.prodAdapter = prodAdapter;
         this.entitlementCurator = entitlementCurator;
         this.identityCertService = identityCertService;
         this.entCertService = entCertServiceAdapter;
@@ -535,15 +541,20 @@ public class ConsumerResource {
     public ContentAccessDTO getContentAccessForConsumer(
         @PathParam("consumer_uuid") @Verify(Consumer.class) String uuid) {
         Consumer consumer = consumerCurator.verifyAndLookupConsumer(uuid);
-        String caMode = Util.firstOf(
+
+        Predicate<String> predicate = (str) -> str != null && !str.isEmpty();
+
+        String caMode = Util.firstOf(predicate,
             consumer.getContentAccessMode(),
             consumer.getOwner().getContentAccessMode(),
             ContentAccessManager.ContentAccessMode.getDefault().toDatabaseValue()
         );
-        String caList = Util.firstOf(
+
+        String caList = Util.firstOf(predicate,
             consumer.getOwner().getContentAccessModeList(),
             ContentAccessManager.ContentAccessMode.getDefault().toDatabaseValue()
         );
+
         return new ContentAccessDTO()
             .contentAccessMode(caMode)
             .contentAccessModeList(Util.toList(caList));
@@ -851,6 +862,14 @@ public class ConsumerResource {
         validateContentAccessMode(consumerToCreate, owner);
         // BZ 1618398 Remove validation check on consumer service level
         // consumerBindUtil.validateServiceLevel(owner.getId(), consumerToCreate.getServiceLevel());
+
+        Set<ConsumerActivationKey> aks = new HashSet<>();
+
+        for (ActivationKey key : keys) {
+            aks.add(new ConsumerActivationKey(consumerToCreate, key.getId(), key.getName()));
+        }
+
+        consumerToCreate.setActivationKeys(aks);
 
         try {
             Date createdDate = consumerToCreate.getCreated();
@@ -1253,7 +1272,7 @@ public class ConsumerResource {
 
                 existingOwner = ownerCurator.create(owner);
 
-                poolManager.getRefresher(this.subAdapter)
+                poolManager.getRefresher(this.subAdapter, this.prodAdapter)
                     .add(existingOwner)
                     .run();
             }
@@ -1473,7 +1492,7 @@ public class ConsumerResource {
             // reset content access cert
             Owner owner = ownerCurator.findOwnerById(toUpdate.getOwnerId());
 
-            if (owner.isContentAccessEnabled()) {
+            if (owner.isUsingSimpleContentAccess()) {
                 toUpdate.setContentAccessCert(null);
                 this.contentAccessManager.removeContentAccessCert(toUpdate);
             }
@@ -1866,14 +1885,13 @@ public class ConsumerResource {
 
         log.debug("Getting content access certificate for consumer: {}", consumerUuid);
         Consumer consumer = consumerCurator.verifyAndLookupConsumer(consumerUuid);
-        ConsumerType ctype = this.consumerTypeCurator.getConsumerType(consumer);
 
         Owner owner = ownerCurator.findOwnerById(consumer.getOwnerId());
-        if (!owner.isContentAccessEnabled()) {
+        if (!owner.isUsingSimpleContentAccess()) {
             throw new BadRequestException(i18n.tr("Content access mode does not allow this request."));
         }
 
-        if (!this.contentAccessManager.hasCertChangedSince(consumer, since)) {
+        if (!this.contentAccessManager.hasCertChangedSince(consumer, since != null ? since : new Date(0))) {
             return Response.status(Response.Status.NOT_MODIFIED)
                 .entity("Not modified since date supplied.")
                 .build();
@@ -1895,6 +1913,9 @@ public class ConsumerResource {
             pieces.add(json);
             result.setContentListing(cac.getSerial().getId(), pieces);
             result.setLastUpdate(cac.getUpdated());
+
+            return Response.ok(result, MediaType.APPLICATION_JSON)
+                .build();
         }
         catch (IOException ioe) {
             throw new BadRequestException(i18n.tr("Cannot retrieve content access certificate"), ioe);
@@ -1902,8 +1923,6 @@ public class ConsumerResource {
         catch (GeneralSecurityException gse) {
             throw new BadRequestException(i18n.tr("Cannot retrieve content access certificate", gse));
         }
-
-        return Response.ok(result, MediaType.APPLICATION_JSON).build();
     }
 
     @ApiOperation(notes = "Retrieves a Compressed File of Entitlement Certificates",
@@ -2157,10 +2176,11 @@ public class ConsumerResource {
                 entitlements = entitler.bindByProducts(autobindData);
             }
             catch (AutobindDisabledForOwnerException e) {
-                if (owner.isContentAccessEnabled()) {
-                    throw new BadRequestException(i18n.tr("Ignoring request to auto-attach. " +
+                if (owner.isUsingSimpleContentAccess()) {
+                    log.debug("Ignoring request to auto-attach. " +
                         "It is disabled for org \"{0}\" because of the content access mode setting."
-                        , owner.getKey()));
+                        , owner.getKey());
+                    return Response.status(Response.Status.OK).build();
                 }
                 else {
                     throw new BadRequestException(i18n.tr("Ignoring request to auto-attach. " +
@@ -2219,16 +2239,15 @@ public class ConsumerResource {
         if (owner.isAutobindDisabled()) {
             String message = "";
 
-            if (owner.isContentAccessEnabled()) {
-                message = (i18n.tr("Organization \"{0}\" has auto-attach disabled because " +
-                    "of the content access mode setting.", owner.getKey()));
-
+            if (owner.isUsingSimpleContentAccess()) {
+                log.debug("Organization \"{0}\" has auto-attach disabled because " +
+                    "of the content access mode setting.", owner.getKey());
+                return Collections.EMPTY_LIST;
             }
             else {
                 message = (i18n.tr("Organization \"{0}\" has auto-attach disabled.", owner.getKey()));
+                throw new BadRequestException(message);
             }
-            throw new BadRequestException(message);
-
         }
 
         List<PoolQuantity> dryRunPools = new ArrayList<>();
@@ -2245,13 +2264,16 @@ public class ConsumerResource {
             throw bre;
         }
         catch (RuntimeException re) {
+            log.debug("Unexpected exception occurred while performing dry-run:", re);
             return Collections.<PoolQuantityDTO>emptyList();
         }
+
         if (dryRunPools != null) {
             List<PoolQuantityDTO> dryRunPoolDtos = new ArrayList<>();
             for (PoolQuantity pq : dryRunPools) {
                 dryRunPoolDtos.add(this.translator.translate(pq, PoolQuantityDTO.class));
             }
+
             return dryRunPoolDtos;
         }
         else {
@@ -2861,5 +2883,4 @@ public class ConsumerResource {
             calculatedAttributesUtil.buildCalculatedAttributes(ent.getPool(), null);
         ent.getPool().setCalculatedAttributes(calculatedAttributes);
     }
-
 }

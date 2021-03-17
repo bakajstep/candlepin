@@ -56,21 +56,51 @@ class Candlepin
       create_basic_client(username, password)
     end
 
-    # Store top level HATEOAS resource links so we know what we can do:
-    results = get("/")
-    @links = {}
-    results.each do |link|
-      @links[link['rel']] = link['href']
-    end
-
+    # Prime variables for later population/use
+    @links = nil
+    @capabilities = nil
   end
 
   def verbose=(verbose)
     @verbose = verbose
   end
 
+  def prime_paths()
+    if !@links
+      # Store top level HATEOAS resource links so we know what we can do
+      results = get("/")
+      @links = {}
+      results.each do |link|
+        @links[link['rel']] = link['href']
+      end
+    end
+  end
+
   def get_path(resource)
+    prime_paths()
     return @links[resource]
+  end
+
+  def prime_capabilities()
+    if !@capabilities
+      status = get_status()
+      @capabilities = status['managerCapabilities']
+    end
+  end
+
+  def get_capabilities()
+    prime_capabilities()
+    return @capabilities
+  end
+
+  def is_capability_present(capability)
+    prime_capabilities()
+    return @capabilities != nil && @capabilities.include?(capability)
+  end
+
+  def get_cloud_registration_token(params = {})
+    path = "/cloud/authorize"
+    return post(path, {}, params, {:accept => "text/plain"});
   end
 
   # TODO: need to switch to a params hash, getting to be too many arguments.
@@ -80,7 +110,8 @@ class Candlepin
               content_tags=[], created_date=nil, last_checkin_date=nil,
               annotations=nil, recipient_owner_key=nil, user_agent=nil,
               entitlement_count=0, id_cert=nil, serviceLevel=nil, role=nil, usage=nil,
-              addOns=nil, reporter_id=nil, autoheal=nil, content_access_mode=nil)
+              addOns=nil, reporter_id=nil, autoheal=nil, content_access_mode=nil,
+              cloud_registration_token=nil)
 
     consumer = {
       :type => {:label => type},
@@ -121,9 +152,12 @@ class Candlepin
     params[:username] = username if username
     params[:activation_keys] = activation_keys.join(",") if activation_keys.length > 1
     params[:activation_keys] = activation_keys[0] if activation_keys.length == 1
-    params[:user_agent] = user_agent if user_agent
 
-    @consumer = post(path, params, consumer)
+    headers = {}
+    headers[:user_agent] = user_agent if user_agent
+    headers[:authorization] = "Bearer: #{cloud_registration_token}" if cloud_registration_token
+
+    @consumer = post(path, params, consumer, headers)
     return @consumer
   end
 
@@ -527,7 +561,7 @@ class Candlepin
     return get("/pools", params)
   end
 
-  def list_owner_pools(owner_key, params = {}, attribute_filters=[], dont_parse= false)
+  def list_owner_pools(owner_key, params = {}, attribute_filters=[], dont_parse=false)
     path = "/owners/#{owner_key}/pools"
 
     params[:attribute] = attribute_filters if !attribute_filters.empty?
@@ -805,6 +839,8 @@ class Candlepin
     dependentProductIds = params[:dependentProductIds] || []
     branding = params[:branding] || []
     relies_on = params[:relies_on] || []
+    providedProducts = params[:providedProducts] || []
+    derivedProduct = params[:derivedProduct]
 
     #if product don't have type attributes, create_product will fail on server
     #side.
@@ -816,7 +852,9 @@ class Candlepin
       'attributes' => attributes,
       'dependentProductIds' => dependentProductIds,
       'branding' => branding,
-      'reliesOn' => relies_on
+      'reliesOn' => relies_on,
+      'providedProducts' => providedProducts.collect { |pid| {'id' => pid} },
+      'derivedProduct' => derivedProduct
     }
 
     post("/owners/#{owner_key}/products", {}, product)
@@ -833,6 +871,12 @@ class Candlepin
     product[:dependentProductIds] = params[:dependentProductIds] if params[:dependentProductIds]
     product[:branding] = params[:branding] if params[:branding]
     product[:relies_on] = params[:relies_on] if params[:relies_on]
+    product[:derivedProduct] = params[:derivedProduct] if params[:derivedProduct]
+
+    if params[:providedProducts]
+      product['providedProducts'] = params[:providedProducts]
+        .collect { |pid| {'id' => pid} }
+    end
 
     put("/owners/#{owner_key}/products/#{product_id}", {}, product)
   end
@@ -1093,7 +1137,6 @@ class Candlepin
 
   def create_pool(owner_key, product_id, params={})
     quantity = params[:quantity] || 1
-    provided_products = params[:provided_products] || []
 
     start_date = params[:start_date] || DateTime.now
     end_date = params[:end_date] || start_date + 365
@@ -1102,8 +1145,7 @@ class Candlepin
       'startDate' => start_date,
       'endDate'   => end_date,
       'quantity'  =>  quantity,
-      'productId' => product_id,
-      'providedProducts' => provided_products.collect { |pid| {'productId' => pid} }
+      'productId' => product_id
     }
 
     if params[:branding]
@@ -1122,8 +1164,8 @@ class Candlepin
       pool['orderNumber'] = params[:order_number]
     end
 
-    if params[:derived_product_id]
-      pool['derivedProductId'] = params[:derived_product_id]
+    if params[:upstream_pool_id]
+      pool['upstreamPoolId'] = params[:upstream_pool_id]
     end
 
     if params[:source_subscription]
@@ -1135,14 +1177,6 @@ class Candlepin
     elsif params[:subscriptionId] || params[:subscriptionSubKey]
       pool['subscriptionId'] = params[:subscriptionId] || "sub_id-#{rand(9)}#{rand(9)}#{rand(9)}"
       pool['subscriptionSubKey'] = params[:subscriptionSubKey] || 'master'
-    end
-
-    if params[:derived_provided_products]
-      pool['derivedProvidedProducts'] = params[:derived_provided_products].collect { |pid| {'productId' => pid} }
-    end
-
-    if params[:upstream_pool_id]
-      pool['upstreamPoolId'] = params[:upstream_pool_id]
     end
 
     return post("/owners/#{owner_key}/pools", {}, pool)
@@ -1576,7 +1610,7 @@ class Candlepin
     return response
   end
 
-  def post(uri, params={}, data=nil)
+  def post(uri, params={}, data=nil, headers={})
     # escape and build uri
     euri = URI.escape(uri)
     if !params.empty?
@@ -1587,15 +1621,20 @@ class Candlepin
     # encode data
     data = data.to_json if not data.nil?
 
+    # determine headers to send
+    accept = headers[:accept] || :json
+    user_agent = headers[:user_agent] || params[:user_agent]
+
     # execute
     puts ("POST #{euri} #{data}") if @verbose
-    if params[:user_agent].nil?
-      response = get_client(uri, Net::HTTP::Post, :post)[euri].post data, :content_type => :json, :accept => :json
+
+    if user_agent.nil?
+      response = get_client(uri, Net::HTTP::Post, :post)[euri].post data, :content_type => :json, :accept => accept
     else
-      response = get_client(uri, Net::HTTP::Post, :post)[euri].post data, :content_type => :json, :accept => :json, "user-agent" => params[:user_agent]
+      response = get_client(uri, Net::HTTP::Post, :post)[euri].post data, :content_type => :json, :accept => accept, "user-agent" => user_agent
     end
 
-    return JSON.parse(response.body) unless response.body.empty?
+    return (accept == :json ? JSON.parse(response.body) : response.body) unless response.body.empty?
   end
 
   def post_file(uri, params={}, file=nil, headers={})
@@ -1680,6 +1719,21 @@ class Candlepin
     end
 
     return JSON.parse(response.body) unless response.body.empty?
+  end
+
+  def get_response(uri, content_type='application/json')
+    # escape and build uri
+    euri = URI.escape(uri)
+
+    # execute
+    puts ("GET #{euri}") if @verbose
+    if content_type.nil?
+      response = get_client(euri, Net::HTTP::Get, :get)[euri].get :content_type => 'application/json'
+    else
+      response = get_client(euri, Net::HTTP::Get, :get)[euri].get :content_type => content_type
+    end
+
+    return (response.body)
   end
 
 
