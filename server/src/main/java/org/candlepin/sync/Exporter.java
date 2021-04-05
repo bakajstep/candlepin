@@ -633,7 +633,7 @@ public class Exporter {
                     try {
                         File file = new File(cdnDir.getCanonicalPath(), cdn.getLabel() + ".json");
                         writer = new FileWriter(file);
-                        cdnExporter.export(mapper, writer, cdn);
+//                        cdnExporter.export(mapper, writer, cdn);
                     }
                     finally {
                         if (writer != null) {

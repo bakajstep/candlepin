@@ -27,7 +27,6 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
 
 public class MetaExporterTest {
 
@@ -58,14 +57,5 @@ public class MetaExporterTest {
 //            "\"webAppPrefix\":\"webapp_prefix\"," +
 //            "\"cdnLabel\":\"test-cdn\"}";
 //    }
-
-    private static class SpyingExporter implements FileExporter {
-        List<Object> lastExports;
-
-        @Override
-        public void export(Path file, List<Object> exports) throws IOException {
-            this.lastExports = exports;
-        }
-    }
 
 }

@@ -1,44 +1,70 @@
 /**
  * Copyright (c) 2009 - 2012 Red Hat, Inc.
- *
+ * <p>
  * This software is licensed to you under the GNU General Public License,
  * version 2 (GPLv2). There is NO WARRANTY for this software, express or
  * implied, including the implied warranties of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE. You should have received a copy of GPLv2
  * along with this software; if not, see
  * http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
- *
+ * <p>
  * Red Hat trademarks are not licensed under GPLv2. No permission is
  * granted to use or replicate Red Hat trademarks that are incorporated
  * in this software or its documentation.
  */
 package org.candlepin.sync;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.inject.Inject;
 import org.candlepin.dto.ModelTranslator;
 import org.candlepin.dto.manifest.v1.CdnDTO;
 import org.candlepin.model.Cdn;
+import org.candlepin.model.CdnCurator;
+import org.candlepin.model.ResultIterator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.inject.Inject;
-
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
+import java.nio.file.Path;
+import java.util.Arrays;
 
 /**
  * CdnExporter
  */
 public class CdnExporter {
 
-    private ModelTranslator translator;
+    private static final Logger log = LoggerFactory.getLogger(CdnExporter.class);
+
+    private final CdnCurator cdnCurator;
+    private final FileExporter fileExporter;
+    private final ModelTranslator translator;
 
     @Inject
-    public CdnExporter(ModelTranslator translator) {
+    public CdnExporter(CdnCurator cdnCurator, FileExporter fileExporter, ModelTranslator translator) {
+        this.cdnCurator = cdnCurator;
+        this.fileExporter = fileExporter;
         this.translator = translator;
     }
 
-    void export(ObjectMapper mapper, Writer writer, Cdn cdn)
-        throws IOException {
+    public void exportTo(Path exportDir) throws IOException {
 
-        mapper.writeValue(writer, this.translator.translate(cdn, CdnDTO.class));
+        try (ResultIterator<Cdn> iterator = this.cdnCurator.listAll().iterate()) {
+            if (iterator.hasNext()) {
+//                File cdnDir = new File(baseDir.getCanonicalPath(), "content_delivery_network");
+//                cdnDir.mkdir();
+
+                while (iterator.hasNext()) {
+                    Cdn cdn = iterator.next();
+                    log.debug("Exporting CDN: {}", cdn.getName());
+
+                    Path file = exportDir.resolve(cdn.getLabel() + ".json");
+                    this.fileExporter.export(file, Arrays.asList(this.translator.translate(cdn, CdnDTO.class)));
+                }
+            }
+        }
     }
+
 }

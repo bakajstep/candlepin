@@ -155,7 +155,7 @@ public class ExporterTest {
         dvc = mock(DistributorVersionCurator.class);
         dve = new DistributorVersionExporter(translator);
         cdnc = mock(CdnCurator.class);
-        cdne = new CdnExporter(translator);
+        cdne = new CdnExporter(cdnc, mock(FileExporter.class), translator);
         su = new SyncUtils(config);
         contentAccessManager = mock(ContentAccessManager.class);
         when(exportRules.canExport(any(Entitlement.class))).thenReturn(Boolean.TRUE);
