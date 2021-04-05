@@ -136,7 +136,7 @@ public class ExporterTest {
         ctc = mock(ConsumerTypeCurator.class);
         mockEnvironmentCurator = mock(EnvironmentCurator.class);
         oc = mock(OwnerCurator.class);
-        me = new MetaExporter(mock(PrincipalProvider.class), new ObjectMapper());
+        me = new MetaExporter(mock(PrincipalProvider.class), mock(FileExporter.class));
         translator = new StandardTranslator(ctc, mockEnvironmentCurator, oc);
         ce = new ConsumerExporter(translator);
         cte = new ConsumerTypeExporter(translator);

@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.Map;
 
@@ -36,25 +37,19 @@ import java.util.Map;
 public class MetaExporter {
 
     private final PrincipalProvider principalProvider;
-    private final ObjectMapper mapper;
+    private final FileExporter exporter;
 
     @Inject
-    MetaExporter(PrincipalProvider principalProvider, ObjectMapper mapper) {
+    MetaExporter(PrincipalProvider principalProvider, FileExporter exporter) {
         this.principalProvider = principalProvider;
-        this.mapper = mapper;
+        this.exporter = exporter;
     }
 
     // TODO Wrap IOException
     public void exportTo(Path file, String cdnKey) throws IOException {
         Meta m = new Meta(getVersion(), new Date(),
             this.principalProvider.get().getName(), null, cdnKey);
-        try (BufferedWriter writer = Files.newBufferedWriter(file)) {
-            export(this.mapper, writer, m);
-        }
-    }
-
-    private void export(ObjectMapper mapper, Writer writer, Meta meta) throws IOException {
-        mapper.writeValue(writer, meta);
+        this.exporter.export(file, Arrays.asList(m));
     }
 
     private String getVersion() {

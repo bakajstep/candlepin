@@ -20,65 +20,35 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import org.candlepin.auth.NoAuthPrincipal;
-import org.candlepin.common.config.MapConfiguration;
-import org.candlepin.config.ConfigProperties;
 import org.candlepin.guice.PrincipalProvider;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.jimfs.Configuration;
-import com.google.common.jimfs.Jimfs;
-
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.nio.file.FileSystem;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Map;
+import java.nio.file.Paths;
+import java.util.List;
 
 public class MetaExporterTest {
 
-    private FileSystem fileSystem;
-
-    @BeforeEach
-    void setUp() {
-        this.fileSystem = Jimfs.newFileSystem(Configuration.unix());
-    }
-
     @Test
     public void testMetaExporter() throws IOException {
-        ObjectMapper mapper = createObjectMapper();
+        SpyingExporter exporter = new SpyingExporter();
         NoAuthPrincipal principal = new NoAuthPrincipal();
         PrincipalProvider principalProvider = mock(PrincipalProvider.class);
         when(principalProvider.get()).thenReturn(principal);
 
-        MetaExporter metaEx = new MetaExporter(principalProvider, mapper);
+        MetaExporter metaEx = new MetaExporter(principalProvider, exporter);
         String cdnKey = "test-cdn";
-        Path path = this.fileSystem.getPath("/meta.json");
+        Path path = Paths.get("/meta.json");
 
         metaEx.exportTo(path, cdnKey);
 
-        Meta result = mapper.readValue(Files.readAllBytes(path), Meta.class);
+        Meta result = (Meta) exporter.lastExports.get(0);
         assertEquals(result.getCdnLabel(), cdnKey);
         assertEquals(result.getPrincipalName(), "Anonymous");
         assertNotNull(result.getVersion());
         assertNotNull(result.getCreated());
-    }
-
-    private ObjectMapper createObjectMapper() {
-        Map<String, String> configProps = new HashMap<>();
-        configProps.put(ConfigProperties.FAIL_ON_UNKNOWN_IMPORT_PROPERTIES, "false");
-
-        return new SyncUtils(new MapConfiguration(configProps)).getObjectMapper();
-    }
-
-    private String expectedJson(String nowString) {
-        return "{\"version\":\"${version}-${release}\",\"created\":\"" + nowString +
-            "\",\"principalName\":\"myUsername\"," +
-            "\"webAppPrefix\":\"webapp_prefix\"," +
-            "\"cdnLabel\":\"test-cdn\"}";
     }
 
     //TODO
@@ -88,5 +58,14 @@ public class MetaExporterTest {
 //            "\"webAppPrefix\":\"webapp_prefix\"," +
 //            "\"cdnLabel\":\"test-cdn\"}";
 //    }
+
+    private static class SpyingExporter implements FileExporter {
+        List<Object> lastExports;
+
+        @Override
+        public void export(Path file, List<Object> exports) throws IOException {
+            this.lastExports = exports;
+        }
+    }
 
 }
