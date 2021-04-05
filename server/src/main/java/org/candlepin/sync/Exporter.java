@@ -59,6 +59,8 @@ import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.util.Collection;
 import java.util.Date;
@@ -322,22 +324,9 @@ public class Exporter {
         out.closeEntry();
     }
 
-    private void exportMeta(File baseDir, String cdnKey)
-        throws IOException {
-        File file = new File(baseDir.getCanonicalPath(), "meta.json");
-        FileWriter writer = null;
-        try {
-            writer = new FileWriter(file);
-            Meta m = new Meta(getVersion(), new Date(),
-                principalProvider.get().getName(),
-                null, cdnKey);
-            meta.export(mapper, writer, m);
-        }
-        finally {
-            if (writer != null) {
-                writer.close();
-            }
-        }
+    private void exportMeta(File baseDir, String cdnKey) throws IOException {
+        Path exportFile = Paths.get(baseDir.getCanonicalPath(), "meta.json");
+        meta.exportTo(exportFile, cdnKey);
     }
 
     private String getPrefixWebUrl(String override) {
