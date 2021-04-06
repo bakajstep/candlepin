@@ -15,6 +15,13 @@
 
 package org.candlepin.sync;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import org.candlepin.pki.PKIUtility;
+
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 
@@ -23,15 +30,14 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
+import java.util.zip.ZipInputStream;
 
 public class ZipTest {
 
@@ -69,148 +75,72 @@ public class ZipTest {
 
     @Test
     void name() throws IOException {
+        PKIUtility mock = mock(PKIUtility.class);
+        when(mock.getSHA256WithRSAHash(any())).thenReturn(new byte[]{});
+        Zipper zipper = new Zipper(mock);
         Path source = mkpath("/source");
         mkdirs(source);
         touch(source, "file1.txt");
         touch(source, "file2.txt");
-        System.out.println(Files.list(source).count());
         Path target = mkpath("/target");
         mkdirs(target);
-        System.out.println(Files.list(target).count());
 
-        makeArchive("asd", target, source);
+        Path export = zipper.makeArchive("asd", target, source);
 
-        System.out.println(Files.list(target).count());
-        Files.list(target).forEach(System.out::println);
+        assertTrue(verifyHasEntry(export,"file2.txt"));
     }
 
     /**
-     * Create a tar.gz archive of the exported directory.
-     *
-     * @param exportDir Directory where Candlepin data was exported.
-     * @return File reference to the new archive zip.
+     * return true if export has a given entry named name.
+     * @param export zip file to inspect
+     * @param name entry
+     * @return
      */
-    private Path makeArchive(String consumerUuid, Path tempDir, Path exportDir)
-        throws IOException {
-        String exportFileName = String.format("%s-%s.zip", consumerUuid, exportDir.getFileName());
-        log.info("Creating archive of " + exportDir.toAbsolutePath() + " in: " +
-            exportFileName);
+    private boolean verifyHasEntry(Path export, String name) {
+        ZipInputStream zis = null;
+        boolean found = false;
 
-        Path archive = createZipArchiveWithDir(tempDir, exportDir, "consumer_export.zip",
-            "Candlepin export for " + consumerUuid);
-
-        final byte[] bytes = Files.readAllBytes(archive);
-        Path signedArchive = createSignedZipArchive(
-            tempDir, archive, exportFileName,
-            getSHA256WithRSAHash(bytes),
-            "signed Candlepin export for " + consumerUuid);
-
-        log.debug("Returning file: " + archive.toAbsolutePath());
-        return signedArchive;
-    }
-
-    private Path createZipArchiveWithDir(Path tempDir, Path exportDir,
-        String exportFileName, String comment)
-        throws IOException {
-
-        Path archive = tempDir.resolve(exportFileName);
-//        File archive = new File(tempDir, exportFileName);
-        try (ZipOutputStream out = new ZipOutputStream(Files.newOutputStream(archive))) {
-            out.setComment(comment);
-            addFilesToArchive(out, exportDir);
-        }
-        return archive;
-    }
-
-    private Path createSignedZipArchive(
-        Path tempDir, Path toAdd,
-        String exportFileName, byte[] signature, String comment) throws IOException {
-
-//        File archive = new File(tempDir, exportFileName);
-        Path archive = tempDir.resolve(exportFileName);
-        try (ZipOutputStream out = new ZipOutputStream(Files.newOutputStream(archive))) {
-            out.setComment(comment);
-            addFileToArchive(out, toAdd);
-            addSignatureToArchive(out, signature);
-        }
-        return archive;
-    }
-
-    private void addFilesToArchive(ZipOutputStream out, Path directory) {
-        list(directory).forEach(path -> {
-            if (Files.isDirectory(path)) {
-                addFilesToArchive(out, path);
-            }
-            else {
-                addFileToArchive(out, path);
-            }
-        });
-//        for (File file : directory.listFiles()) {
-//            if (file.isDirectory()) {
-//                addFilesToArchive(out, charsToDropFromName, file);
-//            } else {
-//                addFileToArchive(out, charsToDropFromName, file);
-//            }
-//        }
-    }
-
-    private void addFileToArchive(ZipOutputStream out, Path file) {
         try {
-            addFileToArchive3(out, file);
-        }
-        catch (IOException e) {
-            throw new RuntimeException("fail", e);
-        }
-    }
+            zis = new ZipInputStream(Files.newInputStream(export));
+            ZipEntry entry = null;
 
-    private Stream<Path> list(Path directory) {
-        try {
-            return Files.list(directory);
-        }
-        catch (IOException e) {
-            throw new RuntimeException("fail", e);
-        }
-    }
+            while ((entry = zis.getNextEntry()) != null) {
+                byte[] buf = new byte[1024];
 
-    private void addFileToArchive2(ZipOutputStream out, Path file) throws IOException {
-        log.debug("Adding file to archive: " + file.getFileName());
-        out.putNextEntry(new ZipEntry(file.getFileName().toString()));
-        try (FileInputStream in = new FileInputStream(file.toString())) {
-            byte[] buf = new byte[1024];
-            int len;
-            while ((len = in.read(buf)) > 0) {
-                out.write(buf, 0, len);
+                if (entry.getName().equals("consumer_export.zip")) {
+                    Path exportdata = export.resolveSibling("consumer_export.zip");
+                    try (OutputStream os = Files.newOutputStream(exportdata)) {
+                        int n;
+                        while ((n = zis.read(buf, 0, 1024)) > -1) {
+                            os.write(buf, 0, n);
+                        }
+                    }
+                    // open up the zip and look for the metadata
+                    found = verifyHasEntry(exportdata, name);
+                }
+                else if (entry.getName().equals(name)) {
+                    found = true;
+                }
+
+                zis.closeEntry();
             }
-            out.closeEntry();
+
         }
-    }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+        finally {
+            if (zis != null) {
+                try {
+                    zis.close();
+                }
+                catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
 
-    private void addFileToArchive3(ZipOutputStream out, Path file) throws IOException {
-        log.debug("Adding file to archive: " + file.getFileName());
-        out.putNextEntry(new ZipEntry(file.getFileName().toString()));
-        Files.copy(file, out);
-        out.closeEntry();
-//        try (FileInputStream in = new FileInputStream(file.toString())) {
-//            byte[] buf = new byte[1024];
-//            int len;
-//            while ((len = in.read(buf)) > 0) {
-//                out.write(buf, 0, len);
-//            }
-//            out.closeEntry();
-//        }
-    }
-
-    private void addSignatureToArchive(ZipOutputStream out, byte[] signature)
-        throws IOException {
-
-        log.debug("Adding signature to archive.");
-        out.putNextEntry(new ZipEntry("signature"));
-        out.write(signature, 0, signature.length);
-        out.closeEntry();
-    }
-
-    private byte[] getSHA256WithRSAHash(byte[] archiveInputStream) {
-        return new byte[0];
+        return found;
     }
 
 }
