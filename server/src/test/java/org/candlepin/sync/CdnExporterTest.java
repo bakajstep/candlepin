@@ -21,8 +21,12 @@ import static org.mockito.Mockito.when;
 
 import org.candlepin.auth.NoAuthPrincipal;
 import org.candlepin.dto.ModelTranslator;
+import org.candlepin.dto.ObjectTranslator;
+import org.candlepin.dto.SimpleModelTranslator;
+import org.candlepin.dto.SimpleModelTranslatorTest;
 import org.candlepin.dto.StandardTranslator;
 import org.candlepin.dto.manifest.v1.CdnDTO;
+import org.candlepin.dto.manifest.v1.CdnTranslator;
 import org.candlepin.guice.PrincipalProvider;
 import org.candlepin.model.CandlepinQuery;
 import org.candlepin.model.Cdn;
@@ -44,18 +48,13 @@ import java.util.List;
 class CdnExporterTest {
 
     private CdnCurator cdnCurator;
-    private ConsumerTypeCurator consumerTypeCurator;
-    private EnvironmentCurator environmentCurator;
-    private OwnerCurator ownerCurator;
     private ModelTranslator translator;
 
     @BeforeEach
     void setUp() {
         this.cdnCurator = mock(CdnCurator.class);
-        consumerTypeCurator = mock(ConsumerTypeCurator.class);
-        environmentCurator = mock(EnvironmentCurator.class);
-        ownerCurator = mock(OwnerCurator.class);
-        translator = new StandardTranslator(consumerTypeCurator, environmentCurator, ownerCurator);
+        translator = new SimpleModelTranslator();
+        translator.registerTranslator(new CdnTranslator(),Cdn.class,CdnDTO.class);
     }
 
     @Test
