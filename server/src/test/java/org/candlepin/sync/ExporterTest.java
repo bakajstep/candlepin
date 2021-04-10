@@ -153,7 +153,7 @@ public class ExporterTest {
         exportRules = mock(ExportRules.class);
         pprov = mock(PrincipalProvider.class);
         dvc = mock(DistributorVersionCurator.class);
-        dve = new DistributorVersionExporter(translator);
+        dve = mock(DistributorVersionExporter.class);
         cdnc = mock(CdnCurator.class);
         cdne = new CdnExporter(cdnc, mock(FileExporter.class), translator);
         su = new SyncUtils(config);
