@@ -15,25 +15,19 @@
 
 package org.candlepin.sync;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import org.candlepin.auth.NoAuthPrincipal;
 import org.candlepin.dto.ModelTranslator;
-import org.candlepin.dto.ObjectTranslator;
 import org.candlepin.dto.SimpleModelTranslator;
-import org.candlepin.dto.SimpleModelTranslatorTest;
-import org.candlepin.dto.StandardTranslator;
 import org.candlepin.dto.manifest.v1.CdnDTO;
 import org.candlepin.dto.manifest.v1.CdnTranslator;
 import org.candlepin.guice.PrincipalProvider;
 import org.candlepin.model.CandlepinQuery;
 import org.candlepin.model.Cdn;
 import org.candlepin.model.CdnCurator;
-import org.candlepin.model.ConsumerTypeCurator;
-import org.candlepin.model.EnvironmentCurator;
-import org.candlepin.model.OwnerCurator;
 import org.candlepin.test.MockResultIterator;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -58,7 +52,7 @@ class CdnExporterTest {
     }
 
     @Test
-    public void testMetaExporter() throws IOException {
+    public void testCdnExporter() throws IOException {
         SpyingExporter fileExporter = new SpyingExporter();
         NoAuthPrincipal principal = new NoAuthPrincipal();
         PrincipalProvider principalProvider = mock(PrincipalProvider.class);
@@ -68,12 +62,12 @@ class CdnExporterTest {
         when(cdnCurator.listAll()).thenReturn(q);
 
         CdnExporter exporter = new CdnExporter(cdnCurator, fileExporter, translator);
-        Path path = Paths.get("/meta.json");
+        Path path = Paths.get("/cdn.json");
 
         exporter.exportTo(path);
 
         assertEquals(3, fileExporter.calledTimes);
-        CdnDTO result = (CdnDTO) fileExporter.lastExports.get(0);
+        CdnDTO result = (CdnDTO) fileExporter.lastExports[0];
         assertEquals(result.getLabel(), "cdn_label_3");
         assertEquals(result.getName(), "cdn_name_3");
         assertEquals(result.getUrl(), "cdn_url_3");

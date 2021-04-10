@@ -14,26 +14,21 @@
  */
 package org.candlepin.sync;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.inject.Inject;
 import org.candlepin.dto.ModelTranslator;
 import org.candlepin.dto.manifest.v1.CdnDTO;
 import org.candlepin.model.Cdn;
 import org.candlepin.model.CdnCurator;
 import org.candlepin.model.ResultIterator;
+
+import com.google.inject.Inject;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.Writer;
 import java.nio.file.Path;
 import java.util.Arrays;
 
-/**
- * CdnExporter
- */
 public class CdnExporter {
 
     private static final Logger log = LoggerFactory.getLogger(CdnExporter.class);
@@ -50,19 +45,13 @@ public class CdnExporter {
     }
 
     public void exportTo(Path exportDir) throws IOException {
-
         try (ResultIterator<Cdn> iterator = this.cdnCurator.listAll().iterate()) {
-            if (iterator.hasNext()) {
-//                File cdnDir = new File(baseDir.getCanonicalPath(), "content_delivery_network");
-//                cdnDir.mkdir();
+            while (iterator.hasNext()) {
+                Cdn cdn = iterator.next();
+                log.debug("Exporting CDN: {}", cdn.getName());
 
-                while (iterator.hasNext()) {
-                    Cdn cdn = iterator.next();
-                    log.debug("Exporting CDN: {}", cdn.getName());
-
-                    Path file = exportDir.resolve(cdn.getLabel() + ".json");
-                    this.fileExporter.export(file, Arrays.asList(this.translator.translate(cdn, CdnDTO.class)));
-                }
+                Path file = exportDir.resolve(cdn.getLabel() + ".json");
+                this.fileExporter.exportTo(file, this.translator.translate(cdn, CdnDTO.class));
             }
         }
     }

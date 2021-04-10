@@ -21,10 +21,10 @@ import java.util.List;
 
 public class SpyingExporter implements FileExporter {
     int calledTimes = 0;
-    List<Object> lastExports;
+    Object[] lastExports;
 
     @Override
-    public void export(Path file, List<Object> exports) throws IOException {
+    public void exportTo(Path path, Object... exports) throws IOException {
         this.lastExports = exports;
         this.calledTimes++;
     }

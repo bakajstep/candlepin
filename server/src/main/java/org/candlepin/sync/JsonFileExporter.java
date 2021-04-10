@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 
 public class JsonFileExporter implements FileExporter {
 
@@ -32,10 +31,10 @@ public class JsonFileExporter implements FileExporter {
     }
 
     @Override
-    public void export(Path file, List<Object> exports) throws IOException {
-        try (OutputStream outputStream = Files.newOutputStream(file)) {
+    public void exportTo(Path path, Object... exports) throws IOException {
+        try (OutputStream outputStream = Files.newOutputStream(path)) {
             for (Object export : exports) {
-                mapper.writeValue(outputStream, export);
+                this.mapper.writeValue(outputStream, export);
             }
         }
     }

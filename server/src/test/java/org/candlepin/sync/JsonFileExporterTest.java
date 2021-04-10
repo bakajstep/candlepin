@@ -29,11 +29,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.io.StringWriter;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -57,7 +55,7 @@ class JsonFileExporterTest {
         String nowString = mapper.convertValue(now, String.class);
         Meta meta = createMeta(now);
 
-        exporter.export(exportPath, Arrays.asList(meta));
+        exporter.exportTo(exportPath, meta);
 
         StringBuffer json = expectedJson(nowString);
         assertTrue(TestUtil.isJsonEqual(json.toString(), Files.readString(exportPath)));

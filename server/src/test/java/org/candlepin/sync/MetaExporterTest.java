@@ -43,7 +43,7 @@ public class MetaExporterTest {
 
         metaEx.exportTo(path, cdnKey);
 
-        Meta result = (Meta) exporter.lastExports.get(0);
+        Meta result = (Meta) exporter.lastExports[0];
         assertEquals(result.getCdnLabel(), cdnKey);
         assertEquals(result.getPrincipalName(), "Anonymous");
         assertNotNull(result.getVersion());

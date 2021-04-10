@@ -14,19 +14,13 @@
  */
 package org.candlepin.sync;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.inject.Inject;
 import org.candlepin.common.util.VersionUtil;
 import org.candlepin.guice.PrincipalProvider;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
+import com.google.inject.Inject;
+
 import java.io.IOException;
-import java.io.Writer;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.Map;
 
@@ -46,10 +40,10 @@ public class MetaExporter {
     }
 
     // TODO Wrap IOException
-    public void exportTo(Path file, String cdnKey) throws IOException {
-        Meta m = new Meta(getVersion(), new Date(),
+    public void exportTo(Path path, String cdnKey) throws IOException {
+        Meta meta = new Meta(getVersion(), new Date(),
             this.principalProvider.get().getName(), null, cdnKey);
-        this.exporter.export(file, Arrays.asList(m));
+        this.exporter.exportTo(path, meta);
     }
 
     private String getVersion() {

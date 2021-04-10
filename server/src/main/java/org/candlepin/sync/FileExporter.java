@@ -17,10 +17,9 @@ package org.candlepin.sync;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.List;
 
 public interface FileExporter {
 
-    void export(Path file, List<Object> exports) throws IOException;
+    void exportTo(Path path, Object... exports) throws IOException;
 
 }

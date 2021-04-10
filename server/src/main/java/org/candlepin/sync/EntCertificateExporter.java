@@ -22,7 +22,6 @@ import org.candlepin.service.EntitlementCertServiceAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -74,10 +73,10 @@ public class EntCertificateExporter {
     }
 
     void exportCertificate(Certificate<?> cert, Path file) throws IOException {
-        this.exporter.export(file, Arrays.asList(
+        this.exporter.exportTo(file,
             cert.getCert(),
             cert.getKey()
-        ));
+        );
 //        try (FileWriter writer = new FileWriter(file)) {
 //            writer.write(cert.getCert());
 //            writer.write(cert.getKey());
