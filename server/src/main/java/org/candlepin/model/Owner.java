@@ -15,6 +15,7 @@
 package org.candlepin.model;
 
 import org.candlepin.common.jackson.HateoasInclude;
+import org.candlepin.controller.ContentAccessManager;
 import org.candlepin.controller.ContentAccessManager.ContentAccessMode;
 import org.candlepin.model.activationkeys.ActivationKey;
 import org.candlepin.resteasy.InfoProperty;
@@ -23,8 +24,6 @@ import org.candlepin.util.Util;
 
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
-import io.swagger.annotations.ApiModelProperty;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.builder.EqualsBuilder;
@@ -82,7 +81,6 @@ public class Owner extends AbstractHibernateObject<Owner>
     @GenericGenerator(name = "system-uuid", strategy = "uuid")
     @Column(length = 32)
     @NotNull
-    @ApiModelProperty(readOnly = true)
     private String id;
 
     @Column(name = "account", nullable = false, unique = true)
@@ -100,7 +98,6 @@ public class Owner extends AbstractHibernateObject<Owner>
     @Size(max = 255)
     private String contentPrefix;
 
-    @ApiModelProperty(readOnly = true)
     @Column(name = "last_refreshed")
     private Date lastRefreshed;
 
@@ -154,7 +151,7 @@ public class Owner extends AbstractHibernateObject<Owner>
      * Determines the allowable modes of the content access.
      */
     @Column(name = "content_access_mode_list", nullable = false)
-    private String contentAccessModeList = ContentAccessMode.getDefault().toDatabaseValue();
+    private String contentAccessModeList;
 
     /** Denotes the last time this org's content view has been changed. */
     @Column(name = "last_content_update", nullable = true)
@@ -170,6 +167,7 @@ public class Owner extends AbstractHibernateObject<Owner>
         this.autobindDisabled = false;
         this.autobindHypervisorDisabled = false;
         this.lastContentUpdate = new Date();
+        this.contentAccessModeList = ContentAccessManager.getListDefaultDatabaseValue();
     }
 
     /**
