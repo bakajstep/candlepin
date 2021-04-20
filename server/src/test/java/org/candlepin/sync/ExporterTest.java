@@ -152,7 +152,7 @@ public class ExporterTest {
         psa = mock(ProductServiceAdapter.class);
         pce = new ProductCertExporter();
         ec = mock(EntitlementCurator.class);
-        ee = new EntitlementExporter(translator);
+        ee = new EntitlementExporter(mock(EntitlementCurator.class), exportRules, mock(FileExporter.class), translator);
         pki = mock(PKIUtility.class);
         config = new CandlepinCommonTestConfig();
         exportRules = mock(ExportRules.class);

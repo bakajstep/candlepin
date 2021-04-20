@@ -27,6 +27,7 @@ import org.candlepin.dto.StandardTranslator;
 import org.candlepin.dto.manifest.v1.CdnDTO;
 import org.candlepin.dto.manifest.v1.CdnTranslator;
 import org.candlepin.dto.manifest.v1.ConsumerDTO;
+import org.candlepin.dto.manifest.v1.ConsumerTranslator;
 import org.candlepin.dto.manifest.v1.ConsumerTypeDTO;
 import org.candlepin.model.Cdn;
 import org.candlepin.model.Consumer;
@@ -65,11 +66,11 @@ public class ConsumerExporterTest {
     @BeforeEach
     void setUp() {
         translator = new SimpleModelTranslator();
-        translator.registerTranslator(new CdnTranslator(), Cdn.class, CdnDTO.class);
+        translator.registerTranslator(new ConsumerTranslator(mock(ConsumerTypeCurator.class), mock(OwnerCurator.class)), Consumer.class, ConsumerDTO.class);
     }
 
     @Test
-    public void testConsumerExport() throws IOException {
+    public void exportWithOverrides() throws IOException {
         SpyingExporter fileExporter = new SpyingExporter();
         ConsumerExporter exporter = new ConsumerExporter(
             mock(Configuration.class),
@@ -93,6 +94,11 @@ public class ConsumerExporterTest {
         assertThat(exportedCType.getId()).isEqualTo(ctype.getId());
         assertThat(exportedCType.getLabel()).isEqualTo(ctype.getLabel());
         assertThat(exportedCType.isManifest()).isEqualTo(ctype.isManifest());
+    }
+
+    @Test
+    public void exportWithoutOverrides() throws IOException {
+        fail();
     }
 
     private Consumer createConsumer(ConsumerType ctype) {

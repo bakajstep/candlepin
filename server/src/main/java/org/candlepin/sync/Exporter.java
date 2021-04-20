@@ -464,7 +464,7 @@ public class Exporter {
 
             File file = new File(entCertDir.getCanonicalPath(), ent.getId() + ".json");
             try (FileWriter writer = new FileWriter(file)) {
-                entExporter.export(mapper, writer, ent);
+                entExporter.exportTo(null, null);
             }
         }
     }
