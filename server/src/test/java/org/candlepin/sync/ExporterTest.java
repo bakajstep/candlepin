@@ -25,6 +25,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import org.candlepin.auth.Principal;
+import org.candlepin.common.config.Configuration;
 import org.candlepin.common.config.MapConfiguration;
 import org.candlepin.common.util.VersionUtil;
 import org.candlepin.config.CandlepinCommonTestConfig;
@@ -138,7 +139,11 @@ public class ExporterTest {
         oc = mock(OwnerCurator.class);
         me = new MetaExporter(mock(PrincipalProvider.class), mock(FileExporter.class));
         translator = new StandardTranslator(ctc, mockEnvironmentCurator, oc);
-        ce = new ConsumerExporter(translator);
+        ce = new ConsumerExporter(
+            mock(Configuration.class),
+            mock(FileExporter.class),
+            translator
+        );
         cte = new ConsumerTypeExporter(translator);
         rc = mock(RulesCurator.class);
         re = new RulesExporter(rc);

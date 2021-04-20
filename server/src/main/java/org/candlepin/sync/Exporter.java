@@ -365,7 +365,7 @@ public class Exporter {
 
         File file = new File(baseDir.getCanonicalPath(), "consumer.json");
         try (FileWriter writer = new FileWriter(file)) {
-            this.consumerExporter.export(mapper, writer, consumer,
+            this.consumerExporter.exportTo(null, consumer,
                 getPrefixWebUrl(webAppPrefix), getPrefixApiUrl(apiUrl));
         }
     }

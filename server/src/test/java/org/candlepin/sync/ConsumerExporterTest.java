@@ -14,13 +14,21 @@
  */
 package org.candlepin.sync;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import org.candlepin.common.config.Configuration;
 import org.candlepin.common.config.MapConfiguration;
 import org.candlepin.config.ConfigProperties;
 import org.candlepin.dto.ModelTranslator;
+import org.candlepin.dto.SimpleModelTranslator;
 import org.candlepin.dto.StandardTranslator;
+import org.candlepin.dto.manifest.v1.CdnDTO;
+import org.candlepin.dto.manifest.v1.CdnTranslator;
+import org.candlepin.dto.manifest.v1.ConsumerDTO;
+import org.candlepin.dto.manifest.v1.ConsumerTypeDTO;
+import org.candlepin.model.Cdn;
 import org.candlepin.model.Consumer;
 import org.candlepin.model.ConsumerType;
 import org.candlepin.model.ConsumerTypeCurator;
@@ -30,6 +38,8 @@ import org.candlepin.test.TestUtil;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -37,6 +47,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
 import java.io.StringWriter;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -48,61 +60,53 @@ import java.util.Map;
 @ExtendWith(MockitoExtension.class)
 public class ConsumerExporterTest {
 
-    @Mock private ConsumerTypeCurator mockConsumerTypeCurator;
-    @Mock private EnvironmentCurator mockEnvironmentCurator;
-    @Mock private OwnerCurator ownerCurator;
     private ModelTranslator translator;
+
+    @BeforeEach
+    void setUp() {
+        translator = new SimpleModelTranslator();
+        translator.registerTranslator(new CdnTranslator(), Cdn.class, CdnDTO.class);
+    }
 
     @Test
     public void testConsumerExport() throws IOException {
-        Map<String, String> configProps = new HashMap<>();
-        configProps.put(ConfigProperties.FAIL_ON_UNKNOWN_IMPORT_PROPERTIES, "false");
+        SpyingExporter fileExporter = new SpyingExporter();
+        ConsumerExporter exporter = new ConsumerExporter(
+            mock(Configuration.class),
+            fileExporter,
+            translator
+        );
+        ConsumerType ctype = createCType();
+        Consumer consumer = createConsumer(ctype);
 
-        ObjectMapper mapper = new SyncUtils(new MapConfiguration(configProps)).getObjectMapper();
+        Path exportDir = Paths.get("");
+        exporter.exportTo(exportDir, consumer, "/subscriptions", "/candlepin");
 
-        translator = new StandardTranslator(mockConsumerTypeCurator, mockEnvironmentCurator, ownerCurator);
-        ConsumerExporter exporter = new ConsumerExporter(translator);
-        ConsumerType ctype = new ConsumerType("candlepin");
-        ctype.setId("8888");
-        ctype.setManifest(true);
+        assertThat(fileExporter.calledTimes).isEqualTo(1);
+        Object lastExport = fileExporter.lastExports[0];
+        assertThat(lastExport).isInstanceOf(Consumer.class);
+        ConsumerDTO exportedConsumer = (ConsumerDTO) lastExport;
 
-        StringWriter writer = new StringWriter();
+        assertThat(exportedConsumer.getUuid()).isEqualTo(consumer.getUuid());
+        assertThat(exportedConsumer.getName()).isEqualTo(consumer.getName());
+        ConsumerTypeDTO exportedCType = exportedConsumer.getType();
+        assertThat(exportedCType.getId()).isEqualTo(ctype.getId());
+        assertThat(exportedCType.getLabel()).isEqualTo(ctype.getLabel());
+        assertThat(exportedCType.isManifest()).isEqualTo(ctype.isManifest());
+    }
 
+    private Consumer createConsumer(ConsumerType ctype) {
         Consumer consumer = new Consumer().setUuid("test-uuid");
         consumer.setName("testy consumer");
         consumer.setType(ctype);
         consumer.setContentAccessMode("access_mode");
+        return consumer;
+    }
 
-        when(mockConsumerTypeCurator.getConsumerType(eq(consumer))).thenReturn(ctype);
-
-        exporter.export(mapper, writer, consumer, "/subscriptions", "/candlepin");
-
-        StringBuffer json = new StringBuffer();
-        json.append("{\"uuid\":\"").append(consumer.getUuid()).append("\",");
-        json.append("\"name\":\"").append(consumer.getName()).append("\",");
-        json.append("\"type\":");
-        json.append("{\"id\":\"").append(ctype.getId()).append("\",");
-        json.append("\"label\":\"").append(ctype.getLabel()).append("\",");
-        json.append("\"manifest\":").append(ctype.isManifest()).append("},");
-        json.append("\"owner\":null,");
-        json.append("\"urlWeb\":\"/subscriptions\",");
-        json.append("\"urlApi\":\"/candlepin\",");
-        json.append("\"contentAccessMode\":\"access_mode\"}");
-        assertTrue(TestUtil.isJsonEqual(json.toString(), writer.toString()),
-            json.toString() + "\n" + writer.toString());
-
-        // change sibling order to ensure that isJsonEqual can reconcile
-        json = new StringBuffer();
-        json.append("{\"uuid\":\"").append(consumer.getUuid()).append("\",");
-        json.append("\"type\":");
-        json.append("{\"id\":\"").append(ctype.getId()).append("\",");
-        json.append("\"label\":\"").append(ctype.getLabel()).append("\",");
-        json.append("\"manifest\":").append(ctype.isManifest()).append("},");
-        json.append("\"owner\":null,");
-        json.append("\"name\":\"").append(consumer.getName()).append("\",");
-        json.append("\"urlApi\":\"/candlepin\",");
-        json.append("\"urlWeb\":\"/subscriptions\",");
-        json.append("\"contentAccessMode\":\"access_mode\"}");
-        assertTrue(TestUtil.isJsonEqual(json.toString(), writer.toString()));
+    private ConsumerType createCType() {
+        ConsumerType ctype = new ConsumerType("candlepin");
+        ctype.setId("8888");
+        ctype.setManifest(true);
+        return ctype;
     }
 }

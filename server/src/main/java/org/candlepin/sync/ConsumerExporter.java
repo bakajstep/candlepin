@@ -14,34 +14,69 @@
  */
 package org.candlepin.sync;
 
+import org.candlepin.common.config.Configuration;
+import org.candlepin.config.ConfigProperties;
 import org.candlepin.dto.ModelTranslator;
 import org.candlepin.dto.manifest.v1.ConsumerDTO;
 import org.candlepin.model.Consumer;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
 
+import org.apache.commons.lang.StringUtils;
+
 import java.io.IOException;
-import java.io.Writer;
+import java.nio.file.Path;
 
 /**
  * Consumer - maps to the consumer.json file
  */
 public class ConsumerExporter {
 
-    private ModelTranslator translator;
+    private final Configuration config;
+    private final FileExporter fileExporter;
+    private final ModelTranslator translator;
 
     @Inject
-    ConsumerExporter(ModelTranslator translator) {
+    public ConsumerExporter(Configuration config, FileExporter fileExporter, ModelTranslator translator) {
+        this.config = config;
+        this.fileExporter = fileExporter;
         this.translator = translator;
     }
 
-    void export(ObjectMapper mapper, Writer writer, Consumer consumer,
-        String weburl, String apiurl) throws IOException {
-        ConsumerDTO consumerDTO = this.translator.translate(consumer, ConsumerDTO.class);
+    public void exportTo(Path exportDir, Consumer consumer, String webAppPrefix, String apiUrl)
+        throws IOException {
 
-        consumerDTO.setUrlApi(apiurl);
-        consumerDTO.setUrlWeb(weburl);
-        mapper.writeValue(writer, consumerDTO);
+        Path export = exportDir.resolve("consumer.json");
+        ConsumerDTO consumerDTO = createDto(consumer, webAppPrefix, apiUrl);
+        this.fileExporter.exportTo(export, consumerDTO);
     }
+
+    private ConsumerDTO createDto(Consumer consumer, String webAppPrefix, String apiUrl) {
+        ConsumerDTO consumerDTO = this.translator.translate(consumer, ConsumerDTO.class);
+        consumerDTO.setUrlApi(getPrefixApiUrl(apiUrl));
+        consumerDTO.setUrlWeb(getPrefixWebUrl(webAppPrefix));
+        return consumerDTO;
+    }
+
+    private String getPrefixWebUrl(String override) {
+        return getWithOverride(override, ConfigProperties.PREFIX_WEBURL);
+    }
+
+    private String getPrefixApiUrl(String override) {
+        return getWithOverride(override, ConfigProperties.PREFIX_APIURL);
+    }
+
+    private String getWithOverride(String override, String key) {
+        String prefixApiUrl = config.getString(key);
+        if (!StringUtils.isBlank(override)) {
+            return override;
+        }
+
+        if (StringUtils.isBlank(prefixApiUrl)) {
+            return null;
+        }
+
+        return prefixApiUrl;
+    }
+
 }
