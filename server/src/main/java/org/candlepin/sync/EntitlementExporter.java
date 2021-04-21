@@ -53,7 +53,7 @@ public class EntitlementExporter {
     public void exportTo(Path exportDir, Consumer consumer)
         throws IOException, ExportCreationException {
         Path entCertDir = exportDir.resolve("entitlements");
-        Files.createDirectory(entCertDir);
+//        Files.createDirectory(entCertDir);
 
         for (Entitlement ent : entitlementCurator.listByConsumer(consumer)) {
             if (ent.isDirty()) {

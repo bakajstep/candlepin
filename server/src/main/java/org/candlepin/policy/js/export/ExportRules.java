@@ -21,18 +21,16 @@ import org.candlepin.model.Pool;
 
 import com.google.inject.Inject;
 
+import java.util.Objects;
 
 
-/**
- *
- */
 public class ExportRules {
 
-    private ConsumerTypeCurator consumerTypeCurator;
+    private final ConsumerTypeCurator consumerTypeCurator;
 
     @Inject
     public ExportRules(ConsumerTypeCurator consumerTypeCurator) {
-        this.consumerTypeCurator = consumerTypeCurator;
+        this.consumerTypeCurator = Objects.requireNonNull(consumerTypeCurator);
     }
 
     public boolean canExport(Entitlement entitlement) {
