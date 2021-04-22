@@ -15,16 +15,18 @@
 
 package org.candlepin.sync;
 
-import java.io.IOException;
 import java.nio.file.Path;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 public class SpyingExporter implements FileExporter {
     int calledTimes = 0;
     Object[] lastExports;
+    Map<Path, Object[]> exports = new HashMap<>();
 
     @Override
-    public void exportTo(Path path, Object... exports) throws IOException {
+    public void exportTo(Path path, Object... exports) {
+        this.exports.put(path, exports);
         this.lastExports = exports;
         this.calledTimes++;
     }

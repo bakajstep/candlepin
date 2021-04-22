@@ -46,127 +46,108 @@ import java.util.List;
 
 class EntitlementExporterTest {
 
-    public static final Path EXPORT_DIR = Paths.get("entitlements");
+    public static final Path EXPORT_DIR = Paths.get("export");
+    public static final Path EXPECTED_PATH_1 = Paths.get("export/entitlements/ent_1.json");
+    public static final Path EXPECTED_PATH_2 = Paths.get("export/entitlements/ent_2.json");
 
     private EntitlementCurator entitlementCurator;
-    private ModelTranslator translator;
     private ExportRules exportRules;
+    private SpyingExporter fileExporter;
+    private EntitlementExporter exporter;
 
     @BeforeEach
     void setUp() {
-        exportRules = mock(ExportRules.class);
-        entitlementCurator = mock(EntitlementCurator.class);
-        translator = new SimpleModelTranslator();
+        this.exportRules = mock(ExportRules.class);
+        this.entitlementCurator = mock(EntitlementCurator.class);
+        this.fileExporter = new SpyingExporter();
+        ModelTranslator translator = new SimpleModelTranslator();
         translator.registerTranslator(new EntitlementTranslator(), Entitlement.class, EntitlementDTO.class);
         translator.registerTranslator(new PoolTranslator(), Pool.class, PoolDTO.class);
+        this.exporter = new EntitlementExporter(
+            entitlementCurator,
+            exportRules,
+            fileExporter,
+            translator
+        );
     }
 
     @Test
     public void shouldExport() throws ExportCreationException, IOException {
         when(exportRules.canExport(any(Entitlement.class))).thenReturn(true);
-        Consumer consumer = mock(Consumer.class);
-        ConsumerType ctype = new ConsumerType(ConsumerType.ConsumerTypeEnum.CANDLEPIN);
-        ctype.setId("test-ctype");
-        when(consumer.getUuid()).thenReturn("consumer");
-        when(consumer.getName()).thenReturn("consumer_name");
-        when(consumer.getTypeId()).thenReturn(ctype.getId());
-//        when(ctc.getConsumerType(eq(consumer))).thenReturn(ctype);
-//        when(ctc.get(eq(ctype.getId()))).thenReturn(ctype);
-
-//        when(ecsa.listForConsumer(consumer)).thenReturn(Arrays.asList(entCert));
-//        when(contentAccessManager.getCertificate(consumer)).thenReturn(cac);
-
+        Consumer consumer = getConsumer();
         List<Entitlement> entitlements = Arrays.asList(
-            createEntitlement(),
-            createEntitlement()
+            createEntitlement("ent_1"),
+            createEntitlement("ent_2")
         );
-
-        SpyingExporter fileExporter = new SpyingExporter();
         when(entitlementCurator.listByConsumer(eq(consumer))).thenReturn(entitlements);
-        EntitlementExporter exporter = new EntitlementExporter(
-            entitlementCurator,
-            exportRules,
-            fileExporter,
-            translator
-        );
 
         exporter.exportTo(EXPORT_DIR, consumer);
 
         assertThat(fileExporter.calledTimes).isEqualTo(2);
+        assertThat(fileExporter.exports).hasSize(2);
+        assertThat(fileExporter.exports.get(EXPECTED_PATH_1)).hasSize(1);
+        assertThat(fileExporter.exports.get(EXPECTED_PATH_2)).hasSize(1);
     }
 
     @Test
     public void shouldNotExportDirtyEntitlements() {
-        Consumer consumer = mock(Consumer.class);
-        List<Entitlement> entitlements = Arrays.asList(
-            createDirtyEntitlement(),
-            createDirtyEntitlement(),
-            createDirtyEntitlement()
-        );
+        Consumer consumer = getConsumer();
+        List<Entitlement> entitlements = createDirtyEntitlements();
         when(entitlementCurator.listByConsumer(consumer)).thenReturn(entitlements);
-        SpyingExporter fileExporter = new SpyingExporter();
-        EntitlementExporter exporter = new EntitlementExporter(
-            entitlementCurator,
-            exportRules,
-            fileExporter,
-            translator
-        );
 
         assertThatThrownBy(() -> exporter.exportTo(EXPORT_DIR, consumer))
             .isInstanceOf(ExportCreationException.class);
         assertThat(fileExporter.calledTimes).isEqualTo(0);
     }
 
+    private List<Entitlement> createDirtyEntitlements() {
+        return Arrays.asList(
+            createDirtyEntitlement(),
+            createDirtyEntitlement(),
+            createDirtyEntitlement()
+        );
+    }
+
     @Test
     public void shouldFilterExportedEntitlementsByRules() throws Exception {
         when(exportRules.canExport(any(Entitlement.class))).thenReturn(false);
-        Consumer consumer = mock(Consumer.class);
+        Consumer consumer = getConsumer();
         List<Entitlement> entitlements = Arrays.asList(
-            createEntitlement(),
-            createEntitlement(),
-            createEntitlement()
+            createEntitlement("ent_1"),
+            createEntitlement("ent_2"),
+            createEntitlement("ent_3")
         );
         when(entitlementCurator.listByConsumer(eq(consumer))).thenReturn(entitlements);
-        SpyingExporter fileExporter = new SpyingExporter();
-        EntitlementExporter exporter = new EntitlementExporter(
-            entitlementCurator,
-            mock(ExportRules.class),
-            fileExporter,
-            translator
-        );
 
         exporter.exportTo(EXPORT_DIR, consumer);
 
         assertThat(fileExporter.calledTimes).isEqualTo(0);
     }
 
+    private Consumer getConsumer() {
+        Consumer consumer = mock(Consumer.class);
+        ConsumerType ctype = new ConsumerType(ConsumerType.ConsumerTypeEnum.CANDLEPIN);
+        ctype.setId("test-ctype");
+        when(consumer.getUuid()).thenReturn("consumer");
+        when(consumer.getName()).thenReturn("consumer_name");
+        when(consumer.getTypeId()).thenReturn(ctype.getId());
+        return consumer;
+    }
+
     private Entitlement createDirtyEntitlement() {
-        return createEntitlement(true);
+        return createEntitlement(true, "ent");
     }
 
-    private Entitlement createEntitlement() {
-        return createEntitlement(false);
+    private Entitlement createEntitlement(String id) {
+        return createEntitlement(false, id);
     }
 
-    private Entitlement createEntitlement(boolean dirty) {
+    private Entitlement createEntitlement(boolean dirty, String id) {
         Entitlement entitlement = new Entitlement();
+        entitlement.setId(id);
         entitlement.setPool(new Pool());
         entitlement.setDirty(dirty);
         return entitlement;
     }
 
-    private Consumer createConsumer(ConsumerType ctype) {
-        Consumer consumer = new Consumer().setUuid("test-uuid");
-        consumer.setName("testy consumer");
-        consumer.setType(ctype);
-        consumer.setContentAccessMode("access_mode");
-        return consumer;
-    }
-
-    private ConsumerType createCType() {
-        ConsumerType ctype = new ConsumerType("candlepin");
-        ctype.setId("8888");
-        ctype.setManifest(true);
-        return ctype;
-    }
 }
