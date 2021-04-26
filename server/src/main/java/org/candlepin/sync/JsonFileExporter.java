@@ -15,13 +15,16 @@
 
 package org.candlepin.sync;
 
+import com.fasterxml.jackson.core.util.MinimalPrettyPrinter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+// TODO split
 public class JsonFileExporter implements FileExporter {
 
     private final ObjectMapper mapper;
@@ -31,11 +34,28 @@ public class JsonFileExporter implements FileExporter {
     }
 
     @Override
-    public void exportTo(Path path, Object... exports) throws IOException {
-        try (OutputStream outputStream = Files.newOutputStream(path)) {
+    public void exportTo(Path path, Object... exports) throws ExportCreationException {
+        createExportDirectories(path);
+        writeExport(path, exports);
+    }
+
+    private void createExportDirectories(Path path) throws ExportCreationException {
+        Path exportDir = path.getParent();
+        try {
+            Files.createDirectories(exportDir);
+        }
+        catch (IOException e) {
+            throw new ExportCreationException("Could not create the export directory: " + exportDir, e);
+        }
+    }
+
+    private void writeExport(Path path, Object[] exports) throws ExportCreationException {
+        try (BufferedWriter writer = Files.newBufferedWriter(path)) {
             for (Object export : exports) {
-                this.mapper.writeValue(outputStream, export);
+                writer.write(this.mapper.writeValueAsString(export));
             }
+        } catch (IOException e) {
+            throw new ExportCreationException("Could not write to the export file: " + path, e);
         }
     }
 

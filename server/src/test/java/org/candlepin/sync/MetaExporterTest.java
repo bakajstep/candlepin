@@ -31,7 +31,7 @@ import java.nio.file.Paths;
 public class MetaExporterTest {
 
     @Test
-    public void testMetaExporter() throws IOException {
+    public void testMetaExporter() throws ExportCreationException {
         SpyingExporter exporter = new SpyingExporter();
         NoAuthPrincipal principal = new NoAuthPrincipal();
         PrincipalProvider principalProvider = mock(PrincipalProvider.class);

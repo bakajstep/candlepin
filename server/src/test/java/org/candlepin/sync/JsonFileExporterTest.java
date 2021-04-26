@@ -15,6 +15,7 @@
 
 package org.candlepin.sync;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.candlepin.common.config.MapConfiguration;
@@ -38,6 +39,8 @@ import java.util.Map;
 
 class JsonFileExporterTest {
 
+    public static final String VERSION_1 = "0.1.0";
+    public static final String VERSION_2 = "0.2.0";
     private FileSystem fileSystem;
     private ObjectMapper mapper;
 
@@ -48,22 +51,47 @@ class JsonFileExporterTest {
     }
 
     @Test
-    public void testMetaExporter() throws IOException {
+    public void canExportFile() throws IOException, ExportCreationException {
         FileExporter exporter = new JsonFileExporter(mapper);
-        Path exportPath = this.fileSystem.getPath("/export");
+        Path exportPath = this.fileSystem.getPath("/export.json");
         Date now = new Date();
         String nowString = mapper.convertValue(now, String.class);
-        Meta meta = createMeta(now);
+        Meta meta = createMeta("0.1.0", now);
 
         exporter.exportTo(exportPath, meta);
 
-        StringBuffer json = expectedJson(nowString);
-        assertTrue(TestUtil.isJsonEqual(json.toString(), Files.readString(exportPath)));
+        String expectedJson = expectedJson(VERSION_1, nowString);
+        assertTrue(TestUtil.isJsonEqual(expectedJson, Files.readString(exportPath)));
     }
 
-    private Meta createMeta(Date now) {
+    @Test
+    public void canExportMultipleObjects() throws IOException, ExportCreationException {
+        FileExporter exporter = new JsonFileExporter(mapper);
+        Path exportPath = this.fileSystem.getPath("/export.json");
+
+        exporter.exportTo(exportPath, VERSION_1, VERSION_2);
+
+        String expectedJson = "\"" + VERSION_1 + "\"\n\"" + VERSION_2 + "\"";
+        assertEquals(expectedJson, Files.readString(exportPath));
+    }
+
+    @Test
+    public void canExportToDirectory() throws IOException, ExportCreationException {
+        FileExporter exporter = new JsonFileExporter(mapper);
+        Path exportPath = this.fileSystem.getPath("/a/b/export.json");
+        Date now = new Date();
+        String nowString = mapper.convertValue(now, String.class);
+        Meta meta = createMeta("0.1.0", now);
+
+        exporter.exportTo(exportPath, meta);
+
+        String expectedJson = expectedJson(VERSION_1, nowString);
+        assertTrue(TestUtil.isJsonEqual(expectedJson, Files.readString(exportPath)));
+    }
+
+    private Meta createMeta(String version, Date now) {
         Meta meta = new Meta();
-        meta.setVersion("0.1.0");
+        meta.setVersion(version);
         meta.setCreated(now);
         meta.setPrincipalName("myUsername");
         meta.setWebAppPrefix("webapp_prefix");
@@ -75,17 +103,18 @@ class JsonFileExporterTest {
         Map<String, String> configProps = new HashMap<>();
         configProps.put(ConfigProperties.FAIL_ON_UNKNOWN_IMPORT_PROPERTIES, "false");
 
-        ObjectMapper mapper = new SyncUtils(new MapConfiguration(configProps)).getObjectMapper();
-        return mapper;
+        return new SyncUtils(new MapConfiguration(configProps)).getObjectMapper();
     }
 
-    private StringBuffer expectedJson(String nowString) {
-        StringBuffer json = new StringBuffer();
-        json.append("{\"version\":\"0.1.0\",\"created\":\"").append(nowString);
-        json.append("\",\"principalName\":\"myUsername\",");
-        json.append("\"webAppPrefix\":\"webapp_prefix\",");
-        json.append("\"cdnLabel\":\"test-cdn\"}");
-        return json;
+    private String expectedMultiJson(String nowString) {
+        return expectedJson(VERSION_1, nowString) + "\n" + expectedJson(VERSION_2, nowString);
+    }
+
+    private String expectedJson(String version, String nowString) {
+        return "{\"version\":\"" + version + "\",\"created\":\"" + nowString +
+            "\",\"principalName\":\"myUsername\"," +
+            "\"webAppPrefix\":\"webapp_prefix\"," +
+            "\"cdnLabel\":\"test-cdn\"}";
     }
 
 }

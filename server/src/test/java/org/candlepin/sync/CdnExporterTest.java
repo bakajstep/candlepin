@@ -52,7 +52,7 @@ class CdnExporterTest {
     }
 
     @Test
-    public void testCdnExporter() throws IOException {
+    public void testCdnExporter() throws ExportCreationException {
         SpyingExporter fileExporter = new SpyingExporter();
         NoAuthPrincipal principal = new NoAuthPrincipal();
         PrincipalProvider principalProvider = mock(PrincipalProvider.class);

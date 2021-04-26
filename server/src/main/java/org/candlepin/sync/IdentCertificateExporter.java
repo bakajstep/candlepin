@@ -41,7 +41,7 @@ public class IdentCertificateExporter {
         this.translator = translator;
     }
 
-    public void exportTo(Path exportDir, Consumer consumer) throws IOException {
+    public void exportTo(Path exportDir, Consumer consumer) throws ExportCreationException {
 //        File idcertdir = new File(baseDir.getCanonicalPath(), "upstream_consumer");
 //        idcertdir.mkdir();
 

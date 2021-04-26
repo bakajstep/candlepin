@@ -39,8 +39,7 @@ public class MetaExporter {
         this.exporter = exporter;
     }
 
-    // TODO Wrap IOException
-    public void exportTo(Path path, String cdnKey) throws IOException {
+    public void exportTo(Path path, String cdnKey) throws ExportCreationException {
         Meta meta = new Meta(getVersion(), new Date(),
             this.principalProvider.get().getName(), null, cdnKey);
         this.exporter.exportTo(path, meta);

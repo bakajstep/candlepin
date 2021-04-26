@@ -70,7 +70,7 @@ public class ConsumerExporterTest {
     }
 
     @Test
-    public void exportWithOverrides() throws IOException {
+    public void exportWithOverrides() throws ExportCreationException {
         SpyingExporter fileExporter = new SpyingExporter();
         ConsumerExporter exporter = new ConsumerExporter(
             mock(Configuration.class),

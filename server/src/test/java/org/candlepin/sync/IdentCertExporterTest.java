@@ -56,7 +56,7 @@ class IdentCertExporterTest {
     }
 
     @Test
-    public void testExporter() throws IOException {
+    public void testExporter() throws ExportCreationException {
         SpyingExporter fileExporter = new SpyingExporter();
         IdentCertificateExporter exporter = new IdentCertificateExporter(fileExporter, translator);
         Consumer consumer = getConsumer();

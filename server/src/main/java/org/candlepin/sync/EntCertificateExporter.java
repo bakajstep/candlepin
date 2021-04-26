@@ -43,7 +43,7 @@ public class EntCertificateExporter {
     }
 
     public void exportTo(Path exportDir, Consumer consumer, Set<Long> serials, boolean manifest)
-        throws IOException {
+        throws ExportCreationException {
 
 //        File entCertDir = new File(baseDir.getCanonicalPath(), "entitlement_certificates");
 //        entCertDir.mkdir();
@@ -72,7 +72,7 @@ public class EntCertificateExporter {
         return (serials == null) || (serials.contains(cert.getSerial().getId()));
     }
 
-    void exportCertificate(Certificate<?> cert, Path file) throws IOException {
+    void exportCertificate(Certificate<?> cert, Path file) throws ExportCreationException {
         this.exporter.exportTo(file,
             cert.getCert(),
             cert.getKey()

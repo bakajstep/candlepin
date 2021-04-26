@@ -50,8 +50,7 @@ public class EntitlementExporter {
         this.translator = translator;
     }
 
-    public void exportTo(Path exportDir, Consumer consumer)
-        throws IOException, ExportCreationException {
+    public void exportTo(Path exportDir, Consumer consumer) throws ExportCreationException {
         Path entCertDir = exportDir.resolve("entitlements");
 //        Files.createDirectory(entCertDir);
 
@@ -73,7 +72,7 @@ public class EntitlementExporter {
         }
     }
 
-    private void export(Path path, Entitlement entitlement) throws IOException {
+    private void export(Path path, Entitlement entitlement) throws ExportCreationException {
         fileExporter.exportTo(path, this.translator.translate(entitlement, EntitlementDTO.class));
     }
 }

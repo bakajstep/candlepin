@@ -48,7 +48,7 @@ class DistributorVersionExporterTest {
     }
 
     @Test
-    public void testExporter() throws IOException {
+    public void testExporter() throws ExportCreationException {
         SpyingExporter fileExporter = new SpyingExporter();
         when(dvCurator.findAll()).thenReturn(createDVs());
 

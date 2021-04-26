@@ -44,7 +44,7 @@ public class CdnExporter {
         this.translator = translator;
     }
 
-    public void exportTo(Path exportDir) throws IOException {
+    public void exportTo(Path exportDir) throws ExportCreationException {
         try (ResultIterator<Cdn> iterator = this.cdnCurator.listAll().iterate()) {
             while (iterator.hasNext()) {
                 Cdn cdn = iterator.next();

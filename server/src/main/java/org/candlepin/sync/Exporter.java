@@ -324,7 +324,7 @@ public class Exporter {
         out.closeEntry();
     }
 
-    private void exportMeta(File baseDir, String cdnKey) throws IOException {
+    private void exportMeta(File baseDir, String cdnKey) throws IOException, ExportCreationException {
         Path exportFile = Paths.get(baseDir.getCanonicalPath(), "meta.json");
         meta.exportTo(exportFile, cdnKey);
     }
@@ -361,7 +361,7 @@ public class Exporter {
     }
 
     private void exportConsumer(File baseDir, Consumer consumer, String webAppPrefix, String apiUrl)
-        throws IOException {
+        throws IOException, ExportCreationException {
 
         File file = new File(baseDir.getCanonicalPath(), "consumer.json");
         try (FileWriter writer = new FileWriter(file)) {

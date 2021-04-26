@@ -44,7 +44,7 @@ public class ConsumerExporter {
     }
 
     public void exportTo(Path exportDir, Consumer consumer, String webAppPrefix, String apiUrl)
-        throws IOException {
+        throws ExportCreationException {
 
         Path export = exportDir.resolve("consumer.json");
         ConsumerDTO consumerDTO = createDto(consumer, webAppPrefix, apiUrl);

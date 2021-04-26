@@ -46,7 +46,7 @@ public class DistributorVersionExporter {
         this.translator = translator;
     }
 
-    public void exportTo(Path exportDir) throws IOException {
+    public void exportTo(Path exportDir) throws ExportCreationException {
         List<DistributorVersion> versions = distVerCurator.findAll();
         if (versions == null || versions.isEmpty()) {
             return;
