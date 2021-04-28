@@ -15,47 +15,48 @@
 
 package org.candlepin.sync;
 
-import com.fasterxml.jackson.core.util.MinimalPrettyPrinter;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
-// TODO split
-public class JsonFileExporter implements FileExporter {
+public class JsonFileExporter implements FileExporter<Object> {
 
     private final ObjectMapper mapper;
+    private final FileExporter<String> exporter;
 
-    public JsonFileExporter(final ObjectMapper mapper) {
+    public JsonFileExporter(ObjectMapper mapper, FileExporter<String> exporter) {
         this.mapper = mapper;
+        this.exporter = exporter;
     }
 
     @Override
     public void exportTo(Path path, Object... exports) throws ExportCreationException {
-        createExportDirectories(path);
-        writeExport(path, exports);
+        String[] strings = toJson(exports);
+        this.exporter.exportTo(path, strings);
     }
 
-    private void createExportDirectories(Path path) throws ExportCreationException {
-        Path exportDir = path.getParent();
+    private String[] toJson(Object[] exports) throws ExportCreationException {
+        String[] strings = new String[exports.length];
+        for (int i = 0; i < exports.length; i++) {
+            Object export = exports[i];
+            strings[i] = toJson(export);
+        }
+        return strings;
+    }
+
+    private String toJson(Object object) throws ExportCreationException {
         try {
-            Files.createDirectories(exportDir);
+            return this.mapper.writeValueAsString(object);
         }
-        catch (IOException e) {
-            throw new ExportCreationException("Could not create the export directory: " + exportDir, e);
-        }
-    }
-
-    private void writeExport(Path path, Object[] exports) throws ExportCreationException {
-        try (BufferedWriter writer = Files.newBufferedWriter(path)) {
-            for (Object export : exports) {
-                writer.write(this.mapper.writeValueAsString(export));
-            }
-        } catch (IOException e) {
-            throw new ExportCreationException("Could not write to the export file: " + path, e);
+        catch (JsonProcessingException e) {
+            throw new ExportCreationException("Could not write to the export file: ", e);
         }
     }
 

@@ -146,7 +146,7 @@ public class ExporterTest {
         );
         cte = new ConsumerTypeExporter(translator);
         rc = mock(RulesCurator.class);
-        re = new RulesExporter(rc);
+        re = new RulesExporter(null, rc);
         ecsa = mock(EntitlementCertServiceAdapter.class);
         pe = new ProductExporter(translator);
         psa = mock(ProductServiceAdapter.class);

@@ -555,7 +555,7 @@ public class Exporter {
         }
     }
 
-    private void exportRules(File baseDir) throws IOException {
+    private void exportRules(File baseDir) throws IOException, ExportCreationException {
         // Because old candlepin servers assume to import a file in rules dir, we had to
         // move to a new directory for versioned rules file:
         File newRulesDir = new File(baseDir.getCanonicalPath(), "rules2");
@@ -564,9 +564,11 @@ public class Exporter {
         FileWriter writer = null;
         try {
             writer = new FileWriter(newRulesFile);
-            rules.export(writer);
+            rules.export(Paths.get(""));
         }
-        finally {
+        catch (ExportCreationException e) {
+            throw e;
+        } finally {
             if (writer != null) {
                 writer.close();
             }

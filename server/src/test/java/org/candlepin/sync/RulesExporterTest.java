@@ -34,12 +34,12 @@ public class RulesExporterTest {
     private String FAKE_RULES = "//Version: 2.0\nHELLO WORLD";
 
     @Test
-    public void testMetaExporter() throws IOException {
+    public void testMetaExporter() throws ExportCreationException {
         RulesCurator rulesCurator = mock(RulesCurator.class);
         when(rulesCurator.getRules()).thenReturn(new Rules(FAKE_RULES));
-        RulesExporter exporter = new RulesExporter(rulesCurator);
+        RulesExporter exporter = new RulesExporter(null, rulesCurator);
         StringWriter writer = new StringWriter();
-        exporter.export(writer);
+        exporter.export(null);
         assertEquals(FAKE_RULES, writer.toString());
     }
 

@@ -16,9 +16,10 @@
 package org.candlepin.sync;
 
 import java.nio.file.Path;
+import java.util.List;
 
-public interface FileExporter {
+public interface FileExporter<T> {
 
-    void exportTo(Path path, Object... exports) throws ExportCreationException;
+    void exportTo(Path path, T... exports) throws ExportCreationException;
 
 }
