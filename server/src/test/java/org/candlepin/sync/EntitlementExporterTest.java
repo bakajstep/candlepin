@@ -52,14 +52,14 @@ class EntitlementExporterTest {
 
     private EntitlementCurator entitlementCurator;
     private ExportRules exportRules;
-    private SpyingExporter fileExporter;
+    private SpyingExporter<Object> fileExporter;
     private EntitlementExporter exporter;
 
     @BeforeEach
     void setUp() {
         this.exportRules = mock(ExportRules.class);
         this.entitlementCurator = mock(EntitlementCurator.class);
-        this.fileExporter = new SpyingExporter();
+        this.fileExporter = new SpyingExporter<>();
         ModelTranslator translator = new SimpleModelTranslator();
         translator.registerTranslator(new EntitlementTranslator(), Entitlement.class, EntitlementDTO.class);
         translator.registerTranslator(new PoolTranslator(), Pool.class, PoolDTO.class);
@@ -72,7 +72,7 @@ class EntitlementExporterTest {
     }
 
     @Test
-    public void shouldExport() throws ExportCreationException, IOException {
+    public void shouldExport() throws ExportCreationException {
         when(exportRules.canExport(any(Entitlement.class))).thenReturn(true);
         Consumer consumer = getConsumer();
         List<Entitlement> entitlements = Arrays.asList(

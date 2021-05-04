@@ -14,20 +14,16 @@
  */
 package org.candlepin.sync;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.inject.Inject;
 import org.candlepin.dto.ModelTranslator;
 import org.candlepin.dto.manifest.v1.DistributorVersionDTO;
 import org.candlepin.model.DistributorVersion;
 import org.candlepin.model.DistributorVersionCurator;
+
+import com.google.inject.Inject;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.Writer;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -36,11 +32,11 @@ public class DistributorVersionExporter {
     private static final Logger log = LoggerFactory.getLogger(DistributorVersionExporter.class);
 
     private final DistributorVersionCurator distVerCurator;
-    private final FileExporter fileExporter;
+    private final FileExporter<Object> fileExporter;
     private final ModelTranslator translator;
 
     @Inject
-    public DistributorVersionExporter(DistributorVersionCurator distVerCurator, FileExporter fileExporter, ModelTranslator translator) {
+    public DistributorVersionExporter(DistributorVersionCurator distVerCurator, FileExporter<Object> fileExporter, ModelTranslator translator) {
         this.distVerCurator = distVerCurator;
         this.fileExporter = fileExporter;
         this.translator = translator;
@@ -52,20 +48,13 @@ public class DistributorVersionExporter {
             return;
         }
 
-//        File distVerDir = new File(baseDir.getCanonicalPath(), "distributor_version");
-//        distVerDir.mkdir();
+        Path distVerDir = exportDir.resolve("distributor_version");
 
-//        FileWriter writer = null;
         for (DistributorVersion dv : versions) {
             log.debug("Exporting Distributor Version: {}", dv.getName());
-            Path export = exportDir.resolve(dv.getName() + ".json");
-            this.fileExporter.exportTo(export, dv);
+            Path export = distVerDir.resolve(dv.getName() + ".json");
+            this.fileExporter.exportTo(export, this.translator.translate(dv, DistributorVersionDTO.class));
         }
     }
 
-    void export(ObjectMapper mapper, Writer writer, DistributorVersion version)
-        throws IOException {
-
-        mapper.writeValue(writer, this.translator.translate(version, DistributorVersionDTO.class));
-    }
 }

@@ -32,6 +32,7 @@ class TextFileExporterTest {
 
     public static final String VERSION_1 = "0.1.0";
     public static final String VERSION_2 = "0.2.0";
+
     private FileSystem fileSystem;
 
     @BeforeEach

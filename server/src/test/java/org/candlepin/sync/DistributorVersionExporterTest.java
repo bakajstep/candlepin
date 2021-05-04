@@ -29,10 +29,10 @@ import org.candlepin.model.DistributorVersionCurator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 class DistributorVersionExporterTest {
@@ -48,8 +48,8 @@ class DistributorVersionExporterTest {
     }
 
     @Test
-    public void testExporter() throws ExportCreationException {
-        SpyingExporter fileExporter = new SpyingExporter();
+    public void successfulExport() throws ExportCreationException {
+        SpyingExporter<Object> fileExporter = new SpyingExporter<>();
         when(dvCurator.findAll()).thenReturn(createDVs());
 
         DistributorVersionExporter exporter = new DistributorVersionExporter(dvCurator, fileExporter, translator);
@@ -58,8 +58,22 @@ class DistributorVersionExporterTest {
         exporter.exportTo(path);
 
         assertEquals(3, fileExporter.calledTimes);
-        DistributorVersion result = (DistributorVersion) fileExporter.lastExports[0];
+        DistributorVersionDTO result = (DistributorVersionDTO) fileExporter.lastExports[0];
         assertEquals(result.getName(), "distributor_version_3");
+    }
+
+    @Test
+    public void nothingToExport() throws ExportCreationException {
+        SpyingExporter<Object> fileExporter = new SpyingExporter<>();
+        when(dvCurator.findAll()).thenReturn(Collections.emptyList());
+
+        DistributorVersionExporter exporter = new DistributorVersionExporter(dvCurator, fileExporter, translator);
+        Path path = Paths.get("/export");
+
+        exporter.exportTo(path);
+
+        assertEquals(0, fileExporter.calledTimes);
+        assertEquals(0, fileExporter.exports.size());
     }
 
     private List<DistributorVersion> createDVs() {

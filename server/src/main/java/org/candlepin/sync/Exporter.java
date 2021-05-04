@@ -609,7 +609,7 @@ public class Exporter {
             try {
                 File file = new File(distVerDir.getCanonicalPath(), dv.getName() + ".json");
                 writer = new FileWriter(file);
-                distVerExporter.export(mapper, writer, dv);
+//                distVerExporter.export(mapper, writer, dv);
             }
             finally {
                 if (writer != null) {

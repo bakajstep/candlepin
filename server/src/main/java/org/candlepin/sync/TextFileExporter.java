@@ -15,12 +15,17 @@
 
 package org.candlepin.sync;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
 public class TextFileExporter implements FileExporter<String> {
+
+    private static final Logger log = LoggerFactory.getLogger(TextFileExporter.class);
 
     @Override
     public void exportTo(Path path, String... exports) throws ExportCreationException {
@@ -30,6 +35,7 @@ public class TextFileExporter implements FileExporter<String> {
 
     private void createExportDirectories(Path path) throws ExportCreationException {
         Path exportDir = path.getParent();
+        log.trace("Creating an export dir: {}", exportDir);
         try {
             Files.createDirectories(exportDir);
         }
@@ -39,6 +45,7 @@ public class TextFileExporter implements FileExporter<String> {
     }
 
     private void writeExport(Path path, String[] exports) throws ExportCreationException {
+        log.debug("Creating an export: {}", path);
         try (BufferedWriter writer = Files.newBufferedWriter(path)) {
             for (String export : exports) {
                 writer.write(export);

@@ -15,18 +15,21 @@
 
 package org.candlepin.sync;
 
+import org.assertj.core.util.Arrays;
+
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
-public class SpyingExporter implements FileExporter {
+public class SpyingExporter<T> implements FileExporter<T> {
     int calledTimes = 0;
     Object[] lastExports;
-    Map<Path, Object[]> exports = new HashMap<>();
+    Map<Path, List<Object>> exports = new HashMap<>();
 
     @Override
     public void exportTo(Path path, Object... exports) {
-        this.exports.put(path, exports);
+        this.exports.put(path, Arrays.asList(exports));
         this.lastExports = exports;
         this.calledTimes++;
     }
