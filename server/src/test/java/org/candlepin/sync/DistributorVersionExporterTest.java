@@ -37,6 +37,8 @@ import java.util.List;
 
 class DistributorVersionExporterTest {
 
+    private static final Path EXPORT_PATH = Paths.get("/export");
+
     private DistributorVersionCurator dvCurator;
     private ModelTranslator translator;
 
@@ -51,11 +53,9 @@ class DistributorVersionExporterTest {
     public void successfulExport() throws ExportCreationException {
         SpyingExporter<Object> fileExporter = new SpyingExporter<>();
         when(dvCurator.findAll()).thenReturn(createDVs());
-
         DistributorVersionExporter exporter = new DistributorVersionExporter(dvCurator, fileExporter, translator);
-        Path path = Paths.get("/distributorVersions");
 
-        exporter.exportTo(path);
+        exporter.exportTo(EXPORT_PATH);
 
         assertEquals(3, fileExporter.calledTimes);
         DistributorVersionDTO result = (DistributorVersionDTO) fileExporter.lastExports[0];
@@ -66,11 +66,9 @@ class DistributorVersionExporterTest {
     public void nothingToExport() throws ExportCreationException {
         SpyingExporter<Object> fileExporter = new SpyingExporter<>();
         when(dvCurator.findAll()).thenReturn(Collections.emptyList());
-
         DistributorVersionExporter exporter = new DistributorVersionExporter(dvCurator, fileExporter, translator);
-        Path path = Paths.get("/export");
 
-        exporter.exportTo(path);
+        exporter.exportTo(EXPORT_PATH);
 
         assertEquals(0, fileExporter.calledTimes);
         assertEquals(0, fileExporter.exports.size());

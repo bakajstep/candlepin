@@ -19,12 +19,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import org.candlepin.auth.NoAuthPrincipal;
 import org.candlepin.dto.ModelTranslator;
 import org.candlepin.dto.SimpleModelTranslator;
 import org.candlepin.dto.manifest.v1.CdnDTO;
 import org.candlepin.dto.manifest.v1.CdnTranslator;
-import org.candlepin.guice.PrincipalProvider;
 import org.candlepin.model.CandlepinQuery;
 import org.candlepin.model.Cdn;
 import org.candlepin.model.CdnCurator;
@@ -33,13 +31,15 @@ import org.candlepin.test.MockResultIterator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 class CdnExporterTest {
+
+    private static final Path EXPORT_PATH = Paths.get("/export");
 
     private CdnCurator cdnCurator;
     private ModelTranslator translator;
@@ -48,29 +48,40 @@ class CdnExporterTest {
     void setUp() {
         this.cdnCurator = mock(CdnCurator.class);
         translator = new SimpleModelTranslator();
-        translator.registerTranslator(new CdnTranslator(),Cdn.class,CdnDTO.class);
+        translator.registerTranslator(new CdnTranslator(), Cdn.class, CdnDTO.class);
     }
 
     @Test
-    public void testCdnExporter() throws ExportCreationException {
-        SpyingExporter fileExporter = new SpyingExporter();
-        NoAuthPrincipal principal = new NoAuthPrincipal();
-        PrincipalProvider principalProvider = mock(PrincipalProvider.class);
-        when(principalProvider.get()).thenReturn(principal);
-        CandlepinQuery<Cdn> q = mock(CandlepinQuery.class);
-        when(q.iterate()).thenReturn(new MockResultIterator<>(createCdns().iterator()));
-        when(cdnCurator.listAll()).thenReturn(q);
-
+    public void successfulExport() throws ExportCreationException {
+        SpyingExporter<Object> fileExporter = new SpyingExporter<>();
+        mockCurator(createCdns());
         CdnExporter exporter = new CdnExporter(cdnCurator, fileExporter, translator);
-        Path path = Paths.get("/cdn.json");
 
-        exporter.exportTo(path);
+        exporter.exportTo(EXPORT_PATH);
 
         assertEquals(3, fileExporter.calledTimes);
         CdnDTO result = (CdnDTO) fileExporter.lastExports[0];
         assertEquals(result.getLabel(), "cdn_label_3");
         assertEquals(result.getName(), "cdn_name_3");
         assertEquals(result.getUrl(), "cdn_url_3");
+    }
+
+    @Test
+    public void nothingToExport() throws ExportCreationException {
+        SpyingExporter<Object> fileExporter = new SpyingExporter<>();
+        mockCurator(Collections.emptyList());
+        CdnExporter exporter = new CdnExporter(cdnCurator, fileExporter, translator);
+
+        exporter.exportTo(EXPORT_PATH);
+
+        assertEquals(0, fileExporter.calledTimes);
+        assertEquals(0, fileExporter.exports.size());
+    }
+
+    private void mockCurator(List<Cdn> cdns) {
+        CandlepinQuery<Cdn> q = mock(CandlepinQuery.class);
+        when(q.iterate()).thenReturn(new MockResultIterator<>(cdns.iterator()));
+        when(cdnCurator.listAll()).thenReturn(q);
     }
 
     private List<Cdn> createCdns() {

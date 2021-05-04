@@ -25,6 +25,7 @@ import com.google.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.nio.file.Path;
 
 public class CdnExporter {
@@ -32,23 +33,24 @@ public class CdnExporter {
     private static final Logger log = LoggerFactory.getLogger(CdnExporter.class);
 
     private final CdnCurator cdnCurator;
-    private final FileExporter fileExporter;
+    private final FileExporter<Object> fileExporter;
     private final ModelTranslator translator;
 
     @Inject
-    public CdnExporter(CdnCurator cdnCurator, FileExporter fileExporter, ModelTranslator translator) {
+    public CdnExporter(CdnCurator cdnCurator, FileExporter<Object> fileExporter, ModelTranslator translator) {
         this.cdnCurator = cdnCurator;
         this.fileExporter = fileExporter;
         this.translator = translator;
     }
 
     public void exportTo(Path exportDir) throws ExportCreationException {
+        Path cdnDir = exportDir.resolve("content_delivery_network");
         try (ResultIterator<Cdn> iterator = this.cdnCurator.listAll().iterate()) {
             while (iterator.hasNext()) {
                 Cdn cdn = iterator.next();
                 log.debug("Exporting CDN: {}", cdn.getName());
 
-                Path file = exportDir.resolve(cdn.getLabel() + ".json");
+                Path file = cdnDir.resolve(cdn.getLabel() + ".json");
                 this.fileExporter.exportTo(file, this.translator.translate(cdn, CdnDTO.class));
             }
         }
