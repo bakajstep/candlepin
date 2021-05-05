@@ -75,6 +75,8 @@ class Candlepin:
         specified credentials
         """
 
+        self.session = requests.Session()
+
         self.host = host
         self.port = port
         self.username = username
@@ -136,7 +138,7 @@ class Candlepin:
         log.debug('Sending request: %s %s (params: %s, headers: %s, data: %s)',
             req_type, endpoint, query_params, headers, data)
 
-        response = requests.request(req_type, self.build_url(endpoint),
+        response = self.session.request(req_type, self.build_url(endpoint),
             json=data,
             auth=(self.username, self.password),
             params=query_params,

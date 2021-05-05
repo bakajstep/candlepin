@@ -110,6 +110,8 @@ TEST_DATA_JSON_MTIME = 0.0
 
 CERT_DIR = 'generated_certs'
 
+SESSION = None
+
 
 def run_command(command, verbose=False):
     """
@@ -289,7 +291,7 @@ def get_owners():
     Get list of owner names.
     """
     try:
-        response = requests.get(
+        response = SESSION.get(
             CANLDEPIN_SERVER_BASE_URL + 'owners/',
             auth=(CANDLEPIN_USER, CANDLEPIN_PASS),
             verify=False)
@@ -417,7 +419,7 @@ def get_productid_cert(repo_definition, owner='admin'):
     # When the certificate cannot be found on the disk, then try to get certificate
     # from the candlepin server
     try:
-        r = requests.get(
+        r = SESSION.get(
             CANLDEPIN_SERVER_BASE_URL + 'owners/' + owner + '/products/' + str(product_id) + '/certificate',
             auth=(CANDLEPIN_USER, CANDLEPIN_PASS),
             verify=False)
@@ -748,6 +750,9 @@ def main():
     if len(sys.argv) != 2:
         log.error("Syntax {name} test_data.json".format(name=sys.argv[0]))
         return 1
+
+    global SESSION
+    SESSION = requests.Session()
 
     test_data = read_test_data(sys.argv[1])
 
