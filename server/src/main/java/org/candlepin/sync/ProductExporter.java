@@ -16,29 +16,125 @@ package org.candlepin.sync;
 
 import org.candlepin.dto.ModelTranslator;
 import org.candlepin.dto.manifest.v1.ProductDTO;
+import org.candlepin.model.Consumer;
+import org.candlepin.model.Entitlement;
+import org.candlepin.model.Owner;
+import org.candlepin.model.OwnerCurator;
+import org.candlepin.model.Pool;
 import org.candlepin.model.Product;
+import org.candlepin.service.ProductServiceAdapter;
+import org.candlepin.service.model.CertificateInfo;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
 
-import java.io.IOException;
-import java.io.Writer;
+import org.apache.commons.lang.StringUtils;
+
+import java.nio.file.Path;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * ProductExporter
  */
 public class ProductExporter {
 
-    private ModelTranslator translator;
+    private final OwnerCurator ownerCurator;
+    private final ProductServiceAdapter productAdapter;
+    private final FileExporter<Object> jsonFileExporter;
+    private final FileExporter<String> fileExporter;
+    private final ModelTranslator translator;
 
     @Inject
-    public ProductExporter(ModelTranslator translator) {
+    public ProductExporter(
+        OwnerCurator ownerCurator,
+        ProductServiceAdapter productAdapter,
+        FileExporter<Object> jsonFileExporter,
+        FileExporter<String> fileExporter,
+        ModelTranslator translator) {
+        this.ownerCurator = ownerCurator;
+        this.productAdapter = productAdapter;
+        this.jsonFileExporter = jsonFileExporter;
+        this.fileExporter = fileExporter;
         this.translator = translator;
     }
 
-    public void export(ObjectMapper mapper, Writer writer, Product product)
-        throws IOException {
-        mapper.writeValue(writer, this.translator.translate(product, ProductDTO.class));
+    public void exportTo(Path exportDir, Consumer consumer) throws ExportCreationException {
+        Path productDir = exportDir.resolve("products");
+
+        Map<String, Product> products = productsOf(consumer);
+
+        for (Product product : products.values()) {
+            // Clear the owner and UUID so they can be re-generated/assigned on import
+            // product.setUuid(null);
+            // product.setOwner(null);
+
+            String productId = product.getId();
+
+            Path exportFile = productDir.resolve(productId + ".json");
+            export(exportFile, product);
+
+            if (isRealProduct(product)) {
+                Owner owner = ownerCurator.findOwnerById(consumer.getOwnerId());
+
+                CertificateInfo cert = productAdapter.getProductCertificate(owner.getKey(), product.getId());
+
+                // XXX: not all product adapters implement getProductCertificate,
+                // so just skip over this if we get null back
+                // XXX: need to decide if the cert should always be in the export, or never.
+                if (cert != null) {
+                    Path certExportFile = productDir.resolve(product.getId() + ".pem");
+                    export(certExportFile, cert);
+                }
+            }
+        }
+    }
+
+    private Map<String, Product> productsOf(Consumer consumer) {
+        Map<String, Product> products = new HashMap<>();
+        for (Entitlement entitlement : consumer.getEntitlements()) {
+            Pool pool = entitlement.getPool();
+
+            // Don't forget the 'main' product!
+            Product product = pool.getProduct();
+            products.put(product.getId(), product);
+
+            addProvidedProducts(product.getProvidedProducts(), products);
+
+            // Also need to check for sub products
+            Product derivedProduct = product.getDerivedProduct();
+            if (derivedProduct != null) {
+                products.put(derivedProduct.getId(), derivedProduct);
+                addProvidedProducts(derivedProduct.getProvidedProducts(), products);
+            }
+        }
+        return products;
+    }
+
+    // Real products have a numeric id.
+    private boolean isRealProduct(Product product) {
+        return StringUtils.isNumeric(product.getId());
+    }
+
+    private void addProvidedProducts(Collection<Product> providedProducts, Map<String, Product> products) {
+        if (providedProducts == null || providedProducts.isEmpty()) {
+            return;
+        }
+
+        for (Product product : providedProducts) {
+            if (product != null) {
+                products.put(product.getId(), product);
+                addProvidedProducts(product.getProvidedProducts(), products);
+            }
+        }
+    }
+
+    private void export(Path exportFile, Product product) throws ExportCreationException {
+        this.jsonFileExporter.exportTo(exportFile, this.translator.translate(product, ProductDTO.class));
+    }
+
+    private void export(Path exportFile, CertificateInfo cert) throws ExportCreationException {
+        this.fileExporter.exportTo(exportFile, cert.getCertificate());
     }
 
 }

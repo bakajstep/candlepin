@@ -85,8 +85,8 @@ class EntitlementExporterTest {
 
         assertThat(fileExporter.calledTimes).isEqualTo(2);
         assertThat(fileExporter.exports).hasSize(2);
-        assertThat(fileExporter.exports.get(EXPECTED_PATH_1)).hasSize(1);
-        assertThat(fileExporter.exports.get(EXPECTED_PATH_2)).hasSize(1);
+        assertThat(fileExporter.exports.get(0)).hasSize(1);
+        assertThat(fileExporter.exports.get(1)).hasSize(1);
     }
 
     @Test

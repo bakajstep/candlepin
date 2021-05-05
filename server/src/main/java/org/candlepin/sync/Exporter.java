@@ -501,7 +501,7 @@ public class Exporter {
 
             File file = new File(path, productId + ".json");
             try (FileWriter writer = new FileWriter(file)) {
-                productExporter.export(mapper, writer, product);
+//                productExporter.export(mapper, writer, product);
             }
 
             // Real products have a numeric id.

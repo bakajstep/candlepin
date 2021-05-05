@@ -41,7 +41,7 @@ import java.util.Iterator;
 public class ConsumerTypeExporterTest {
 
     private static final Path EXPORT_PATH = Paths.get("/export");
-    public static final String TEST_LABEL = "TESTTYPE";
+    private static final String TEST_LABEL = "TESTTYPE";
 
     private ConsumerTypeCurator consumerTypeCurator;
     private ModelTranslator translator;
