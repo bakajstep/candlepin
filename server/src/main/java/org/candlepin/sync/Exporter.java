@@ -545,7 +545,7 @@ public class Exporter {
             FileWriter writer = null;
             try {
                 writer = new FileWriter(file);
-                consumerType.export(mapper, writer, type);
+//                consumerType.export(mapper, writer, type);
             }
             finally {
                 if (writer != null) {

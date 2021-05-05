@@ -17,27 +17,33 @@ package org.candlepin.sync;
 import org.candlepin.dto.ModelTranslator;
 import org.candlepin.dto.manifest.v1.ConsumerTypeDTO;
 import org.candlepin.model.ConsumerType;
+import org.candlepin.model.ConsumerTypeCurator;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
 
-import java.io.IOException;
-import java.io.Writer;
+import java.nio.file.Path;
 
-/**
- * ConsumerTypeExporter
- */
 public class ConsumerTypeExporter {
 
-    private ModelTranslator translator;
+    private final ConsumerTypeCurator consumerTypeCurator;
+    private final FileExporter<Object> fileExporter;
+    private final ModelTranslator translator;
 
     @Inject
-    ConsumerTypeExporter(ModelTranslator translator) {
+    public ConsumerTypeExporter(ConsumerTypeCurator consumerTypeCurator,
+        FileExporter<Object> fileExporter, ModelTranslator translator) {
+        this.consumerTypeCurator = consumerTypeCurator;
+        this.fileExporter = fileExporter;
         this.translator = translator;
     }
 
-    void export(ObjectMapper mapper, Writer writer, ConsumerType consumerType)
-        throws IOException {
-        mapper.writeValue(writer, this.translator.translate(consumerType, ConsumerTypeDTO.class));
+    public void exportTo(Path baseDir) throws ExportCreationException {
+        Path typeDir = baseDir.resolve("consumer_types");
+
+        for (ConsumerType type : consumerTypeCurator.listAll()) {
+            Path export = typeDir.resolve(type.getLabel() + ".json");
+            this.fileExporter.exportTo(export, this.translator.translate(type, ConsumerTypeDTO.class));
+        }
     }
+
 }

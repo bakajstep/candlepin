@@ -14,63 +14,78 @@
  */
 package org.candlepin.sync;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-import org.candlepin.common.config.MapConfiguration;
-import org.candlepin.config.ConfigProperties;
 import org.candlepin.dto.ModelTranslator;
-import org.candlepin.dto.StandardTranslator;
+import org.candlepin.dto.SimpleModelTranslator;
+import org.candlepin.dto.manifest.v1.ConsumerTypeDTO;
+import org.candlepin.dto.manifest.v1.ConsumerTypeTranslator;
+import org.candlepin.model.CandlepinQuery;
 import org.candlepin.model.ConsumerType;
 import org.candlepin.model.ConsumerTypeCurator;
-import org.candlepin.model.EnvironmentCurator;
-import org.candlepin.model.OwnerCurator;
-import org.candlepin.test.TestUtil;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
-
-import java.io.IOException;
-import java.io.StringWriter;
-import java.util.HashMap;
-import java.util.Map;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Iterator;
 
 
-
-/**
- * ConsumerTypeExporterTest
- */
-@RunWith(MockitoJUnitRunner.class)
 public class ConsumerTypeExporterTest {
 
-    @Mock private ConsumerTypeCurator mockConsumerTypeCurator;
-    @Mock private EnvironmentCurator mockEnvironmentCurator;
-    @Mock private OwnerCurator ownerCurator;
+    private static final Path EXPORT_PATH = Paths.get("/export");
+    public static final String TEST_LABEL = "TESTTYPE";
+
+    private ConsumerTypeCurator consumerTypeCurator;
     private ModelTranslator translator;
 
+    @BeforeEach
+    void setUp() {
+        consumerTypeCurator = mock(ConsumerTypeCurator.class);
+        translator = new SimpleModelTranslator();
+        translator.registerTranslator(new ConsumerTypeTranslator(), ConsumerType.class, ConsumerTypeDTO.class);
+    }
+
     @Test
-    public void testConsumerTypeExport() throws IOException {
-        Map<String, String> configProps = new HashMap<>();
-        configProps.put(ConfigProperties.FAIL_ON_UNKNOWN_IMPORT_PROPERTIES, "false");
+    public void successfulExport() throws ExportCreationException {
+        SpyingExporter<Object> fileExporter = new SpyingExporter<>();
+        ConsumerTypeExporter consumerType = new ConsumerTypeExporter(consumerTypeCurator, fileExporter, translator);
+        CandlepinQuery query = mock(CandlepinQuery.class);
+        when(query.iterator()).thenReturn(createTypes());
+        when(consumerTypeCurator.listAll()).thenReturn(query);
 
-        ObjectMapper mapper = new SyncUtils(new MapConfiguration(configProps)).getObjectMapper();
+        consumerType.exportTo(EXPORT_PATH);
 
-        translator = new StandardTranslator(mockConsumerTypeCurator, mockEnvironmentCurator, ownerCurator);
-        ConsumerTypeExporter consumerType = new ConsumerTypeExporter(translator);
+        assertEquals(1, fileExporter.calledTimes);
+        ConsumerTypeDTO export = (ConsumerTypeDTO) fileExporter.lastExports[0];
+        assertNull(export.getId());
+        assertEquals(TEST_LABEL, export.getLabel());
+        assertFalse(export.isManifest());
+    }
 
-        StringWriter writer = new StringWriter();
+    @Test
+    public void nothingToExport() throws ExportCreationException {
+        SpyingExporter<Object> fileExporter = new SpyingExporter<>();
+        ConsumerTypeExporter consumerType = new ConsumerTypeExporter(consumerTypeCurator, fileExporter, translator);
+        CandlepinQuery query = mock(CandlepinQuery.class);
+        when(query.iterator()).thenReturn(Collections.emptyList().iterator());
+        when(consumerTypeCurator.listAll()).thenReturn(query);
 
-        ConsumerType type = new ConsumerType("TESTTYPE");
+        consumerType.exportTo(EXPORT_PATH);
 
-        consumerType.export(mapper, writer, type);
+        assertEquals(0, fileExporter.calledTimes);
+    }
 
-        StringBuffer json = new StringBuffer();
-        json.append("{\"id\":null,\"label\":\"TESTTYPE\",");
-        json.append("\"manifest\":false}");
-        assertTrue(TestUtil.isJsonEqual(json.toString(), writer.toString()));
+    private Iterator<ConsumerType> createTypes() {
+        return Arrays.asList(
+            new ConsumerType(TEST_LABEL)).iterator();
     }
 
 }

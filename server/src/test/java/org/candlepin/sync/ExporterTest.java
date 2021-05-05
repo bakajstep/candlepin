@@ -144,7 +144,7 @@ public class ExporterTest {
             mock(FileExporter.class),
             translator
         );
-        cte = new ConsumerTypeExporter(translator);
+        cte = mock(ConsumerTypeExporter.class);
         rc = mock(RulesCurator.class);
         re = new RulesExporter(null, rc);
         ecsa = mock(EntitlementCertServiceAdapter.class);
