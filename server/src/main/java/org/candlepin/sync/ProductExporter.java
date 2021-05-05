@@ -34,9 +34,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * ProductExporter
- */
 public class ProductExporter {
 
     private final OwnerCurator ownerCurator;
@@ -82,7 +79,7 @@ public class ProductExporter {
         // XXX: need to decide if the cert should always be in the export, or never.
         if (cert != null) {
             Path certExportFile = productDir.resolve(product.getId() + ".pem");
-            export(certExportFile, cert);
+            this.fileExporter.exportTo(certExportFile, cert.getCertificate());
         }
     }
 
@@ -92,9 +89,8 @@ public class ProductExporter {
         // product.setOwner(null);
 
         String productId = product.getId();
-
         Path exportFile = productDir.resolve(productId + ".json");
-        export(exportFile, product);
+        this.jsonFileExporter.exportTo(exportFile, this.translator.translate(product, ProductDTO.class));
     }
 
     private Map<String, Product> productsOf(Consumer consumer) {
@@ -134,14 +130,6 @@ public class ProductExporter {
                 addProvidedProducts(product.getProvidedProducts(), products);
             }
         }
-    }
-
-    private void export(Path exportFile, Product product) throws ExportCreationException {
-        this.jsonFileExporter.exportTo(exportFile, this.translator.translate(product, ProductDTO.class));
-    }
-
-    private void export(Path exportFile, CertificateInfo cert) throws ExportCreationException {
-        this.fileExporter.exportTo(exportFile, cert.getCertificate());
     }
 
 }

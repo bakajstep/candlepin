@@ -37,8 +37,8 @@ import org.candlepin.model.ProductCertificate;
 import org.candlepin.service.ProductServiceAdapter;
 import org.candlepin.test.TestUtil;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -60,29 +60,25 @@ public class ProductExporterTest {
 
     private OwnerCurator ownerCurator;
     private ProductServiceAdapter productAdapter;
+    private ModelTranslator translator;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         ownerCurator = mock(OwnerCurator.class);
         productAdapter = mock(ProductServiceAdapter.class);
+        translator = new SimpleModelTranslator();
+        translator.registerTranslator(new ProductTranslator(), Product.class, ProductDTO.class);
+        translator.registerTranslator(new ContentTranslator(), Content.class, ContentDTO.class);
     }
 
     @Test
     public void nothingToExport() throws Exception {
-        Consumer consumer = mock(Consumer.class);
-        Owner owner = TestUtil.createOwner("Example-Corporation");
-        when(consumer.getEntitlements()).thenReturn(Collections.emptySet());
-        when(consumer.getOwnerId()).thenReturn(owner.getId());
-        when(ownerCurator.findOwnerById(eq(owner.getId()))).thenReturn(owner);
         SpyingExporter<Object> jsonExporter = new SpyingExporter<>();
         SpyingExporter<String> certExporter = new SpyingExporter<>();
-        ModelTranslator translator = new SimpleModelTranslator();
-        translator.registerTranslator(new ProductTranslator(), Product.class, ProductDTO.class);
-        translator.registerTranslator(new ContentTranslator(), Content.class, ContentDTO.class);
         ProductExporter exporter = new ProductExporter(ownerCurator, productAdapter,
             jsonExporter, certExporter, translator);
 
-        exporter.exportTo(EXPORT_PATH, consumer);
+        exporter.exportTo(EXPORT_PATH, new Consumer());
 
         assertThat(jsonExporter.calledTimes).isEqualTo(0);
         assertThat(certExporter.calledTimes).isEqualTo(0);
@@ -91,30 +87,10 @@ public class ProductExporterTest {
     @Test
     public void singleProduct() throws Exception {
         Consumer consumer = mock(Consumer.class);
-        Entitlement ent = mock(Entitlement.class);
-
-        Set<Entitlement> entitlements = new HashSet<>();
-        entitlements.add(ent);
-
-        Owner owner = TestUtil.createOwner("Example-Corporation");
-
         Product product = createProduct(PRODUCT_ID_1, "RHEL Product");
-
-        Pool pool = TestUtil.createPool(owner)
-            .setId("MockedPoolId")
-            .setProduct(product);
-
-        when(ent.getPool()).thenReturn(pool);
-        when(consumer.getEntitlements()).thenReturn(entitlements);
-
-        when(consumer.getOwnerId()).thenReturn(owner.getId());
-        when(ownerCurator.findOwnerById(eq(owner.getId()))).thenReturn(owner);
-
+        mockEntitlements(consumer, product);
         SpyingExporter<Object> jsonExporter = new SpyingExporter<>();
         SpyingExporter<String> certExporter = new SpyingExporter<>();
-        ModelTranslator translator = new SimpleModelTranslator();
-        translator.registerTranslator(new ProductTranslator(), Product.class, ProductDTO.class);
-        translator.registerTranslator(new ContentTranslator(), Content.class, ContentDTO.class);
         ProductExporter exporter = new ProductExporter(ownerCurator, productAdapter,
             jsonExporter, certExporter, translator);
 
@@ -126,7 +102,7 @@ public class ProductExporterTest {
             .map(objects -> objects.get(0))
             .map(objects -> (ProductDTO) objects)
             .map(ProductDTO::getId)
-            .containsAll(Arrays.asList(
+            .containsAll(Collections.singletonList(
                 PRODUCT_ID_1
             ));
     }
@@ -134,37 +110,10 @@ public class ProductExporterTest {
     @Test
     public void exportsCertOfRealProduct() throws Exception {
         Consumer consumer = mock(Consumer.class);
-        Entitlement ent = mock(Entitlement.class);
-
-        Set<Entitlement> entitlements = new HashSet<>();
-        entitlements.add(ent);
-
-        Owner owner = TestUtil.createOwner("Example-Corporation");
-
         Product product = createProduct(REAL_PRODUCT_ID_1, "RHEL Product");
-
-        Pool pool = TestUtil.createPool(owner)
-            .setId("MockedPoolId")
-            .setProduct(product);
-
-        ProductCertificate pcert = new ProductCertificate();
-        pcert.setKey("euh0876puhapodifbvj094");
-        pcert.setCert(EXPECTED_CERT);
-        pcert.setCreated(new Date());
-        pcert.setUpdated(new Date());
-
-        when(productAdapter.getProductCertificate(any(String.class), any(String.class))).thenReturn(pcert);
-        when(ent.getPool()).thenReturn(pool);
-        when(consumer.getEntitlements()).thenReturn(entitlements);
-
-        when(consumer.getOwnerId()).thenReturn(owner.getId());
-        when(ownerCurator.findOwnerById(eq(owner.getId()))).thenReturn(owner);
-
+        mockEntitlements(consumer, product);
         SpyingExporter<Object> jsonExporter = new SpyingExporter<>();
         SpyingExporter<String> certExporter = new SpyingExporter<>();
-        ModelTranslator translator = new SimpleModelTranslator();
-        translator.registerTranslator(new ProductTranslator(), Product.class, ProductDTO.class);
-        translator.registerTranslator(new ContentTranslator(), Content.class, ContentDTO.class);
         ProductExporter exporter = new ProductExporter(ownerCurator, productAdapter,
             jsonExporter, certExporter, translator);
 
@@ -172,50 +121,22 @@ public class ProductExporterTest {
 
         assertThat(jsonExporter.calledTimes).isEqualTo(1);
         assertThat(certExporter.calledTimes).isEqualTo(1);
-        assertThat(certExporter.exports.get(0).get(0)).isEqualTo(EXPECTED_CERT);
+        assertThat(certExporter.lastExports[0]).isEqualTo(EXPECTED_CERT);
     }
 
     @Test
-    public void exportsSubProducts() throws Exception {
+    public void exportSubProducts() throws Exception {
         Consumer consumer = mock(Consumer.class);
-        Entitlement ent = mock(Entitlement.class);
-
-        Set<Entitlement> entitlements = new HashSet<>();
-        entitlements.add(ent);
-
-        Owner owner = TestUtil.createOwner("Example-Corporation");
-
         Product prod = createProduct(REAL_PRODUCT_ID_1, "RHEL Product");
         Product prod1 = createProduct(PRODUCT_ID_1, "RHEL Product");
         Product subProduct = createProduct(PRODUCT_ID_2, "Sub Product");
         Product subProvidedProduct = createProduct(REAL_PRODUCT_ID_2, "Sub Product");
-
         prod1.addProvidedProduct(prod);
         prod1.setDerivedProduct(subProduct);
         subProduct.addProvidedProduct(subProvidedProduct);
-
-        ProductCertificate pcert = new ProductCertificate();
-        pcert.setKey("euh0876puhapodifbvj094");
-        pcert.setCert(EXPECTED_CERT);
-        pcert.setCreated(new Date());
-        pcert.setUpdated(new Date());
-
-        Pool pool = TestUtil.createPool(owner)
-            .setId("MockedPoolId")
-            .setProduct(prod1);
-
-        when(ent.getPool()).thenReturn(pool);
-        when(consumer.getEntitlements()).thenReturn(entitlements);
-        when(productAdapter.getProductCertificate(any(String.class), any(String.class))).thenReturn(pcert);
-
-        when(consumer.getOwnerId()).thenReturn(owner.getId());
-        when(ownerCurator.findOwnerById(eq(owner.getId()))).thenReturn(owner);
-
+        mockEntitlements(consumer, prod1);
         SpyingExporter<Object> jsonExporter = new SpyingExporter<>();
         SpyingExporter<String> certExporter = new SpyingExporter<>();
-        ModelTranslator translator = new SimpleModelTranslator();
-        translator.registerTranslator(new ProductTranslator(), Product.class, ProductDTO.class);
-        translator.registerTranslator(new ContentTranslator(), Content.class, ContentDTO.class);
         ProductExporter exporter = new ProductExporter(ownerCurator, productAdapter,
             jsonExporter, certExporter, translator);
 
@@ -233,8 +154,7 @@ public class ProductExporterTest {
                 PRODUCT_ID_2,
                 REAL_PRODUCT_ID_2
             ));
-        assertThat(certExporter.exports.get(0).get(0)).isEqualTo(EXPECTED_CERT);
-        assertThat(certExporter.exports.get(1).get(0)).isEqualTo(EXPECTED_CERT);
+        assertThat(certExporter.lastExports[0]).isEqualTo(EXPECTED_CERT);
     }
 
     private Product createProduct(String id, String name) {
@@ -246,4 +166,29 @@ public class ProductExporterTest {
         return product;
     }
 
+    private void mockEntitlements(Consumer consumer, Product product) {
+        Entitlement ent = mock(Entitlement.class);
+
+        Set<Entitlement> entitlements = new HashSet<>();
+        entitlements.add(ent);
+
+        Owner owner = TestUtil.createOwner("Example-Corporation");
+
+        Pool pool = TestUtil.createPool(owner)
+            .setId("MockedPoolId")
+            .setProduct(product);
+
+        ProductCertificate pcert = new ProductCertificate();
+        pcert.setKey("euh0876puhapodifbvj094");
+        pcert.setCert(EXPECTED_CERT);
+        pcert.setCreated(new Date());
+        pcert.setUpdated(new Date());
+
+        when(productAdapter.getProductCertificate(any(String.class), any(String.class))).thenReturn(pcert);
+        when(ent.getPool()).thenReturn(pool);
+        when(consumer.getEntitlements()).thenReturn(entitlements);
+
+        when(consumer.getOwnerId()).thenReturn(owner.getId());
+        when(ownerCurator.findOwnerById(eq(owner.getId()))).thenReturn(owner);
+    }
 }
