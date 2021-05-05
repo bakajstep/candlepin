@@ -65,29 +65,36 @@ public class ProductExporter {
         Map<String, Product> products = productsOf(consumer);
 
         for (Product product : products.values()) {
-            // Clear the owner and UUID so they can be re-generated/assigned on import
-            // product.setUuid(null);
-            // product.setOwner(null);
-
-            String productId = product.getId();
-
-            Path exportFile = productDir.resolve(productId + ".json");
-            export(exportFile, product);
-
+            exportProduct(productDir, product);
             if (isRealProduct(product)) {
-                Owner owner = ownerCurator.findOwnerById(consumer.getOwnerId());
-
-                CertificateInfo cert = productAdapter.getProductCertificate(owner.getKey(), product.getId());
-
-                // XXX: not all product adapters implement getProductCertificate,
-                // so just skip over this if we get null back
-                // XXX: need to decide if the cert should always be in the export, or never.
-                if (cert != null) {
-                    Path certExportFile = productDir.resolve(product.getId() + ".pem");
-                    export(certExportFile, cert);
-                }
+                exportProductCert(consumer, productDir, product);
             }
         }
+    }
+
+    private void exportProductCert(Consumer consumer, Path productDir, Product product) throws ExportCreationException {
+        Owner owner = ownerCurator.findOwnerById(consumer.getOwnerId());
+
+        CertificateInfo cert = productAdapter.getProductCertificate(owner.getKey(), product.getId());
+
+        // XXX: not all product adapters implement getProductCertificate,
+        // so just skip over this if we get null back
+        // XXX: need to decide if the cert should always be in the export, or never.
+        if (cert != null) {
+            Path certExportFile = productDir.resolve(product.getId() + ".pem");
+            export(certExportFile, cert);
+        }
+    }
+
+    private void exportProduct(Path productDir, Product product) throws ExportCreationException {
+        // Clear the owner and UUID so they can be re-generated/assigned on import
+        // product.setUuid(null);
+        // product.setOwner(null);
+
+        String productId = product.getId();
+
+        Path exportFile = productDir.resolve(productId + ".json");
+        export(exportFile, product);
     }
 
     private Map<String, Product> productsOf(Consumer consumer) {
