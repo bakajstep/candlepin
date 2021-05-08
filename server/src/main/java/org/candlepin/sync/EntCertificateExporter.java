@@ -34,9 +34,9 @@ public class EntCertificateExporter {
 
     private final EntitlementCertServiceAdapter entCertAdapter;
     private final ExportRules exportRules;
-    private final FileExporter exporter;
+    private final FileExporter<String> exporter;
 
-    public EntCertificateExporter(EntitlementCertServiceAdapter entCertAdapter, ExportRules exportRules, FileExporter exporter) {
+    public EntCertificateExporter(EntitlementCertServiceAdapter entCertAdapter, ExportRules exportRules, FileExporter<String> exporter) {
         this.entCertAdapter = entCertAdapter;
         this.exportRules = exportRules;
         this.exporter = exporter;
@@ -45,12 +45,7 @@ public class EntCertificateExporter {
     public void exportTo(Path exportDir, Consumer consumer, Set<Long> serials, boolean manifest)
         throws ExportCreationException {
 
-//        File entCertDir = new File(baseDir.getCanonicalPath(), "entitlement_certificates");
-//        entCertDir.mkdir();
-        if (!Files.isDirectory(exportDir)) {
-            return;
-        }
-
+        Path entCertDir = exportDir.resolve("entitlement_certificates");
         for (EntitlementCertificate cert : entCertAdapter.listForConsumer(consumer)) {
             if (manifest && !this.exportRules.canExport(cert.getEntitlement())) {
                 log.debug("Skipping export of entitlement cert with product: {}",
@@ -61,9 +56,8 @@ public class EntCertificateExporter {
 
             if (contains(serials, cert)) {
                 log.debug("Exporting entitlement certificate: {}", cert.getSerial());
-//                File file = new File(entCertDir.getCanonicalPath(), cert.getSerial().getId() + ".pem");
-                Path file = exportDir.resolve(cert.getSerial().getId() + ".pem");
-                exportCertificate(cert, file);
+                Path exportFile = entCertDir.resolve(cert.getSerial().getId() + ".pem");
+                exportCertificate(cert, exportFile);
             }
         }
     }

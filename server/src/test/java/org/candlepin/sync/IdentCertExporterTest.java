@@ -58,7 +58,7 @@ class IdentCertExporterTest {
     @Test
     public void testExporter() throws ExportCreationException {
         SpyingExporter fileExporter = new SpyingExporter();
-        IdentCertificateExporter exporter = new IdentCertificateExporter(fileExporter, translator);
+        IdentCertificateExporter exporter = new IdentCertificateExporter(fileExporter);
         Consumer consumer = getConsumer();
         Path path = Paths.get("/certs");
 

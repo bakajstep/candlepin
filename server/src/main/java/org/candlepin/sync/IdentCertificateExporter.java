@@ -14,45 +14,32 @@
  */
 package org.candlepin.sync;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import org.candlepin.dto.ModelTranslator;
-import org.candlepin.dto.manifest.v1.CertificateDTO;
 import org.candlepin.model.Consumer;
 import org.candlepin.model.IdentityCertificate;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.nio.file.Path;
 
 public class IdentCertificateExporter {
 
     private static final Logger log = LoggerFactory.getLogger(IdentCertificateExporter.class);
 
-    private final FileExporter fileExporter;
-    private final ModelTranslator translator;
+    private final FileExporter<String> fileExporter;
 
-    public IdentCertificateExporter(FileExporter fileExporter, ModelTranslator translator) {
+    public IdentCertificateExporter(FileExporter<String> fileExporter) {
         this.fileExporter = fileExporter;
-        this.translator = translator;
     }
 
     public void exportTo(Path exportDir, Consumer consumer) throws ExportCreationException {
-//        File idcertdir = new File(baseDir.getCanonicalPath(), "upstream_consumer");
-//        idcertdir.mkdir();
+        Path idCertDir = exportDir.resolve("upstream_consumer");
 
         IdentityCertificate cert = consumer.getIdCert();
 
-        // paradigm dictates this should go in an exporter.export method
-        Path export = exportDir.resolve(cert.getSerial().getId() + ".json");
-        this.fileExporter.exportTo(export, this.translator.translate(cert, CertificateDTO.class));
-//        try (FileWriter writer = new FileWriter(file)) {
-//            mapper.writeValue(writer, this.translator.translate(cert, CertificateDTO.class));
-//        }
+        Path export = idCertDir.resolve(cert.getSerial().getId() + ".json");
+        this.fileExporter.exportTo(export, cert.getCert(), cert.getKey());
     }
 
 }

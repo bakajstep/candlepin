@@ -33,11 +33,11 @@ import java.nio.file.Path;
 public class ConsumerExporter {
 
     private final Configuration config;
-    private final FileExporter fileExporter;
+    private final FileExporter<Object> fileExporter;
     private final ModelTranslator translator;
 
     @Inject
-    public ConsumerExporter(Configuration config, FileExporter fileExporter, ModelTranslator translator) {
+    public ConsumerExporter(Configuration config, FileExporter<Object> fileExporter, ModelTranslator translator) {
         this.config = config;
         this.fileExporter = fileExporter;
         this.translator = translator;

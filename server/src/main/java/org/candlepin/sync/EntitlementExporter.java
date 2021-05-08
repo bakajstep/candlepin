@@ -26,24 +26,19 @@ import com.google.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 
-/**
- * EntitlementExporter
- */
 public class EntitlementExporter {
 
     private static final Logger log = LoggerFactory.getLogger(EntitlementExporter.class);
 
     private final EntitlementCurator entitlementCurator;
     private final ExportRules exportRules;
-    private final FileExporter fileExporter;
+    private final FileExporter<Object> fileExporter;
     private final ModelTranslator translator;
 
     @Inject
-    public EntitlementExporter(EntitlementCurator entitlementCurator, ExportRules exportRules, FileExporter fileExporter, ModelTranslator translator) {
+    public EntitlementExporter(EntitlementCurator entitlementCurator, ExportRules exportRules, FileExporter<Object> fileExporter, ModelTranslator translator) {
         this.entitlementCurator = entitlementCurator;
         this.exportRules = exportRules;
         this.fileExporter = fileExporter;
@@ -52,7 +47,6 @@ public class EntitlementExporter {
 
     public void exportTo(Path exportDir, Consumer consumer) throws ExportCreationException {
         Path entCertDir = exportDir.resolve("entitlements");
-//        Files.createDirectory(entCertDir);
 
         for (Entitlement ent : entitlementCurator.listByConsumer(consumer)) {
             if (ent.isDirty()) {
