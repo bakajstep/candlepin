@@ -19,13 +19,11 @@ import org.candlepin.model.Consumer;
 import org.candlepin.model.EntitlementCertificate;
 import org.candlepin.policy.js.export.ExportRules;
 import org.candlepin.service.EntitlementCertServiceAdapter;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Set;
 
 public class EntCertificateExporter {
@@ -71,12 +69,6 @@ public class EntCertificateExporter {
             cert.getCert(),
             cert.getKey()
         );
-//        try (FileWriter writer = new FileWriter(file)) {
-//            writer.write(cert.getCert());
-//            writer.write(cert.getKey());
-//        } catch (IOException ioExp) {
-//            throw new IOException("Error occurred while exporting certificates", ioExp);
-//        }
     }
 
 }

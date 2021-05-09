@@ -15,43 +15,31 @@
 package org.candlepin.sync;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
 
 import org.candlepin.common.config.Configuration;
-import org.candlepin.common.config.MapConfiguration;
-import org.candlepin.config.ConfigProperties;
 import org.candlepin.dto.ModelTranslator;
 import org.candlepin.dto.SimpleModelTranslator;
-import org.candlepin.dto.StandardTranslator;
-import org.candlepin.dto.manifest.v1.CdnDTO;
-import org.candlepin.dto.manifest.v1.CdnTranslator;
 import org.candlepin.dto.manifest.v1.ConsumerDTO;
 import org.candlepin.dto.manifest.v1.ConsumerTranslator;
 import org.candlepin.dto.manifest.v1.ConsumerTypeDTO;
-import org.candlepin.model.Cdn;
+import org.candlepin.dto.manifest.v1.ConsumerTypeTranslator;
 import org.candlepin.model.Consumer;
 import org.candlepin.model.ConsumerType;
 import org.candlepin.model.ConsumerTypeCurator;
-import org.candlepin.model.EnvironmentCurator;
 import org.candlepin.model.OwnerCurator;
-import org.candlepin.test.TestUtil;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.io.IOException;
-import java.io.StringWriter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.Map;
 
 
 
@@ -61,44 +49,74 @@ import java.util.Map;
 @ExtendWith(MockitoExtension.class)
 public class ConsumerExporterTest {
 
+    private static final Path EXPORT_DIR = Paths.get("/export");
+    private static final String WEB_URL = "/subscriptions";
+    private static final String API_URL = "/candlepin";
+    private static final String CONFIG_OVERRIDE = "/config_override";
+
     private ModelTranslator translator;
+    private Configuration configuration;
+    private ConsumerTypeCurator typeCurator;
 
     @BeforeEach
     void setUp() {
+        configuration = mock(Configuration.class);
         translator = new SimpleModelTranslator();
-        translator.registerTranslator(new ConsumerTranslator(mock(ConsumerTypeCurator.class), mock(OwnerCurator.class)), Consumer.class, ConsumerDTO.class);
+        typeCurator = mock(ConsumerTypeCurator.class);
+        translator.registerTranslator(new ConsumerTranslator(typeCurator, mock(OwnerCurator.class)), Consumer.class, ConsumerDTO.class);
+        translator.registerTranslator(new ConsumerTypeTranslator(), ConsumerType.class, ConsumerTypeDTO.class);
     }
 
     @Test
     public void exportWithOverrides() throws ExportCreationException {
-        SpyingExporter fileExporter = new SpyingExporter();
-        ConsumerExporter exporter = new ConsumerExporter(
-            mock(Configuration.class),
-            fileExporter,
-            translator
-        );
+        SpyingExporter<Object> fileExporter = new SpyingExporter<>();
+        ConsumerExporter exporter = new ConsumerExporter(configuration, fileExporter, translator);
         ConsumerType ctype = createCType();
         Consumer consumer = createConsumer(ctype);
+        when(typeCurator.getConsumerType(any(Consumer.class))).thenReturn(ctype);
 
-        Path exportDir = Paths.get("");
-        exporter.exportTo(exportDir, consumer, "/subscriptions", "/candlepin");
+        exporter.exportTo(EXPORT_DIR, consumer, WEB_URL, API_URL);
 
         assertThat(fileExporter.calledTimes).isEqualTo(1);
         Object lastExport = fileExporter.lastExports[0];
-        assertThat(lastExport).isInstanceOf(Consumer.class);
+        assertThat(lastExport).isInstanceOf(ConsumerDTO.class);
         ConsumerDTO exportedConsumer = (ConsumerDTO) lastExport;
 
         assertThat(exportedConsumer.getUuid()).isEqualTo(consumer.getUuid());
         assertThat(exportedConsumer.getName()).isEqualTo(consumer.getName());
+        assertThat(exportedConsumer.getUrlWeb()).isEqualTo(WEB_URL);
+        assertThat(exportedConsumer.getUrlApi()).isEqualTo(API_URL);
         ConsumerTypeDTO exportedCType = exportedConsumer.getType();
         assertThat(exportedCType.getId()).isEqualTo(ctype.getId());
         assertThat(exportedCType.getLabel()).isEqualTo(ctype.getLabel());
         assertThat(exportedCType.isManifest()).isEqualTo(ctype.isManifest());
+        verifyZeroInteractions(this.configuration);
     }
 
     @Test
-    public void exportWithoutOverrides() throws IOException {
-        fail();
+    public void exportWithoutOverrides() throws ExportCreationException {
+        SpyingExporter<Object> fileExporter = new SpyingExporter<>();
+        ConsumerExporter exporter = new ConsumerExporter(configuration, fileExporter, translator);
+        ConsumerType ctype = createCType();
+        Consumer consumer = createConsumer(ctype);
+        when(configuration.getString(anyString())).thenReturn(CONFIG_OVERRIDE);
+        when(typeCurator.getConsumerType(any(Consumer.class))).thenReturn(ctype);
+
+        exporter.exportTo(EXPORT_DIR, consumer, null, null);
+
+        assertThat(fileExporter.calledTimes).isEqualTo(1);
+        Object lastExport = fileExporter.lastExports[0];
+        assertThat(lastExport).isInstanceOf(ConsumerDTO.class);
+        ConsumerDTO exportedConsumer = (ConsumerDTO) lastExport;
+
+        assertThat(exportedConsumer.getUuid()).isEqualTo(consumer.getUuid());
+        assertThat(exportedConsumer.getName()).isEqualTo(consumer.getName());
+        assertThat(exportedConsumer.getUrlWeb()).isEqualTo(CONFIG_OVERRIDE);
+        assertThat(exportedConsumer.getUrlApi()).isEqualTo(CONFIG_OVERRIDE);
+        ConsumerTypeDTO exportedCType = exportedConsumer.getType();
+        assertThat(exportedCType.getId()).isEqualTo(ctype.getId());
+        assertThat(exportedCType.getLabel()).isEqualTo(ctype.getLabel());
+        assertThat(exportedCType.isManifest()).isEqualTo(ctype.isManifest());
     }
 
     private Consumer createConsumer(ConsumerType ctype) {

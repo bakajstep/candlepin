@@ -24,12 +24,8 @@ import com.google.inject.Inject;
 
 import org.apache.commons.lang.StringUtils;
 
-import java.io.IOException;
 import java.nio.file.Path;
 
-/**
- * Consumer - maps to the consumer.json file
- */
 public class ConsumerExporter {
 
     private final Configuration config;
@@ -67,11 +63,11 @@ public class ConsumerExporter {
     }
 
     private String getWithOverride(String override, String key) {
-        String prefixApiUrl = config.getString(key);
         if (!StringUtils.isBlank(override)) {
             return override;
         }
 
+        String prefixApiUrl = this.config.getString(key);
         if (StringUtils.isBlank(prefixApiUrl)) {
             return null;
         }

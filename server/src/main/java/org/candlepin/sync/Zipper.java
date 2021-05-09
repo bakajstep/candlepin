@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.stream.Stream;
@@ -44,7 +45,7 @@ public class Zipper {
      * @return File reference to the new archive zip.
      */
     public Path makeArchive(String consumerUuid, Path tempDir, Path exportDir)
-        throws IOException {
+        throws ExportCreationException {
         String exportFileName = String.format("%s-%s.zip", consumerUuid, exportDir.getFileName());
         log.info("Creating archive of " + exportDir.toAbsolutePath() + " in: " +
             exportFileName);
@@ -54,34 +55,49 @@ public class Zipper {
 
         Path signedArchive = createSignedZipArchive(
             tempDir, archive, exportFileName,
-            this.pki.getSHA256WithRSAHash(Files.newInputStream(archive)),
+            createSignature(archive),
             "signed Candlepin export for " + consumerUuid);
 
         log.debug("Returning file: " + archive.toAbsolutePath());
         return signedArchive;
     }
 
+    private byte[] createSignature(Path archive) throws ExportCreationException {
+        try (InputStream inputStream = Files.newInputStream(archive)) {
+            return this.pki.getSHA256WithRSAHash(inputStream);
+        }
+        catch (IOException e) {
+            throw new ExportCreationException("", e);
+        }
+    }
+
     private Path createZipArchiveWithDir(Path tempDir, Path exportDir,
         String exportFileName, String comment)
-        throws IOException {
+        throws ExportCreationException {
 
         Path archive = tempDir.resolve(exportFileName);
         try (ZipOutputStream out = new ZipOutputStream(Files.newOutputStream(archive))) {
             out.setComment(comment);
             addFilesToArchive(out, exportDir);
         }
+        catch (IOException e) {
+            throw new ExportCreationException("", e);
+        }
         return archive;
     }
 
     private Path createSignedZipArchive(
         Path tempDir, Path toAdd,
-        String exportFileName, byte[] signature, String comment) throws IOException {
+        String exportFileName, byte[] signature, String comment) throws ExportCreationException {
 
         Path archive = tempDir.resolve(exportFileName);
         try (ZipOutputStream out = new ZipOutputStream(Files.newOutputStream(archive))) {
             out.setComment(comment);
             addFileToArchive(out, toAdd);
             addSignatureToArchive(out, signature);
+        }
+        catch (IOException e) {
+            throw new ExportCreationException("", e);
         }
         return archive;
     }

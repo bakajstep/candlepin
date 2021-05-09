@@ -14,7 +14,6 @@
  */
 package org.candlepin.sync;
 
-import org.candlepin.dto.ModelTranslator;
 import org.candlepin.model.Consumer;
 import org.candlepin.model.IdentityCertificate;
 

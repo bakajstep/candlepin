@@ -19,7 +19,6 @@ import org.candlepin.guice.PrincipalProvider;
 
 import com.google.inject.Inject;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Date;
 import java.util.Map;
@@ -31,21 +30,26 @@ import java.util.Map;
 public class MetaExporter {
 
     private final PrincipalProvider principalProvider;
-    private final FileExporter exporter;
+    private final FileExporter<Object> exporter;
 
     @Inject
-    MetaExporter(PrincipalProvider principalProvider, FileExporter exporter) {
+    MetaExporter(PrincipalProvider principalProvider, FileExporter<Object> exporter) {
         this.principalProvider = principalProvider;
         this.exporter = exporter;
     }
 
-    public void exportTo(Path path, String cdnKey) throws ExportCreationException {
-        Meta meta = new Meta(getVersion(), new Date(),
-            this.principalProvider.get().getName(), null, cdnKey);
-        this.exporter.exportTo(path, meta);
+    public void exportTo(Path exportDir, String cdnKey) throws ExportCreationException {
+        Path exportFile = exportDir.resolve("meta.json");
+        Meta meta = createMeta(cdnKey);
+        this.exporter.exportTo(exportFile, meta);
     }
 
-    private String getVersion() {
+    private Meta createMeta(String cdnKey) {
+        return new Meta(createVersion(), new Date(),
+            this.principalProvider.get().getName(), null, cdnKey);
+    }
+
+    private String createVersion() {
         // TODO This should be injectable dependency as it accesses the FS
         Map<String, String> map = VersionUtil.getVersionMap();
         System.out.println(map);

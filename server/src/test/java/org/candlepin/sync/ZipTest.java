@@ -27,8 +27,6 @@ import com.google.common.jimfs.Jimfs;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -40,8 +38,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 public class ZipTest {
-
-    private static final Logger log = LoggerFactory.getLogger(ZipTest.class);
 
     private FileSystem fileSystem;
 
@@ -74,7 +70,7 @@ public class ZipTest {
     }
 
     @Test
-    void name() throws IOException {
+    void name() throws ExportCreationException {
         PKIUtility mock = mock(PKIUtility.class);
         when(mock.getSHA256WithRSAHash(any())).thenReturn(new byte[]{});
         Zipper zipper = new Zipper(mock);
@@ -87,13 +83,14 @@ public class ZipTest {
 
         Path export = zipper.makeArchive("asd", target, source);
 
-        assertTrue(verifyHasEntry(export,"file2.txt"));
+        assertTrue(verifyHasEntry(export, "file2.txt"));
     }
 
     /**
      * return true if export has a given entry named name.
+     *
      * @param export zip file to inspect
-     * @param name entry
+     * @param name   entry
      * @return
      */
     private boolean verifyHasEntry(Path export, String name) {
@@ -128,8 +125,7 @@ public class ZipTest {
         }
         catch (Exception e) {
             e.printStackTrace();
-        }
-        finally {
+        } finally {
             if (zis != null) {
                 try {
                     zis.close();
