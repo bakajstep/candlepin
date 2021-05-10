@@ -26,14 +26,14 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 
-public class ScaCertificateExporter {
+public class ContentAccessCertExporter {
 
-    private static final Logger log = LoggerFactory.getLogger(ScaCertificateExporter.class);
+    private static final Logger log = LoggerFactory.getLogger(ContentAccessCertExporter.class);
 
     private final ContentAccessManager contentAccessManager;
     private final FileExporter<String> fileExporter;
 
-    public ScaCertificateExporter(ContentAccessManager contentAccessManager, FileExporter<String> fileExporter) {
+    public ContentAccessCertExporter(ContentAccessManager contentAccessManager, FileExporter<String> fileExporter) {
         this.contentAccessManager = contentAccessManager;
         this.fileExporter = fileExporter;
     }

@@ -26,15 +26,15 @@ import org.slf4j.LoggerFactory;
 import java.nio.file.Path;
 import java.util.Set;
 
-public class EntCertificateExporter {
+public class EntitlementCertExporter {
 
-    private static final Logger log = LoggerFactory.getLogger(EntCertificateExporter.class);
+    private static final Logger log = LoggerFactory.getLogger(EntitlementCertExporter.class);
 
     private final EntitlementCertServiceAdapter entCertAdapter;
     private final ExportRules exportRules;
     private final FileExporter<String> exporter;
 
-    public EntCertificateExporter(EntitlementCertServiceAdapter entCertAdapter, ExportRules exportRules, FileExporter<String> exporter) {
+    public EntitlementCertExporter(EntitlementCertServiceAdapter entCertAdapter, ExportRules exportRules, FileExporter<String> exporter) {
         this.entCertAdapter = entCertAdapter;
         this.exportRules = exportRules;
         this.exporter = exporter;

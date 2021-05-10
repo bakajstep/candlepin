@@ -29,8 +29,8 @@ public class Exporter {
     private static final Logger log = LoggerFactory.getLogger(Exporter.class);
 
     private final MetaExporter meta;
-    private final EntCertificateExporter entCerts;
-    private final ScaCertificateExporter scaCerts;
+    private final EntitlementCertExporter entCerts;
+    private final ContentAccessCertExporter scaCerts;
     private final IdentCertificateExporter identCerts;
     private final ConsumerExporter consumerExporter;
     private final ConsumerTypeExporter consumerTypes;
@@ -45,8 +45,8 @@ public class Exporter {
 
     @Inject
     public Exporter(MetaExporter meta,
-        EntCertificateExporter entCertificateExporter,
-        ScaCertificateExporter scaCertificateExporter,
+        EntitlementCertExporter entitlementCertExporter,
+        ContentAccessCertExporter contentAccessCertExporter,
         IdentCertificateExporter identCertificateExporter,
         ConsumerExporter consumerExporter,
         ConsumerTypeExporter consumerType,
@@ -59,8 +59,8 @@ public class Exporter {
         Zipper zipper
     ) {
         this.meta = meta;
-        this.entCerts = entCertificateExporter;
-        this.scaCerts = scaCertificateExporter;
+        this.entCerts = entitlementCertExporter;
+        this.scaCerts = contentAccessCertExporter;
         this.identCerts = identCertificateExporter;
         this.consumerExporter = consumerExporter;
         this.consumerTypes = consumerType;

@@ -25,7 +25,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import org.candlepin.model.Consumer;
-import org.candlepin.policy.js.export.ExportRules;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,8 +43,8 @@ public class ExporterTest {
     public static final String CONSUMER_UUID = "consumer_uuid";
 
     private MetaExporter me;
-    private EntCertificateExporter ece;
-    private ScaCertificateExporter sce;
+    private EntitlementCertExporter ece;
+    private ContentAccessCertExporter sce;
     private IdentCertificateExporter ice;
     private ConsumerExporter ce;
     private ConsumerTypeExporter cte;
@@ -61,8 +60,8 @@ public class ExporterTest {
     @BeforeEach
     public void setUp() {
         this.me = mock(MetaExporter.class);
-        this.ece = mock(EntCertificateExporter.class);
-        this.sce = mock(ScaCertificateExporter.class);
+        this.ece = mock(EntitlementCertExporter.class);
+        this.sce = mock(ContentAccessCertExporter.class);
         this.ice = mock(IdentCertificateExporter.class);
         this.su = mock(SyncUtils.class);
         this.ce = mock(ConsumerExporter.class);
