@@ -17,6 +17,8 @@ package org.candlepin.sync;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -34,14 +36,12 @@ import java.nio.file.Paths;
 import java.util.HashSet;
 
 
-// TODO: FIXME: Rewrite this test to not be so reliant upon mocks. It's making things incredibly brittle and
-// wasting dev time tracking down non-issues when a mock silently fails because the implementation changes.
-
-
 /**
- * ExporterTest
+ * Orchestrates exporters
  */
 public class ExporterTest {
+
+    public static final String CONSUMER_UUID = "consumer_uuid";
 
     private MetaExporter me;
     private EntCertificateExporter ece;
@@ -92,25 +92,39 @@ public class ExporterTest {
 
     @Test
     void entitlementExport() throws ExportCreationException, IOException {
-        when(this.su.makeTempDirPath(anyString())).thenReturn(Paths.get("/tmp/"));
+        when(this.su.makeTempDirPath(anyString())).thenReturn(Paths.get("/tmp"));
 
-        this.exporter.getEntitlementExport(new Consumer(), new HashSet<>());
+        this.exporter.getEntitlementExport(createConsumer(), new HashSet<>());
 
         verify(this.me).exportTo(any(Path.class), any());
         verify(this.ece).exportTo(any(Path.class), any(Consumer.class), anySet(), anyBoolean());
         verify(this.sce).exportTo(any(Path.class), any(Consumer.class));
+        verify(this.zipper).makeArchive(eq(CONSUMER_UUID), any(Path.class), any(Path.class));
     }
 
     @Test
-    // todo
     void fullExport() throws ExportCreationException, IOException {
-        when(this.su.makeTempDirPath(anyString())).thenReturn(Paths.get("/tmp/"));
+        when(this.su.makeTempDirPath(anyString())).thenReturn(Paths.get("/tmp"));
 
-        this.exporter.getEntitlementExport(new Consumer(), new HashSet<>());
+        this.exporter.getFullExport(createConsumer(), "cdn", "webUrl", "apiUrl");
 
         verify(this.me).exportTo(any(Path.class), any());
-        verify(this.ece).exportTo(any(Path.class), any(Consumer.class), anySet(), anyBoolean());
-        verify(this.sce).exportTo(any(Path.class), any(Consumer.class));
+        verify(this.ce).exportTo(any(Path.class), any(Consumer.class), anyString(), anyString());
+        verify(this.ice).exportTo(any(Path.class), any(Consumer.class));
+        verify(this.ee).exportTo(any(Path.class), any(Consumer.class));
+        verify(this.ece).exportTo(any(Path.class), any(Consumer.class), isNull(), anyBoolean());
+        verify(this.pe).exportTo(any(Path.class), any(Consumer.class));
+        verify(this.cte).exportTo(any(Path.class));
+        verify(this.re).exportTo(any(Path.class));
+        verify(this.dve).exportTo(any(Path.class));
+        verify(this.cdne).exportTo(any(Path.class));
+        verify(this.zipper).makeArchive(eq(CONSUMER_UUID), any(Path.class), any(Path.class));
+    }
+
+    private Consumer createConsumer() {
+        Consumer consumer = new Consumer();
+        consumer.setUuid(CONSUMER_UUID);
+        return consumer;
     }
 
     //    private KeyPair createKeyPair() {

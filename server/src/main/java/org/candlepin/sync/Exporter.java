@@ -14,38 +14,15 @@
  */
 package org.candlepin.sync;
 
-import org.candlepin.common.config.Configuration;
-import org.candlepin.controller.ContentAccessManager;
-import org.candlepin.dto.ModelTranslator;
-import org.candlepin.guice.PrincipalProvider;
-import org.candlepin.model.Cdn;
-import org.candlepin.model.CdnCurator;
 import org.candlepin.model.Consumer;
-import org.candlepin.model.ConsumerType;
-import org.candlepin.model.ConsumerTypeCurator;
-import org.candlepin.model.DistributorVersion;
-import org.candlepin.model.DistributorVersionCurator;
-import org.candlepin.model.EntitlementCurator;
-import org.candlepin.model.OwnerCurator;
-import org.candlepin.model.ResultIterator;
-import org.candlepin.pki.PKIUtility;
-import org.candlepin.policy.js.export.ExportRules;
-import org.candlepin.service.EntitlementCertServiceAdapter;
-import org.candlepin.service.ProductServiceAdapter;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
 
-import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.List;
 import java.util.Set;
 
 public class Exporter {
@@ -101,46 +78,46 @@ public class Exporter {
      *
      * @param consumer the target consumer to export.
      * @param cdnLabel the CDN label to store in the meta file.
-     * @param webUrl the URL pointing to the manifest's originating web application.
-     * @param apiUrl the API URL pointing to the manifest's originating candlepin API.
+     * @param webUrl   the URL pointing to the manifest's originating web application.
+     * @param apiUrl   the API URL pointing to the manifest's originating candlepin API.
      * @return a newly created manifest file for the target consumer.
      * @throws ExportCreationException when an error occurs while creating the manifest file.
      */
-    public Path getFullExport(Consumer consumer, String cdnLabel, String webUrl,
-        String apiUrl) throws ExportCreationException {
-        try {
-            Path tmpDir = syncUtils.makeTempDirPath("export");
-            Path baseDir = tmpDir.resolve("export");
+    public Path getFullExport(Consumer consumer, String cdnLabel, String webUrl, String apiUrl)
+        throws ExportCreationException {
 
-            exportMeta(baseDir, cdnLabel);
-            exportConsumer(baseDir, consumer, webUrl, apiUrl);
-            exportIdentityCertificate(baseDir, consumer);
-            exportEntitlements(baseDir, consumer);
-            exportEntitlementsCerts(baseDir, consumer, null, true);
-            exportProducts(baseDir, consumer);
-            exportConsumerTypes(baseDir);
-            exportRules(baseDir);
-            exportDistributorVersions(baseDir);
-            exportContentDeliveryNetworks(baseDir);
-            return makeArchive(consumer, tmpDir, baseDir);
-        }
-        catch (IOException e) {
-            log.error("Error generating entitlement export", e);
-            throw new ExportCreationException("Unable to create export archive", e);
-        }
+        Path tmpDir = createTmpDir();
+        Path baseDir = tmpDir.resolve("export");
+
+        exportMeta(baseDir, cdnLabel);
+        exportConsumer(baseDir, consumer, webUrl, apiUrl);
+        exportIdentityCertificate(baseDir, consumer);
+        exportEntitlements(baseDir, consumer);
+        exportEntitlementsCerts(baseDir, consumer, null, true);
+        exportProducts(baseDir, consumer);
+        exportConsumerTypes(baseDir);
+        exportRules(baseDir);
+        exportDistributorVersions(baseDir);
+        exportContentDeliveryNetworks(baseDir);
+
+        return makeArchive(consumer, tmpDir, baseDir);
     }
 
     public Path getEntitlementExport(Consumer consumer, Set<Long> serials) throws ExportCreationException {
         // TODO: need to delete tmpDir (which contains the archive,
         // which we need to return...)
-        try {
-            Path tmpDir = syncUtils.makeTempDirPath("export");
-            Path baseDir = tmpDir.resolve("export");
+        Path tmpDir = createTmpDir();
+        Path baseDir = tmpDir.resolve("export");
 
-            exportMeta(baseDir, null);
-            exportEntitlementsCerts(baseDir, consumer, serials, false);
-            exportContentAccessCerts(baseDir, consumer);
-            return makeArchive(consumer, tmpDir, baseDir);
+        exportMeta(baseDir, null);
+        exportEntitlementsCerts(baseDir, consumer, serials, false);
+        exportContentAccessCerts(baseDir, consumer);
+        return makeArchive(consumer, tmpDir, baseDir);
+    }
+
+    private Path createTmpDir() throws ExportCreationException {
+        try {
+            return syncUtils.makeTempDirPath("export");
         }
         catch (IOException e) {
             log.error("Error generating entitlement export", e);
@@ -148,18 +125,12 @@ public class Exporter {
         }
     }
 
-    /**
-     * Create a tar.gz archive of the exported directory.
-     *
-     * @param exportDir Directory where Candlepin data was exported.
-     * @return File reference to the new archive zip.
-     */
     private Path makeArchive(Consumer consumer, Path tempDir, Path exportDir)
         throws ExportCreationException {
-        return this.zipper.makeArchive(consumer.getUuid(),tempDir,exportDir);
+        return this.zipper.makeArchive(consumer.getUuid(), tempDir, exportDir);
     }
 
-    private void exportMeta(Path baseDir, String cdnKey) throws IOException, ExportCreationException {
+    private void exportMeta(Path baseDir, String cdnKey) throws ExportCreationException {
         meta.exportTo(baseDir, cdnKey);
     }
 
@@ -173,19 +144,6 @@ public class Exporter {
         this.entCerts.exportTo(baseDir, consumer, serials, manifest);
     }
 
-    /**
-     * Exports content access certificates for a consumer.
-     * Consumer must belong to owner with SCA enabled.
-     *
-     * @param consumer
-     *  Consumer for which content access certificates needs to be exported.
-     *
-     * @param baseDir
-     *  Base directory path.
-     *
-     * @throws IOException
-     *  Throws IO exception if unable to export content access certs for the consumer.
-     */
     private void exportContentAccessCerts(Path baseDir, Consumer consumer) throws ExportCreationException {
         this.scaCerts.exportTo(baseDir, consumer);
     }
@@ -204,11 +162,11 @@ public class Exporter {
         this.productExporter.exportTo(baseDir, consumer);
     }
 
-    private void exportConsumerTypes(Path baseDir) throws IOException, ExportCreationException {
+    private void exportConsumerTypes(Path baseDir) throws ExportCreationException {
         this.consumerTypes.exportTo(baseDir);
     }
 
-    private void exportRules(Path baseDir) throws IOException, ExportCreationException {
+    private void exportRules(Path baseDir) throws ExportCreationException {
         this.rules.exportTo(baseDir);
     }
 

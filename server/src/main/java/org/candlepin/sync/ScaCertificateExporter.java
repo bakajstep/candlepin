@@ -38,6 +38,19 @@ public class ScaCertificateExporter {
         this.fileExporter = fileExporter;
     }
 
+    /**
+     * Exports content access certificates for a consumer.
+     * Consumer must belong to owner with SCA enabled.
+     *
+     * @param consumer
+     *  Consumer for which content access certificates needs to be exported.
+     *
+     * @param exportDir
+     *  Base directory path.
+     *
+     * @throws ExportCreationException
+     *  Thrown if unable to export content access certs for the consumer.
+     */
     public void exportTo(Path exportDir, Consumer consumer) throws ExportCreationException {
         ContentAccessCertificate contentAccessCert = null;
 
