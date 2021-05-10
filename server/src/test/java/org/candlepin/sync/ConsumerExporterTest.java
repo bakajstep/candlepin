@@ -78,10 +78,7 @@ public class ConsumerExporterTest {
         exporter.exportTo(EXPORT_DIR, consumer, WEB_URL, API_URL);
 
         assertThat(fileExporter.calledTimes).isEqualTo(1);
-        Object lastExport = fileExporter.lastExports[0];
-        assertThat(lastExport).isInstanceOf(ConsumerDTO.class);
-        ConsumerDTO exportedConsumer = (ConsumerDTO) lastExport;
-
+        ConsumerDTO exportedConsumer = (ConsumerDTO) fileExporter.nth(0);
         assertThat(exportedConsumer.getUuid()).isEqualTo(consumer.getUuid());
         assertThat(exportedConsumer.getName()).isEqualTo(consumer.getName());
         assertThat(exportedConsumer.getUrlWeb()).isEqualTo(WEB_URL);
@@ -105,10 +102,7 @@ public class ConsumerExporterTest {
         exporter.exportTo(EXPORT_DIR, consumer, null, null);
 
         assertThat(fileExporter.calledTimes).isEqualTo(1);
-        Object lastExport = fileExporter.lastExports[0];
-        assertThat(lastExport).isInstanceOf(ConsumerDTO.class);
-        ConsumerDTO exportedConsumer = (ConsumerDTO) lastExport;
-
+        ConsumerDTO exportedConsumer = (ConsumerDTO) fileExporter.nth(0);
         assertThat(exportedConsumer.getUuid()).isEqualTo(consumer.getUuid());
         assertThat(exportedConsumer.getName()).isEqualTo(consumer.getName());
         assertThat(exportedConsumer.getUrlWeb()).isEqualTo(CONFIG_OVERRIDE);

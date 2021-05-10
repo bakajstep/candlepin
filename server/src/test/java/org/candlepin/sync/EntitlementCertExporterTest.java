@@ -123,8 +123,8 @@ class EntitlementCertExporterTest {
 
         exporter.exportTo(EXPORT_PATH, consumer, certSerials, false);
 
-        String cert = (String) fileExporter.lastExports[0];
-        String key = (String) fileExporter.lastExports[1];
+        String cert = (String) fileExporter.nth(0);
+        String key = (String) fileExporter.nth(0, 1);
         assertEquals(CERT, cert);
         assertEquals(KEY, key);
     }

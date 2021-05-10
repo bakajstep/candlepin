@@ -84,7 +84,7 @@ class EntitlementExporterTest {
         exporter.exportTo(EXPORT_DIR, consumer);
 
         assertThat(fileExporter.calledTimes).isEqualTo(2);
-        assertThat(fileExporter.exports).hasSize(2);
+        // TODO better asserts
         assertThat(fileExporter.exports.get(0)).hasSize(1);
         assertThat(fileExporter.exports.get(1)).hasSize(1);
     }

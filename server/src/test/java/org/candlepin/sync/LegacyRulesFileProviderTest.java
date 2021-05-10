@@ -25,14 +25,6 @@ import org.junit.jupiter.api.Test;
 class LegacyRulesFileProviderTest {
 
     @Test
-    void couldNotReadLegacyRules() {
-        final LegacyRulesFileProvider provider = new LegacyRulesFileProvider();
-
-        assertThatThrownBy(provider::get)
-            .isInstanceOf(ExportCreationException.class);
-    }
-
-    @Test
     void returnsPathToLegacyRules() throws ExportCreationException {
         final LegacyRulesFileProvider provider = new LegacyRulesFileProvider();
 

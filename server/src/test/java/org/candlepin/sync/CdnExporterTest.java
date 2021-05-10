@@ -60,7 +60,7 @@ class CdnExporterTest {
         exporter.exportTo(EXPORT_PATH);
 
         assertEquals(3, fileExporter.calledTimes);
-        CdnDTO result = (CdnDTO) fileExporter.lastExports[0];
+        CdnDTO result = (CdnDTO) fileExporter.nth(0);
         assertEquals(result.getLabel(), "cdn_label_3");
         assertEquals(result.getName(), "cdn_name_3");
         assertEquals(result.getUrl(), "cdn_url_3");
@@ -75,7 +75,6 @@ class CdnExporterTest {
         exporter.exportTo(EXPORT_PATH);
 
         assertEquals(0, fileExporter.calledTimes);
-        assertEquals(0, fileExporter.exports.size());
     }
 
     private void mockCurator(List<Cdn> cdns) {

@@ -36,7 +36,11 @@ public class SpyingExporter<T> implements FileExporter<T> {
     }
 
     public Object nth(int i) {
-        return this.exports.get(i).get(0);
+        return nth(i, 0);
+    }
+
+    public Object nth(int i, int j) {
+        return this.exports.get(i).get(j);
     }
 
 }

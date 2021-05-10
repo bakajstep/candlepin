@@ -71,7 +71,6 @@ class DistributorVersionExporterTest {
         exporter.exportTo(EXPORT_PATH);
 
         assertEquals(0, fileExporter.calledTimes);
-        assertEquals(0, fileExporter.exports.size());
     }
 
     private List<DistributorVersion> createDVs() {

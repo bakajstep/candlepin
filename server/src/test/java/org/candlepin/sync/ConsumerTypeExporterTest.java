@@ -64,7 +64,7 @@ public class ConsumerTypeExporterTest {
         consumerType.exportTo(EXPORT_PATH);
 
         assertEquals(1, fileExporter.calledTimes);
-        ConsumerTypeDTO export = (ConsumerTypeDTO) fileExporter.lastExports[0];
+        ConsumerTypeDTO export = (ConsumerTypeDTO) fileExporter.nth(0);
         assertNull(export.getId());
         assertEquals(TEST_LABEL, export.getLabel());
         assertFalse(export.isManifest());
