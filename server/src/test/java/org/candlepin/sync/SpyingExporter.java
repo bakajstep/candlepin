@@ -34,4 +34,9 @@ public class SpyingExporter<T> implements FileExporter<T> {
         this.lastExports = exports;
         this.calledTimes++;
     }
+
+    public Object nth(int i) {
+        return this.exports.get(i).get(0);
+    }
+
 }

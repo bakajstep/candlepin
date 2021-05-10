@@ -18,30 +18,21 @@ import org.candlepin.model.RulesCurator;
 
 import com.google.inject.Inject;
 
-import org.apache.commons.io.FileUtils;
-
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
-/**
- * RulesExporter
- */
 public class RulesExporter {
 
-    private static final String LEGACY_RULES_FILE = "/rules/default-rules.js";
-
-    private Path legacyRulesFile;
-    private RulesCurator rulesCurator;
-    private FileExporter<String> fileExporter;
+    private final RulesCurator rulesCurator;
+    private final LegacyRulesFileProvider legacyRules;
+    private final FileExporter<String> fileExporter;
 
     @Inject
-    public RulesExporter(Path asd, RulesCurator rulesCurator) {
+    public RulesExporter(RulesCurator rulesCurator, LegacyRulesFileProvider legacyRules, FileExporter<String> fileExporter) {
         this.rulesCurator = rulesCurator;
+        this.legacyRules = legacyRules;
+        this.fileExporter = fileExporter;
     }
 
     public void exportTo(Path exportDir) throws ExportCreationException {
@@ -49,11 +40,15 @@ public class RulesExporter {
         // move to a new directory for versioned rules file:
         Path newRulesDir = exportDir.resolve("rules2");
         Path newRulesFile = newRulesDir.resolve("rules.js");
-        export(newRulesFile);
+        exportRules(newRulesFile);
         exportLegacyRules(exportDir);
     }
 
-    /*
+    private void exportRules(Path export) throws ExportCreationException {
+        fileExporter.exportTo(export, rulesCurator.getRules().getRules());
+    }
+
+    /**
      * We still need to export a copy of the deprecated default-rules.js so new manifests
      * can still be imported by old candlepin servers.
      */
@@ -61,20 +56,17 @@ public class RulesExporter {
         Path oldRulesDir = baseDir.resolve("rules");
         Path oldRulesFile = oldRulesDir.resolve("default-rules.js");
 
-        // TODO: does this need a "exporter" object as well?
-        try {
-            Files.copy(this.legacyRulesFile, oldRulesFile);
-        }
-        catch (IOException e) {
-            throw new ExportCreationException("", e);
-        }
-//        FileUtils.copyFile(new File(
-//                this.getClass().getResource(LEGACY_RULES_FILE).getPath()),
-//            oldRulesFile);
+        String legacyRules = readLegacyRules();
+        fileExporter.exportTo(oldRulesFile, legacyRules);
     }
 
-    private void export(Path export) throws ExportCreationException {
-        fileExporter.exportTo(export, rulesCurator.getRules().getRules());
+    private String readLegacyRules() throws ExportCreationException {
+        try {
+            return Files.readString(this.legacyRules.get());
+        }
+        catch (IOException e) {
+            throw new ExportCreationException("Failed to copy legacy rules", e);
+        }
     }
 
 }

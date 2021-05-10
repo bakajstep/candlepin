@@ -14,33 +14,60 @@
  */
 package org.candlepin.sync;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import org.candlepin.model.Rules;
 import org.candlepin.model.RulesCurator;
 
-import org.junit.Test;
+import com.google.common.jimfs.Configuration;
+import com.google.common.jimfs.Jimfs;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystem;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
-/**
- * RulesExporterTest
- */
 public class RulesExporterTest {
 
-    private String FAKE_RULES = "//Version: 2.0\nHELLO WORLD";
+    private static final String FAKE_RULES = "//Version: 2.0\nHELLO WORLD";
+    private static final String LEGACY_RULES = "//Version: 2.0\nLEGACY WORLD";
+
+    private FileSystem fileSystem;
+
+    @BeforeEach
+    void setUp() {
+        this.fileSystem = Jimfs.newFileSystem(Configuration.unix());
+    }
 
     @Test
-    public void testMetaExporter() throws ExportCreationException {
+    public void exportRules() throws ExportCreationException, IOException {
+        Path exportPath = this.fileSystem.getPath("/export");
+        Path legacyRulesPath = createLegacyRules(exportPath);
+        SpyingExporter<String> fileExporter = new SpyingExporter<>();
+        LegacyRulesFileProvider legacyRules = mock(LegacyRulesFileProvider.class);
+        when(legacyRules.get()).thenReturn(legacyRulesPath);
         RulesCurator rulesCurator = mock(RulesCurator.class);
         when(rulesCurator.getRules()).thenReturn(new Rules(FAKE_RULES));
-        RulesExporter exporter = new RulesExporter(null, rulesCurator);
-        StringWriter writer = new StringWriter();
-        exporter.exportTo(null);
-        assertEquals(FAKE_RULES, writer.toString());
+        RulesExporter exporter = new RulesExporter(rulesCurator, legacyRules, fileExporter);
+
+        exporter.exportTo(exportPath);
+
+        assertEquals(2, fileExporter.calledTimes);
+        assertEquals(FAKE_RULES, fileExporter.nth(0));
+        assertEquals(LEGACY_RULES, fileExporter.nth(1));
+    }
+
+    private Path createLegacyRules(Path exportPath) throws IOException {
+        Path legacyRules = exportPath.resolve("legacy");
+        Files.createDirectories(exportPath);
+        Files.write(legacyRules, LEGACY_RULES.getBytes(StandardCharsets.UTF_8));
+        return legacyRules;
     }
 
 }

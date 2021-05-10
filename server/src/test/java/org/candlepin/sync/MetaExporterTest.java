@@ -32,7 +32,7 @@ public class MetaExporterTest {
 
     @Test
     public void testMetaExporter() throws ExportCreationException {
-        SpyingExporter exporter = new SpyingExporter();
+        SpyingExporter<Object> exporter = new SpyingExporter<>();
         NoAuthPrincipal principal = new NoAuthPrincipal();
         PrincipalProvider principalProvider = mock(PrincipalProvider.class);
         when(principalProvider.get()).thenReturn(principal);
