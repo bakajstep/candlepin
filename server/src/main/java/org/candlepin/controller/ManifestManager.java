@@ -17,6 +17,7 @@ package org.candlepin.controller;
 import org.candlepin.async.JobConfig;
 import org.candlepin.async.tasks.ExportJob;
 import org.candlepin.async.tasks.ImportJob;
+import org.candlepin.async.tasks.ManifestCleanerJob;
 import org.candlepin.audit.EventFactory;
 import org.candlepin.audit.EventSink;
 import org.candlepin.common.exceptions.BadRequestException;
@@ -58,6 +59,8 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Set;
 
 import javax.servlet.http.HttpServletResponse;
@@ -137,7 +140,7 @@ public class ManifestManager {
      * @return an archive of the target consumer
      * @throws ExportCreationException when an export fails.
      */
-    public File generateManifest(String consumerUuid, String cdnLabel, String webUrl, String apiUrl)
+    public Path generateManifest(String consumerUuid, String cdnLabel, String webUrl, String apiUrl)
         throws ExportCreationException {
 
         log.info("Exporting consumer {}", consumerUuid);
@@ -145,7 +148,7 @@ public class ManifestManager {
         Consumer consumer = validateConsumerForExport(consumerUuid, cdnLabel);
         poolManager.regenerateDirtyEntitlements(consumer);
 
-        File export = exporter.getFullExport(consumer, cdnLabel, webUrl, apiUrl);
+        Path export = exporter.getFullExport(consumer, cdnLabel, webUrl, apiUrl);
         sink.queueEvent(eventFactory.exportCreated(consumer));
 
         return export;
@@ -162,7 +165,7 @@ public class ManifestManager {
      * @return the {@link JobDetail} that represents the asynchronous import job to start.
      * @throws ManifestFileServiceException if the archive could not be stored.
      */
-    public JobConfig importManifestAsync(Owner owner, File archive, String uploadedFileName,
+    public JobConfig importManifestAsync(Owner owner, Path archive, String uploadedFileName,
         ConflictOverrides overrides) throws ManifestFileServiceException {
         ManifestFile manifestRecordId = storeImport(archive, owner);
         return ImportJob.createJobConfig()
@@ -341,7 +344,7 @@ public class ManifestManager {
 
         Consumer consumer = validateConsumerForExport(consumerUuid, cdnLabel);
 
-        File export = null;
+        Path export = null;
         try {
             poolManager.regenerateDirtyEntitlements(entitlementCurator.listByConsumer(consumer));
             export = exporter.getFullExport(consumer, cdnLabel, webUrl, apiUrl);
@@ -355,9 +358,9 @@ public class ManifestManager {
         finally {
             // We no longer need the export work directory since the archive has been saved in the DB.
             if (export != null) {
-                File workDir = export.getParentFile();
+                Path workDir = export.getParent();
                 try {
-                    FileUtils.deleteDirectory(workDir);
+                    Files.deleteIfExists(workDir);
                 }
                 catch (IOException ioe) {
                     // It'll get cleaned up by the ManifestCleanerJob if it couldn't
@@ -395,7 +398,7 @@ public class ManifestManager {
      * @return an archive to the specified consumer's entitlements.
      * @throws ExportCreationException if the archive could not be created.
      */
-    public File generateEntitlementArchive(Consumer consumer, Set<Long> serials)
+    public Path generateEntitlementArchive(Consumer consumer, Set<Long> serials)
         throws ExportCreationException {
 
         log.debug("Getting client certificate zip file for consumer: {}", consumer.getUuid());
@@ -411,7 +414,7 @@ public class ManifestManager {
      * @return the id of the stored manifest file.
      */
     @Transactional
-    protected ManifestFile storeImport(File importFile, Owner targetOwner) throws ManifestFileServiceException {
+    protected ManifestFile storeImport(Path importFile, Owner targetOwner) throws ManifestFileServiceException {
         // Store the manifest record, and then store the file.
         return storeFile(importFile, ManifestFileType.IMPORT, targetOwner.getKey());
     }
@@ -424,7 +427,7 @@ public class ManifestManager {
      * @throws ManifestFileServiceException
      */
     @Transactional
-    protected ManifestFile storeExport(File exportFile, Consumer distributor)
+    protected ManifestFile storeExport(Path exportFile, Consumer distributor)
         throws ManifestFileServiceException {
         // Only allow a single export for a consumer at a time. Delete all others before
         // storing the new one.
@@ -433,9 +436,9 @@ public class ManifestManager {
         return storeFile(exportFile, ManifestFileType.EXPORT, distributor.getUuid());
     }
 
-    private ManifestFile storeFile(File targetFile, ManifestFileType type, String targetId)
+    private ManifestFile storeFile(Path targetFile, ManifestFileType type, String targetId)
         throws ManifestFileServiceException {
-        return manifestFileService.store(type, targetFile, principalProvider.get().getName(), targetId);
+        return manifestFileService.store(type, targetFile.toFile(), principalProvider.get().getName(), targetId);
     }
 
 }

@@ -44,7 +44,7 @@ public class RulesExporter {
         this.rulesCurator = rulesCurator;
     }
 
-    private void exportTo(Path exportDir) throws ExportCreationException {
+    public void exportTo(Path exportDir) throws ExportCreationException {
         // Because old candlepin servers assume to import a file in rules dir, we had to
         // move to a new directory for versioned rules file:
         Path newRulesDir = exportDir.resolve("rules2");
@@ -73,7 +73,7 @@ public class RulesExporter {
 //            oldRulesFile);
     }
 
-    void export(Path export) throws ExportCreationException {
+    private void export(Path export) throws ExportCreationException {
         fileExporter.exportTo(export, rulesCurator.getRules().getRules());
     }
 

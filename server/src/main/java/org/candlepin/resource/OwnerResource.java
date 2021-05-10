@@ -1607,7 +1607,7 @@ public class OwnerResource implements OwnersApi {
             fileData = getArchiveFromResponse(input);
             String archivePath = fileData.getData().getAbsolutePath();
             log.info("Running async import of archive {} for owner {}", archivePath, owner.getDisplayName());
-            JobConfig config = manifestManager.importManifestAsync(owner, fileData.getData(),
+            JobConfig config = manifestManager.importManifestAsync(owner, fileData.getData().toPath(),
                 fileData.getUploadedFilename(), overrides);
 
             try {

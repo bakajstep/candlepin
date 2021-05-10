@@ -17,6 +17,8 @@ package org.candlepin.sync;
 import org.candlepin.model.Consumer;
 import org.candlepin.model.IdentityCertificate;
 
+import com.google.inject.Inject;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,6 +30,7 @@ public class IdentCertificateExporter {
 
     private final FileExporter<String> fileExporter;
 
+    @Inject
     public IdentCertificateExporter(FileExporter<String> fileExporter) {
         this.fileExporter = fileExporter;
     }

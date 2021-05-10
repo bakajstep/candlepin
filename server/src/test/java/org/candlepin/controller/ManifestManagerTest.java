@@ -73,6 +73,7 @@ import org.xnap.commons.i18n.I18nFactory;
 
 import java.io.File;
 import java.io.InputStream;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -218,10 +219,10 @@ public class ManifestManagerTest {
         when(consumerCurator.verifyAndLookupConsumer(eq(consumer.getUuid()))).thenReturn(consumer);
         when(cdnCurator.getByLabel(eq(cdn.getLabel()))).thenReturn(cdn);
 
-        File manifestFile = mock(File.class);
+        Path manifestFile = mock(Path.class);
         when(exporter.getFullExport(eq(consumer), eq(cdn.getLabel()), eq(webAppPrefix),
             eq(apiUrl))).thenReturn(manifestFile);
-        File result = manager.generateManifest(consumer.getUuid(), cdn.getLabel(), webAppPrefix, apiUrl);
+        Path result = manager.generateManifest(consumer.getUuid(), cdn.getLabel(), webAppPrefix, apiUrl);
         assertEquals(manifestFile, result);
 
         verify(exporter).getFullExport(eq(consumer), eq(cdn.getLabel()), eq(webAppPrefix), eq(apiUrl));
@@ -273,7 +274,7 @@ public class ManifestManagerTest {
     @Test
     public void testManifestImportAsync() throws Exception {
         Owner owner = TestUtil.createOwner();
-        File file = mock(File.class);
+        Path file = mock(Path.class);
         String filename = "manifest.zip";
         ConflictOverrides overrides = new ConflictOverrides(Conflict.DISTRIBUTOR_CONFLICT);
 
@@ -281,7 +282,7 @@ public class ManifestManagerTest {
         when(principalProvider.get()).thenReturn(principal);
 
         ManifestFile manifest = mock(ManifestFile.class);
-        when(fileService.store(ManifestFileType.IMPORT, file, principal.getName(),
+        when(fileService.store(ManifestFileType.IMPORT, file.toFile(), principal.getName(),
             owner.getKey())).thenReturn(manifest);
 
         JobConfig job = manager.importManifestAsync(owner, file, filename, overrides);
@@ -296,7 +297,7 @@ public class ManifestManagerTest {
             new ConflictOverrides(jobArgs.getAs("conflict_overrides", String[].class));
         assertTrue(retrievedOverrides.isForced(Conflict.DISTRIBUTOR_CONFLICT));
 
-        verify(fileService).store(eq(ManifestFileType.IMPORT), eq(file), eq(principal.getName()),
+        verify(fileService).store(eq(ManifestFileType.IMPORT), any(), eq(principal.getName()),
             eq(owner.getKey()));
     }
 

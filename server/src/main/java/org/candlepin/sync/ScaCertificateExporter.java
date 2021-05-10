@@ -56,7 +56,7 @@ public class ScaCertificateExporter {
         }
     }
 
-    void exportCertificate(Certificate<?> cert, Path file) throws ExportCreationException {
+    private void exportCertificate(Certificate<?> cert, Path file) throws ExportCreationException {
         this.fileExporter.exportTo(file,
             cert.getCert(),
             cert.getKey()

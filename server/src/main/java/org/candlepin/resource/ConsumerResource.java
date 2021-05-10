@@ -152,6 +152,7 @@ import org.xnap.commons.i18n.I18n;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -2011,11 +2012,11 @@ public class ConsumerResource implements ConsumersApi {
             serialSet = null;
         }
 
-        File archive;
+        Path archive;
         try {
             archive = manifestManager.generateEntitlementArchive(consumer, serialSet);
             response.addHeader("Content-Disposition", "attachment; filename=" +
-                archive.getName());
+                archive.getFileName());
 
             return archive;
         }
@@ -2471,9 +2472,9 @@ public class ConsumerResource implements ConsumersApi {
         ConsumerType ctype = this.consumerTypeCurator.getConsumerType(consumer);
         HttpServletResponse response = ResteasyContext.getContextData(HttpServletResponse.class);
         try {
-            File archive = manifestManager.generateManifest(consumerUuid, cdnLabel, webAppPrefix, apiUrl);
-            response.addHeader("Content-Disposition", "attachment; filename=" + archive.getName());
-            return archive;
+            Path archive = manifestManager.generateManifest(consumerUuid, cdnLabel, webAppPrefix, apiUrl);
+            response.addHeader("Content-Disposition", "attachment; filename=" + archive.getFileName());
+            return archive.toFile();
         }
         catch (ExportCreationException e) {
             throw new IseException(i18n.tr("Unable to create export archive"), e);

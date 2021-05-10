@@ -16,8 +16,6 @@
 package org.candlepin.sync;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import org.candlepin.dto.ModelTranslator;
 import org.candlepin.dto.SimpleModelTranslator;
@@ -25,39 +23,33 @@ import org.candlepin.dto.manifest.v1.CertificateDTO;
 import org.candlepin.dto.manifest.v1.CertificateSerialDTO;
 import org.candlepin.dto.manifest.v1.CertificateSerialTranslator;
 import org.candlepin.dto.manifest.v1.CertificateTranslator;
-import org.candlepin.dto.manifest.v1.DistributorVersionDTO;
-import org.candlepin.dto.manifest.v1.DistributorVersionTranslator;
 import org.candlepin.model.Certificate;
 import org.candlepin.model.CertificateSerial;
 import org.candlepin.model.Consumer;
 import org.candlepin.model.ConsumerType;
-import org.candlepin.model.DistributorVersion;
-import org.candlepin.model.DistributorVersionCurator;
 import org.candlepin.model.IdentityCertificate;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.List;
 
 class IdentCertExporterTest {
 
-    private ModelTranslator translator;
+    public static final String CERT = "id_cert_payload_1";
+    public static final String CERT_KEY = "id_cert_key_1";
 
     @BeforeEach
     void setUp() {
-        this.translator = new SimpleModelTranslator();
-        this.translator.registerTranslator(new CertificateTranslator(), Certificate.class, CertificateDTO.class);
-        this.translator.registerTranslator(new CertificateSerialTranslator(), CertificateSerial.class, CertificateSerialDTO.class);
+        ModelTranslator translator = new SimpleModelTranslator();
+        translator.registerTranslator(new CertificateTranslator(), Certificate.class, CertificateDTO.class);
+        translator.registerTranslator(new CertificateSerialTranslator(), CertificateSerial.class, CertificateSerialDTO.class);
     }
 
     @Test
     public void testExporter() throws ExportCreationException {
-        SpyingExporter fileExporter = new SpyingExporter();
+        SpyingExporter<String> fileExporter = new SpyingExporter<>();
         IdentCertificateExporter exporter = new IdentCertificateExporter(fileExporter);
         Consumer consumer = getConsumer();
         Path path = Paths.get("/certs");
@@ -66,8 +58,8 @@ class IdentCertExporterTest {
 
         assertEquals(1, fileExporter.calledTimes);
         CertificateDTO result = (CertificateDTO) fileExporter.lastExports[0];
-        assertEquals(result.getId(), "id_cert_1");
-        assertEquals(result.getCertificate(), "id_cert_payload_1");
+        assertEquals(result.getCertificate(), CERT);
+        assertEquals(result.getKey(), CERT_KEY);
     }
 
     private Consumer getConsumer() {
@@ -83,9 +75,8 @@ class IdentCertExporterTest {
 
     private IdentityCertificate getIdCert() {
         IdentityCertificate idCert = new IdentityCertificate();
-        idCert.setId("id_cert_1");
-        idCert.setKey("id_cert_key_1");
-        idCert.setCert("id_cert_payload_1");
+        idCert.setKey(CERT_KEY);
+        idCert.setCert(CERT);
         idCert.setSerial(new CertificateSerial(123L));
         return idCert;
     }

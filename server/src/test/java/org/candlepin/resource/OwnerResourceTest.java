@@ -148,6 +148,7 @@ import org.xnap.commons.i18n.I18nFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -1680,7 +1681,7 @@ public class OwnerResourceTest extends DatabaseTestFixture {
         when(input.getParts()).thenReturn(parts);
         when(part.getHeaders()).thenReturn(mm);
         when(part.getBody(any(GenericType.class))).thenReturn(archive);
-        when(this.mockManifestManager.importManifestAsync(eq(owner), any(File.class), eq("test_file.zip"),
+        when(this.mockManifestManager.importManifestAsync(eq(owner), any(Path.class), eq("test_file.zip"),
             any(ConflictOverrides.class))).thenReturn(job);
         when(this.mockOwnerCurator.getByKey(anyString())).thenReturn(owner);
         when(this.mockJobManager.queueJob(eq(job))).thenReturn(asyncJobStatus);

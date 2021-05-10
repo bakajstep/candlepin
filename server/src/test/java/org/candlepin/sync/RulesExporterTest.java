@@ -39,7 +39,7 @@ public class RulesExporterTest {
         when(rulesCurator.getRules()).thenReturn(new Rules(FAKE_RULES));
         RulesExporter exporter = new RulesExporter(null, rulesCurator);
         StringWriter writer = new StringWriter();
-        exporter.export(null);
+        exporter.exportTo(null);
         assertEquals(FAKE_RULES, writer.toString());
     }
 

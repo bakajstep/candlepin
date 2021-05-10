@@ -32,34 +32,12 @@ import com.google.inject.Inject;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 
-
-/**
- * SyncUtils
- */
 public class SyncUtils {
-    private Configuration config;
-    private ObjectMapper mapper;
-
-    File makeTempDir(String baseName) throws IOException {
-        File baseDir = new File(config.getString(ConfigProperties.SYNC_WORK_DIR));
-        if (!baseDir.exists() && !baseDir.mkdirs()) {
-            throw new IseException("Unable to create base dir for sync: " + baseDir);
-        }
-
-        File tmp = File.createTempFile(baseName, Long.toString(System.nanoTime()), baseDir);
-
-        if (!tmp.delete()) {
-            throw new IOException("Could not delete temp file: " + tmp.getAbsolutePath());
-        }
-
-        if (!tmp.mkdirs()) {
-            throw new IOException("Could not create temp directory: " + tmp.getAbsolutePath());
-        }
-
-        return (tmp);
-    }
+    private final Configuration config;
+    private final ObjectMapper mapper;
 
     @Inject
     public SyncUtils(Configuration config) {
@@ -87,6 +65,29 @@ public class SyncUtils {
             this.mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
                 config.getBoolean(ConfigProperties.FAIL_ON_UNKNOWN_IMPORT_PROPERTIES));
         }
+    }
+
+    public Path makeTempDirPath(String baseName) throws IOException {
+        return makeTempDir(baseName).toPath();
+    }
+
+    public File makeTempDir(String baseName) throws IOException {
+        File baseDir = new File(config.getString(ConfigProperties.SYNC_WORK_DIR));
+        if (!baseDir.exists() && !baseDir.mkdirs()) {
+            throw new IseException("Unable to create base dir for sync: " + baseDir);
+        }
+
+        File tmp = File.createTempFile(baseName, Long.toString(System.nanoTime()), baseDir);
+
+        if (!tmp.delete()) {
+            throw new IOException("Could not delete temp file: " + tmp.getAbsolutePath());
+        }
+
+        if (!tmp.mkdirs()) {
+            throw new IOException("Could not create temp directory: " + tmp.getAbsolutePath());
+        }
+
+        return (tmp);
     }
 
     public ObjectMapper getObjectMapper() {
