@@ -42,7 +42,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 
-
 /**
  * ConsumerExporterTest
  */
@@ -53,6 +52,7 @@ public class ConsumerExporterTest {
     private static final String WEB_URL = "/subscriptions";
     private static final String API_URL = "/candlepin";
     private static final String CONFIG_OVERRIDE = "/config_override";
+    private static final String ACCESS_MODE = "access_mode";
 
     private ModelTranslator translator;
     private Configuration configuration;
@@ -63,8 +63,10 @@ public class ConsumerExporterTest {
         configuration = mock(Configuration.class);
         translator = new SimpleModelTranslator();
         typeCurator = mock(ConsumerTypeCurator.class);
-        translator.registerTranslator(new ConsumerTranslator(typeCurator, mock(OwnerCurator.class)), Consumer.class, ConsumerDTO.class);
-        translator.registerTranslator(new ConsumerTypeTranslator(), ConsumerType.class, ConsumerTypeDTO.class);
+        translator.registerTranslator(new ConsumerTranslator(typeCurator, mock(OwnerCurator.class)),
+            Consumer.class, ConsumerDTO.class);
+        translator.registerTranslator(
+            new ConsumerTypeTranslator(), ConsumerType.class, ConsumerTypeDTO.class);
     }
 
     @Test
@@ -83,6 +85,7 @@ public class ConsumerExporterTest {
         assertThat(exportedConsumer.getName()).isEqualTo(consumer.getName());
         assertThat(exportedConsumer.getUrlWeb()).isEqualTo(WEB_URL);
         assertThat(exportedConsumer.getUrlApi()).isEqualTo(API_URL);
+        assertThat(exportedConsumer.getContentAccessMode()).isEqualTo(ACCESS_MODE);
         ConsumerTypeDTO exportedCType = exportedConsumer.getType();
         assertThat(exportedCType.getId()).isEqualTo(ctype.getId());
         assertThat(exportedCType.getLabel()).isEqualTo(ctype.getLabel());
@@ -107,6 +110,7 @@ public class ConsumerExporterTest {
         assertThat(exportedConsumer.getName()).isEqualTo(consumer.getName());
         assertThat(exportedConsumer.getUrlWeb()).isEqualTo(CONFIG_OVERRIDE);
         assertThat(exportedConsumer.getUrlApi()).isEqualTo(CONFIG_OVERRIDE);
+        assertThat(exportedConsumer.getContentAccessMode()).isEqualTo(ACCESS_MODE);
         ConsumerTypeDTO exportedCType = exportedConsumer.getType();
         assertThat(exportedCType.getId()).isEqualTo(ctype.getId());
         assertThat(exportedCType.getLabel()).isEqualTo(ctype.getLabel());
@@ -117,7 +121,7 @@ public class ConsumerExporterTest {
         Consumer consumer = new Consumer().setUuid("test-uuid");
         consumer.setName("testy consumer");
         consumer.setType(ctype);
-        consumer.setContentAccessMode("access_mode");
+        consumer.setContentAccessMode(ACCESS_MODE);
         return consumer;
     }
 
@@ -127,4 +131,5 @@ public class ConsumerExporterTest {
         ctype.setManifest(true);
         return ctype;
     }
+
 }

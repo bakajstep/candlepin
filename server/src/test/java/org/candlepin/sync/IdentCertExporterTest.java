@@ -44,7 +44,8 @@ class IdentCertExporterTest {
     void setUp() {
         ModelTranslator translator = new SimpleModelTranslator();
         translator.registerTranslator(new CertificateTranslator(), Certificate.class, CertificateDTO.class);
-        translator.registerTranslator(new CertificateSerialTranslator(), CertificateSerial.class, CertificateSerialDTO.class);
+        translator.registerTranslator(new CertificateSerialTranslator(),
+            CertificateSerial.class, CertificateSerialDTO.class);
     }
 
     @Test

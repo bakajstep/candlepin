@@ -25,7 +25,6 @@ import java.util.Map;
 
 /**
  * Meta maps to meta.json in the export
- *
  */
 public class MetaExporter {
 

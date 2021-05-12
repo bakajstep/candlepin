@@ -24,6 +24,7 @@ import org.candlepin.dto.SimpleModelTranslator;
 import org.candlepin.dto.manifest.v1.DistributorVersionDTO;
 import org.candlepin.dto.manifest.v1.DistributorVersionTranslator;
 import org.candlepin.model.DistributorVersion;
+import org.candlepin.model.DistributorVersionCapability;
 import org.candlepin.model.DistributorVersionCurator;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -33,7 +34,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 class DistributorVersionExporterTest {
 
@@ -46,27 +49,31 @@ class DistributorVersionExporterTest {
     void setUp() {
         this.dvCurator = mock(DistributorVersionCurator.class);
         this.translator = new SimpleModelTranslator();
-        this.translator.registerTranslator(new DistributorVersionTranslator(), DistributorVersion.class, DistributorVersionDTO.class);
+        this.translator.registerTranslator(new DistributorVersionTranslator(),
+            DistributorVersion.class, DistributorVersionDTO.class);
     }
 
     @Test
     public void successfulExport() throws ExportCreationException {
         SpyingExporter<Object> fileExporter = new SpyingExporter<>();
         when(dvCurator.findAll()).thenReturn(createDVs());
-        DistributorVersionExporter exporter = new DistributorVersionExporter(dvCurator, fileExporter, translator);
+        DistributorVersionExporter exporter = new DistributorVersionExporter(
+            dvCurator, fileExporter, translator);
 
         exporter.exportTo(EXPORT_PATH);
 
         assertEquals(3, fileExporter.calledTimes);
         DistributorVersionDTO result = (DistributorVersionDTO) fileExporter.lastExports[0];
         assertEquals(result.getName(), "distributor_version_3");
+        assertEquals(3, result.getCapabilities().size());
     }
 
     @Test
     public void nothingToExport() throws ExportCreationException {
         SpyingExporter<Object> fileExporter = new SpyingExporter<>();
         when(dvCurator.findAll()).thenReturn(Collections.emptyList());
-        DistributorVersionExporter exporter = new DistributorVersionExporter(dvCurator, fileExporter, translator);
+        DistributorVersionExporter exporter = new DistributorVersionExporter(
+            dvCurator, fileExporter, translator);
 
         exporter.exportTo(EXPORT_PATH);
 
@@ -75,10 +82,20 @@ class DistributorVersionExporterTest {
 
     private List<DistributorVersion> createDVs() {
         return Arrays.asList(
-            new DistributorVersion("distributor_version_1"),
-            new DistributorVersion("distributor_version_2"),
-            new DistributorVersion("distributor_version_3")
+            createDV("distributor_version_1"),
+            createDV("distributor_version_2"),
+            createDV("distributor_version_3")
         );
+    }
+
+    private DistributorVersion createDV(String name) {
+        DistributorVersion dv = new DistributorVersion(name);
+        Set<DistributorVersionCapability> dvcSet = new HashSet<>();
+        dvcSet.add(new DistributorVersionCapability(dv, "capability-1"));
+        dvcSet.add(new DistributorVersionCapability(dv, "capability-2"));
+        dvcSet.add(new DistributorVersionCapability(dv, "capability-3"));
+        dv.setCapabilities(dvcSet);
+        return dv;
     }
 
 }
