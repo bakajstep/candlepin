@@ -22,40 +22,33 @@ import static org.mockito.Mockito.when;
 import org.candlepin.auth.NoAuthPrincipal;
 import org.candlepin.guice.PrincipalProvider;
 
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Date;
 
 public class MetaExporterTest {
 
+    private static final Path EXPORT_PATH = Paths.get("/export");
+    private static final String CDN_KEY = "test-cdn";
+
     @Test
     public void exportMeta() throws ExportCreationException {
+        Date now = new Date();
         SpyingExporter<Object> exporter = new SpyingExporter<>();
-        NoAuthPrincipal principal = new NoAuthPrincipal();
         PrincipalProvider principalProvider = mock(PrincipalProvider.class);
-        when(principalProvider.get()).thenReturn(principal);
-
+        when(principalProvider.get()).thenReturn(new NoAuthPrincipal());
         MetaExporter metaEx = new MetaExporter(principalProvider, exporter);
-        String cdnKey = "test-cdn";
-        Path path = Paths.get("/meta.json");
 
-        metaEx.exportTo(path, cdnKey);
+        metaEx.exportTo(EXPORT_PATH, CDN_KEY);
 
         Meta result = (Meta) exporter.nth(0);
-        assertEquals(result.getCdnLabel(), cdnKey);
+        assertEquals(result.getCdnLabel(), CDN_KEY);
         assertEquals(result.getPrincipalName(), "Anonymous");
         assertNotNull(result.getVersion());
-        assertNotNull(result.getCreated());
+        Assertions.assertThat(result.getCreated()).isAfterOrEqualTo(now);
     }
-
-    //TODO
-//    private String expectedJson(String nowString) {
-//        return "{\"version\":\"0.1.0\",\"created\":\"" + nowString +
-//            "\",\"principalName\":\"myUsername\"," +
-//            "\"webAppPrefix\":\"webapp_prefix\"," +
-//            "\"cdnLabel\":\"test-cdn\"}";
-//    }
 
 }

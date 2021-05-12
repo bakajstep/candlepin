@@ -49,7 +49,8 @@ public class MetaExporter {
     }
 
     private String createVersion() {
-        // TODO This should be injectable dependency as it accesses the FS
+        // TODO VersionUtil should be an injectable dependency as it accesses the FS
+        // TODO Version is a good candidate for a value object. Its logic is duplicated a lot.
         Map<String, String> map = VersionUtil.getVersionMap();
         System.out.println(map);
         return map.get("version") + "-" + map.get("release");
