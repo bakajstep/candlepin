@@ -37,7 +37,7 @@ import java.nio.file.Path;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-public class ZipTest {
+public class ZipperTest {
 
     private FileSystem fileSystem;
 
