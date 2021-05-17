@@ -26,17 +26,18 @@ import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.UncheckedIOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+@Tag("integration")
 public class ZipperTest {
 
     private FileSystem fileSystem;
@@ -46,59 +47,35 @@ public class ZipperTest {
         this.fileSystem = Jimfs.newFileSystem(Configuration.unix());
     }
 
-    private Path mkpath(String path) {
-        return this.fileSystem.getPath(path);
-    }
-
-    void touch(Path path, String fileName) {
-        Path filePath = path.resolve(fileName);
-        try {
-            Files.createFile(filePath);
-        }
-        catch (IOException ex) {
-            throw new UncheckedIOException(ex);
-        }
-    }
-
-    void mkdirs(Path path) {
-        try {
-            Files.createDirectories(path);
-        }
-        catch (IOException ex) {
-            throw new UncheckedIOException(ex);
-        }
-    }
-
     @Test
-    void name() throws ExportCreationException {
+    void createdArchiveShouldContainerFilesFromSource() throws ExportCreationException, IOException {
         PKIUtility mock = mock(PKIUtility.class);
         when(mock.getSHA256WithRSAHash(any())).thenReturn(new byte[]{});
         Zipper zipper = new Zipper(mock);
-        Path source = mkpath("/source");
-        mkdirs(source);
+        Path source = mkPath("/source");
+        mkDirs(source);
         touch(source, "file1.txt");
         touch(source, "file2.txt");
-        Path target = mkpath("/target");
-        mkdirs(target);
+        Path target = mkPath("/target");
+        mkDirs(target);
 
-        Path export = zipper.makeArchive("asd", target, source);
+        Path export = zipper.makeArchive("consumer_uuid_1", target, source);
 
+        assertTrue(verifyHasEntry(export, "file1.txt"));
         assertTrue(verifyHasEntry(export, "file2.txt"));
     }
 
     /**
-     * return true if export has a given entry named name.
+     * return true if export has an entry with a given name.
      *
      * @param export zip file to inspect
-     * @param name   entry
-     * @return
+     * @param name entry name
+     * @return true if archive contains the entry
      */
-    private boolean verifyHasEntry(Path export, String name) {
-        ZipInputStream zis = null;
+    private boolean verifyHasEntry(Path export, String name) throws IOException {
         boolean found = false;
 
-        try {
-            zis = new ZipInputStream(Files.newInputStream(export));
+        try (ZipInputStream zis = new ZipInputStream(Files.newInputStream(export))) {
             ZipEntry entry = null;
 
             while ((entry = zis.getNextEntry()) != null) {
@@ -123,20 +100,20 @@ public class ZipperTest {
             }
 
         }
-        catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            if (zis != null) {
-                try {
-                    zis.close();
-                }
-                catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-
         return found;
+    }
+
+    private Path mkPath(String path) {
+        return this.fileSystem.getPath(path);
+    }
+
+    void touch(Path path, String fileName) throws IOException {
+        Path filePath = path.resolve(fileName);
+        Files.createFile(filePath);
+    }
+
+    void mkDirs(Path path) throws IOException {
+        Files.createDirectories(path);
     }
 
 }
