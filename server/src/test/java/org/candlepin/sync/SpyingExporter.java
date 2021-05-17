@@ -25,13 +25,11 @@ import java.util.Map;
 
 public class SpyingExporter<T> implements FileExporter<T> {
     int calledTimes = 0;
-    Object[] lastExports;
     List<List<Object>> exports = new ArrayList<>();
 
     @Override
     public void exportTo(Path path, Object... exports) {
         this.exports.add(Arrays.asList(exports));
-        this.lastExports = exports;
         this.calledTimes++;
     }
 

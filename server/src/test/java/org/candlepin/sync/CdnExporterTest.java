@@ -61,9 +61,9 @@ class CdnExporterTest {
 
         assertEquals(3, fileExporter.calledTimes);
         CdnDTO result = (CdnDTO) fileExporter.nth(0);
-        assertEquals(result.getLabel(), "cdn_label_3");
-        assertEquals(result.getName(), "cdn_name_3");
-        assertEquals(result.getUrl(), "cdn_url_3");
+        assertEquals(result.getLabel(), "cdn_label_1");
+        assertEquals(result.getName(), "cdn_name_1");
+        assertEquals(result.getUrl(), "cdn_url_1");
     }
 
     @Test

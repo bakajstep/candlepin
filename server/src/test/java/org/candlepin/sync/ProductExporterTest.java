@@ -121,7 +121,7 @@ public class ProductExporterTest {
 
         assertThat(jsonExporter.calledTimes).isEqualTo(1);
         assertThat(certExporter.calledTimes).isEqualTo(1);
-        assertThat(certExporter.lastExports[0]).isEqualTo(EXPECTED_CERT);
+        assertThat(certExporter.nth(0)).isEqualTo(EXPECTED_CERT);
     }
 
     @Test
@@ -154,7 +154,7 @@ public class ProductExporterTest {
                 PRODUCT_ID_2,
                 REAL_PRODUCT_ID_2
             ));
-        assertThat(certExporter.lastExports[0]).isEqualTo(EXPECTED_CERT);
+        assertThat(certExporter.nth(0)).isEqualTo(EXPECTED_CERT);
     }
 
     private Product createProduct(String id, String name) {

@@ -63,8 +63,8 @@ class DistributorVersionExporterTest {
         exporter.exportTo(EXPORT_PATH);
 
         assertEquals(3, fileExporter.calledTimes);
-        DistributorVersionDTO result = (DistributorVersionDTO) fileExporter.lastExports[0];
-        assertEquals(result.getName(), "distributor_version_3");
+        DistributorVersionDTO result = (DistributorVersionDTO) fileExporter.nth(0);
+        assertEquals(result.getName(), "distributor_version_1");
         assertEquals(3, result.getCapabilities().size());
     }
 

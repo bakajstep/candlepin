@@ -58,9 +58,10 @@ class IdentCertExporterTest {
         exporter.exportTo(path, consumer);
 
         assertEquals(1, fileExporter.calledTimes);
-        CertificateDTO result = (CertificateDTO) fileExporter.lastExports[0];
-        assertEquals(result.getCertificate(), CERT);
-        assertEquals(result.getKey(), CERT_KEY);
+        String cert = (String) fileExporter.nth(0);
+        String key = (String) fileExporter.nth(0, 1);
+        assertEquals(cert, CERT);
+        assertEquals(key, CERT_KEY);
     }
 
     private Consumer getConsumer() {
