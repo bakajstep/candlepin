@@ -2,7 +2,7 @@ openapi: 3.0.2
 info:
   title: Candlepin
   description: Candlepin is a subscription management server written in Java. It helps with management of software subscriptions.
-  version: 4.1.0
+  version: 4.1.4
 
 servers:
   - url: /candlepin
@@ -608,6 +608,9 @@ paths:
       tags:
         - Consumer
       operationId: searchConsumers
+      x-java-response:
+        type: java.util.stream.Stream
+        isContainer: true
       security: []
       parameters:
         - name: username
@@ -649,9 +652,6 @@ paths:
             type: array
             items:
               $ref: '#/components/schemas/KeyValueParamDTO'
-      x-java-response:
-        type: Iterable
-        isContainer: true
       responses:
         200:
           description: List of consumers
@@ -4748,7 +4748,7 @@ paths:
         - Owner
       operationId: listConsumers
       x-java-response:
-        type: Iterable
+        type: java.util.stream.Stream
         isContainer: true
       parameters:
         - name: owner_key
@@ -4791,27 +4791,6 @@ paths:
             type: array
             items:
               $ref: '#/components/schemas/KeyValueParamDTO'
-        - name: sku
-          in: query
-          description: The list of skus
-          schema:
-            type: array
-            items:
-              type: string
-        - name: subscription_id
-          in: query
-          description: The list of subscription IDs
-          schema:
-            type: array
-            items:
-              type: string
-        - name: contract
-          in: query
-          description: The list of contract numbers
-          schema:
-            type: array
-            items:
-              type: string
       security: []
       responses:
         200:
@@ -4856,31 +4835,29 @@ paths:
           required: true
           schema:
             type: string
+        - name: username
+          in: query
+          description: The username of the consumer
+          schema:
+            type: string
         - name: type
           in: query
-          description: The type of the consumer
+          description: The consumer type
           schema:
             type: array
             uniqueItems: true
             items:
               type: string
-        - name: sku
+        - name: uuid
           in: query
-          description: The list product ids
+          description: The UUID of consumers
           schema:
             type: array
             items:
               type: string
-        - name: subscription_id
+        - name: hypervisor_id
           in: query
-          description: The list of subscription ids
-          schema:
-            type: array
-            items:
-              type: string
-        - name: contract
-          in: query
-          description: The list of contract numbers
+          description: The hypervisor IDs
           schema:
             type: array
             items:
@@ -5588,7 +5565,7 @@ paths:
         - Owner
       operationId: listPools
       x-java-response:
-        type: Iterable
+        type: java.util.stream.Stream
         isContainer: true
       parameters:
         - name: owner_key
@@ -5619,7 +5596,13 @@ paths:
             type: string
         - name: listall
           in: query
-          description: Include pools that are not suited to the unit's facts
+          description: |
+            Includes pools which are not applicable based on some of the consumer's current system facts
+            (i.e. system architecture, sockets, cores, ram, storage_band, instance_multiplier), but will
+            still filter pools based on other factors, such as pools restricted to a consumer of specific
+            types, usernames, or uuids; pools restricted to guests of specific hosts; non-multi-entitlement
+            pools that the consumer has already attached; unmapped guest pools for which the consumer is
+            ineligible; and expired pools.
           schema:
             type: boolean
             default: false
@@ -6568,12 +6551,10 @@ paths:
 
     put:
       description: |
-        Tickle an owner to have all of their entitlement pools synced with their
-        subscriptions. This method (and the one below may not be entirely RESTful,
-        as the updated data is not supplied as an argument.
-        This API call is only relevant in a top level hosted deployment where
-        subscriptions and products are sourced from adapters. Calling this in
-        an on-site deployment is just a no-op.
+        Triggers an asynchronous "refresh" operation, updating the entitlement and subscription
+        information for the specified owner.
+        This endpoint is only functional in hosted mode, and no operation will be triggered
+        when called in a standalone, or on-site, deployment.
       tags:
         - Owner
       operationId: refreshPools
@@ -6587,16 +6568,10 @@ paths:
             type: string
         - name: auto_create_owner
           in: query
-          description: Specify Whether or not to create an owner automatically. Default is false.
+          description: Specify whether or not to create an owner automatically. Default is false.
           schema:
             type: boolean
             default: false
-        - name: lazy_regen
-          in: query
-          description: Regenerate certificates immediatelly or allow them to be regenerated on demand. Default is true.
-          schema:
-            type: boolean
-            default: true
       responses:
         200:
           description: A successful operation
@@ -8553,6 +8528,8 @@ components:
                 uniqueItems: true
                 items:
                   $ref: '#/components/schemas/ConsumerActivationKeyDTO'
+              serviceType:
+                type: string
 
     ConsumerActivationKeyDTO:
       description: Represent activation keys used by consumer in registration
@@ -8635,6 +8612,8 @@ components:
               items:
                 $ref: '#/components/schemas/GuestIdDTOArrayElement'
             href:
+              type: string
+            serviceType:
               type: string
 
     ConsumerInstalledProductDTO:
@@ -9588,6 +9567,8 @@ components:
           type: string
         nonCompliantUsage:
           type: string
+        nonCompliantServiceType:
+          type: string
         compliantRole:
           type: object
           additionalProperties:
@@ -9621,6 +9602,13 @@ components:
           uniqueItems: true
           items:
             type: string
+        compliantServiceType:
+          type: object
+          additionalProperties:
+            type: array
+            uniqueItems: true
+            items:
+              $ref: '#/components/schemas/EntitlementDTO'
         reasons:
           type: array
           uniqueItems: true
