@@ -20,5 +20,10 @@ gradlePlugin {
             id = "gettext"
             implementationClass = "Gettext"
         }
+        msgfmtPlugin {
+            id = "msgfmt"
+            implementationClass = "Msgfmt"
+        }
+
     }
 }
