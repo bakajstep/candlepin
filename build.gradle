@@ -37,6 +37,8 @@ plugins {
     id "org.candlepin.gradle.SpecVersion"
 }
 
+group = "org.candlepin"
+
 ext {
     api_spec_path = "${projectDir}/api/candlepin-api-spec.yaml"
     config_file = "${projectDir}/api/candlepin-api-config.json"
@@ -207,40 +209,6 @@ ext.libraries = [
     ],
 ]
 
-java {
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
-}
-
-gradleLint {
-    rules = ["dependency-parentheses"]
-    // Turn these on selectively.  They are a little too sensitive to leave on all the time,
-    // but they provide useful information when run occasionally.
-    // rules = ["dependency-parentheses", "unused-exclude-by-dep"]
-    // criticalRules = ["unused-dependency"]
-}
-
-tasks.withType(JavaCompile) {
-    options.encoding = "UTF-8"
-    // options.compilerArgs << "-Xlint:deprecation"
-    // options.compilerArgs.addAll(['--release', '8'])
-}
-
-repositories {
-    mavenLocal()
-    mavenCentral()
-
-    maven { url "https://repo.jenkins-ci.org/public/" }
-    maven { url "https://repository.jboss.org/nexus/content/groups/public/" }
-    maven { url "https://oauth.googlecode.com/svn/code/maven/" }
-    // For LogDriver
-    maven { url "https://awood.fedorapeople.org/ivy/candlepin/" }
-    // Temporary repo, which stores jss 4.4.6
-    maven { url "https://barnabycourt.fedorapeople.org/repo/candlepin/" }
-}
-
-group = "org.candlepin"
-
 dependencyManagement {
     dependencies {
         dependency group: 'aopalliance', name: 'aopalliance', version: '1.0'
@@ -381,21 +349,6 @@ dependencyManagement {
     }
 }
 
-gradleLint {
-    rules = ["dependency-parentheses"]
-    // Turn these on selectively.  They are a little too sensitive to leave on all the time,
-    // but they provide useful information when run occasionally.
-    // rules = ["dependency-parentheses", "unused-exclude-by-dep"]
-    // criticalRules = ["unused-dependency"]
-}
-
-tasks.withType(JavaCompile) {
-    options.encoding = "UTF-8"
-    // options.compilerArgs << "-Xlint:deprecation"
-    // options.compilerArgs.addAll(['--release', '8'])
-}
-
-
 dependencies {
     //Libraries for openapi generate
     compile 'com.fasterxml.jackson.core:jackson-annotations'
@@ -471,6 +424,45 @@ compileJava.dependsOn(processResources)
 sourceSets {
     main.java.srcDir generatedMetamodels
 }
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
+gradleLint {
+    rules = ["dependency-parentheses"]
+    // Turn these on selectively.  They are a little too sensitive to leave on all the time,
+    // but they provide useful information when run occasionally.
+    // rules = ["dependency-parentheses", "unused-exclude-by-dep"]
+    // criticalRules = ["unused-dependency"]
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = "UTF-8"
+    // options.compilerArgs << "-Xlint:deprecation"
+    // options.compilerArgs.addAll(['--release', '8'])
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+
+    maven { url "https://repo.jenkins-ci.org/public/" }
+    maven { url "https://repository.jboss.org/nexus/content/groups/public/" }
+    maven { url "https://oauth.googlecode.com/svn/code/maven/" }
+    // For LogDriver
+    maven { url "https://awood.fedorapeople.org/ivy/candlepin/" }
+    // Temporary repo, which stores jss 4.4.6
+    maven { url "https://barnabycourt.fedorapeople.org/repo/candlepin/" }
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = "UTF-8"
+    // options.compilerArgs << "-Xlint:deprecation"
+    // options.compilerArgs.addAll(['--release', '8'])
+}
+
 
 openApiGenerate {
     generatorName = "jaxrs-spec"
