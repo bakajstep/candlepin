@@ -92,14 +92,7 @@ public abstract class ProviderBasedPKIUtility implements PKIUtility {
     public abstract byte[] getPemEncoded(RSAPrivateKey key) throws IOException;
 
     @Override
-    public byte[] getPemEncoded(PrivateKey key) throws IOException {
-        if (RSAPrivateKey.class.isAssignableFrom(key.getClass())) {
-            return getPemEncoded((RSAPrivateKey) key);
-        }
-        else {
-            throw new RuntimeException("Only RSA keys are supported");
-        }
-    }
+    public abstract byte[] getPemEncoded(PrivateKey key) throws IOException;
 
     /**
      * Compute a SHA256withRSA digital signature on an inputStream.  The digest is signed

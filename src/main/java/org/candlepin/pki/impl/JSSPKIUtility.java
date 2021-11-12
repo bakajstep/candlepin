@@ -66,11 +66,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.math.BigInteger;
-import java.security.GeneralSecurityException;
-import java.security.KeyFactory;
-import java.security.KeyPair;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
+import java.security.*;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
@@ -94,7 +90,8 @@ public class JSSPKIUtility extends ProviderBasedPKIUtility {
 
     // Note that using RSA PRIVATE KEY instead of PRIVATE KEY will indicate this is
     // a PKCS1 format instead of a PKCS8.
-    public static final String PRIVATE_KEY_PEM_NAME = "RSA PRIVATE KEY";
+    public static final String RSA_KEY_PEM_NAME = "RSA PRIVATE KEY";
+    public static final String PRIVATE_KEY_PEM_NAME = "PRIVATE KEY";
 
     @Inject
     public JSSPKIUtility(CertificateReader reader, SubjectKeyIdentifierWriter writer, Configuration config) {
@@ -359,11 +356,16 @@ public class JSSPKIUtility extends ProviderBasedPKIUtility {
     @Override
     public byte[] getPemEncoded(RSAPrivateKey key) throws IOException {
         try {
-            return getPemEncoded(toPKCS1(key), PRIVATE_KEY_PEM_NAME);
+            return getPemEncoded(toPKCS1(key), RSA_KEY_PEM_NAME);
         }
         catch (NoSuchAlgorithmException e) {
             throw new IOException("Could not encode key", e);
         }
+    }
+
+    @Override
+    public byte[] getPemEncoded(PrivateKey key) throws IOException {
+        return getPemEncoded(key.getEncoded(), PRIVATE_KEY_PEM_NAME);
     }
 
     private void writePemEncoded(byte[] der, OutputStream out, String type) throws IOException {
