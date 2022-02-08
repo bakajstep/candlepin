@@ -219,6 +219,9 @@ class LegacySSLContextEditor(AbstractBaseEditor):
             ("keystoreType", "PKCS12"),
             ("ciphers", ciphers),
             ("truststorePass", "password"),
+            ("compression", "on"),
+            ("compressionMinSize", "11"),
+            ("compressableMimeType", "application/json,text/html,text/xml"),
         ])
 
         # Return our top-level node

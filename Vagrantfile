@@ -16,7 +16,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.define "dev" do |dev|
     dev.vm.host_name = "candlepin.example.com"
     # Tomcat remote debug
-    # config.vm.network "forwarded_port", guest: 8000, host: 8000
+    config.vm.network "forwarded_port", guest: 8000, host: 8000
     # Rest access for Candlepin
     # config.vm.network "forwarded_port", guest: 8080, host: 8080
     # config.vm.network "forwarded_port", guest: 8443, host: 8443

@@ -1,19 +1,20 @@
 /**
  * Copyright (c) 2009 - 2016 Red Hat, Inc.
- *
+ * <p>
  * This software is licensed to you under the GNU General Public License,
  * version 2 (GPLv2). There is NO WARRANTY for this software, express or
  * implied, including the implied warranties of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE. You should have received a copy of GPLv2
  * along with this software; if not, see
  * http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
- *
+ * <p>
  * Red Hat trademarks are not licensed under GPLv2. No permission is
  * granted to use or replicate Red Hat trademarks that are incorporated
  * in this software or its documentation.
  */
 package org.candlepin.resteasy.filter;
 
+import com.fasterxml.jackson.core.json.UTF8JsonGenerator;
 import org.candlepin.model.AbstractHibernateObject;
 import org.candlepin.model.CandlepinQuery;
 import org.candlepin.model.ResultIterator;
@@ -30,7 +31,17 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.criterion.Order;
 import org.jboss.resteasy.core.ResteasyContext;
+import org.jboss.resteasy.util.CommitHeaderOutputStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.lang.annotation.Annotation;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.Objects;
 
 import javax.persistence.EntityManager;
@@ -40,6 +51,7 @@ import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.StreamingOutput;
 
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON_TYPE;
 
 
 /**
@@ -52,9 +64,11 @@ public class CandlepinQueryInterceptor implements ContainerResponseFilter {
     protected final JsonProvider jsonProvider;
     protected final Provider<EntityManager> emProvider;
 
+    private static final Logger log = LoggerFactory.getLogger(CandlepinQueryInterceptor.class);
+
     @Inject
     public CandlepinQueryInterceptor(
-        final JsonProvider jsonProvider, final Provider<EntityManager> emProvider) {
+            final JsonProvider jsonProvider, final Provider<EntityManager> emProvider) {
         this.jsonProvider = Objects.requireNonNull(jsonProvider);
         this.emProvider = Objects.requireNonNull(emProvider);
     }
@@ -88,7 +102,7 @@ public class CandlepinQueryInterceptor implements ContainerResponseFilter {
 
                 // Apply any paging config we may have
                 this.applyPaging(pageRequest, query);
-
+//                responseContext.getHeaders().add("Content-Encoding", "gzip");
                 // Set the output streamer that will stream our query result
                 responseContext.setEntity(this.buildOutputStreamer(session, query));
             }
@@ -96,8 +110,6 @@ public class CandlepinQueryInterceptor implements ContainerResponseFilter {
                 if (session != null) {
                     session.close();
                 }
-
-                throw e;
             }
 
         }
@@ -112,16 +124,16 @@ public class CandlepinQueryInterceptor implements ContainerResponseFilter {
         // Sorting will always be required (for consistency) if a page request object is
         // present -- either isPaging() will be true, or we'll have ordering config.
         final String sortField = pageRequest.getSortBy() != null ?
-            pageRequest.getSortBy() :
-            AbstractHibernateObject.DEFAULT_SORT_FIELD;
+                pageRequest.getSortBy() :
+                AbstractHibernateObject.DEFAULT_SORT_FIELD;
 
         final PageRequest.Order order = pageRequest.getOrder() != null ?
-            pageRequest.getOrder() :
-            PageRequest.DEFAULT_ORDER;
+                pageRequest.getOrder() :
+                PageRequest.DEFAULT_ORDER;
 
         query.addOrder(order == PageRequest.Order.DESCENDING ?
-            Order.desc(sortField) :
-            Order.asc(sortField)
+                Order.desc(sortField) :
+                Order.asc(sortField)
         );
 
         if (pageRequest.isPaging()) {
@@ -140,16 +152,26 @@ public class CandlepinQueryInterceptor implements ContainerResponseFilter {
 
     private StreamingOutput buildOutputStreamer(Session session, CandlepinQuery query) {
         ObjectMapper mapper = this.jsonProvider
-            .locateMapper(Object.class, MediaType.APPLICATION_JSON_TYPE);
+                .locateMapper(Object.class, MediaType.APPLICATION_JSON_TYPE);
 
         return stream -> {
             try (
-                JsonGenerator generator = mapper.getJsonFactory().createGenerator(stream);
-                ResultIterator<Object> iterator = query.iterate()) {
+                    JsonGenerator generator = mapper.getFactory().createGenerator(stream);
+                    ResultIterator<Object> iterator = query.iterate()) {
 
                 generator.writeStartArray();
 
                 while (iterator.hasNext()) {
+//                    Scenario 1: Flush the outputstream first
+//                    Results: No difference - First object in the array is gzip encoded, 2nd object and further are not.
+//                    ((CommitHeaderOutputStream) generator.getOutputTarget()).flush();
+
+//                    Scenario 2: Flish the generator first
+//                    Results: None of the objects in the list are properly gzip encoded.
+//                    ((UTF8JsonGenerator)generator).flush();
+
+//                    Scenario 3: Code as originally written.
+//                    Result: First item from the iterator is compressed, items after are not.
                     mapper.writeValue(generator, iterator.next());
                 }
 
