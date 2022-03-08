@@ -810,6 +810,7 @@ public class OwnerResource implements OwnersApi {
 
     @Override
     @Wrapped(element = "owners")
+    @org.jboss.resteasy.annotations.GZIP
     public CandlepinQuery<OwnerDTO> listOwners(String keyFilter) {
         CandlepinQuery<Owner> query = keyFilter != null ?
             this.ownerCurator.getByKeys(Arrays.asList(keyFilter)) :
