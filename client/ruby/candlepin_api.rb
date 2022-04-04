@@ -731,12 +731,13 @@ class Candlepin
   end
 
   def update_content(owner_key, content_id, updates={})
-    current_content = get_content(owner_key, content_id)
-    updates.each do |key, value|
-      current_content[key] = value
-    end
-
-    put("/owners/#{owner_key}/content/#{content_id}", {}, current_content)
+   content = {
+     'id' => content_id
+   }
+   updates.each do |key, value|
+     content[key] = value
+   end
+    put("/owners/#{owner_key}/content/#{content_id}", {}, content)
   end
 
   def add_content_to_product(owner_key, product_id, content_id, enabled=true)

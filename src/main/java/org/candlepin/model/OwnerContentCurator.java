@@ -36,6 +36,8 @@ import java.util.Set;
 
 import javax.inject.Singleton;
 import javax.persistence.EntityManager;
+import javax.persistence.LockModeType;
+import javax.persistence.NoResultException;
 import javax.persistence.Query;
 import javax.persistence.TypedQuery;
 
@@ -54,6 +56,48 @@ public class OwnerContentCurator extends AbstractHibernateCurator<OwnerContent> 
      */
     public OwnerContentCurator() {
         super(OwnerContent.class);
+    }
+
+    /**
+     * Determines if a contentId exists for a given owner while attempting to gain a lock on it
+     * @param owner
+     *  The organization whose content we are looking for
+     * @param contentId
+     *  The ID of the content
+     * @param lockMode
+     *  The lock mode to use
+     *
+     * @return
+     *  boolean to show that the product exists and that a lock was achieved
+     */
+    public boolean lockOwnerContent(Owner owner, String contentId, LockModeType lockMode) {
+        if (owner == null) {
+            throw new IllegalArgumentException("owner is null");
+        }
+
+        if (contentId == null || contentId.isEmpty()) {
+            throw new IllegalArgumentException("contentId is null or empty");
+        }
+        if (!(lockMode == LockModeType.PESSIMISTIC_READ || lockMode == LockModeType.PESSIMISTIC_WRITE)) {
+            throw new IllegalArgumentException("Unsupported lock mode: " + lockMode);
+        }
+
+        String jpql = "SELECT oc FROM OwnerContent oc " +
+            "WHERE oc.ownerId = :owner_id AND oc.contentId = :content_id";
+
+        try {
+            log.warn("Here's that lock");
+            this.getEntityManager()
+                .createQuery(jpql, OwnerContent.class)
+                .setParameter("owner_id", owner.getId())
+                .setParameter("content_id", contentId)
+                .setLockMode(lockMode)
+                .getSingleResult();
+            return true;
+        }
+        catch (NoResultException nre) {
+            return false;
+        }
     }
 
     public Content getContentById(Owner owner, String contentId) {
@@ -85,8 +129,7 @@ public class OwnerContentCurator extends AbstractHibernateCurator<OwnerContent> 
         //     join objects, so filtering/sorting via CandlepinQuery is incorrect or broken
         //  3. The second query Hibernate performs uses the IN operator without any protection for
         //     the MySQL/MariaDB element limits.
-        String jpql = "SELECT oc.owner.id FROM OwnerContent oc WHERE oc.content.id = :content_id";
-
+        String jpql = "SELECT oc.ownerId FROM OwnerContent oc WHERE oc.contentId = :content_id";
         List<String> ids = this.getEntityManager()
             .createQuery(jpql, String.class)
             .setParameter("content_id", contentId)
@@ -127,7 +170,7 @@ public class OwnerContentCurator extends AbstractHibernateCurator<OwnerContent> 
      *  a collection of content UUIDs belonging to the given owner
      */
     public Collection<String> getContentUuidsByOwner(String ownerId) {
-        String jpql = "SELECT oc.content.uuid FROM OwnerContent oc WHERE oc.owner.id = :owner_id";
+        String jpql = "SELECT oc.contentUuid FROM OwnerContent oc WHERE oc.ownerId = :owner_id";
 
         List<String> uuids = this.getEntityManager()
             .createQuery(jpql, String.class)
@@ -231,30 +274,37 @@ public class OwnerContentCurator extends AbstractHibernateCurator<OwnerContent> 
      */
     @Transactional
     public boolean contentExists(Owner owner, String contentId) {
-        String jpql = "SELECT count(op) FROM OwnerContent op " +
-            "WHERE op.owner.id = :owner_id AND op.content.id = :content_id";
-
-        long count = (Long) this.getEntityManager()
-            .createQuery(jpql)
-            .setParameter("owner_id", owner.getId())
-            .setParameter("content_id", contentId)
-            .getSingleResult();
-
-        return count > 0;
+        String jpql = "SELECT oc FROM OwnerContent oc " +
+            "WHERE oc.ownerId = :owner_id AND oc.contentId = :content_id";
+        try {
+            this.getEntityManager()
+                .createQuery(jpql)
+                .setParameter("owner_id", owner.getId())
+                .setParameter("content_id", contentId)
+                .getSingleResult();
+            return true;
+        }
+        catch (NoResultException nre) {
+            return false;
+        }
     }
 
     @Transactional
     public boolean isContentMappedToOwner(Content content, Owner owner) {
-        String jpql = "SELECT count(op) FROM OwnerContent op " +
-            "WHERE op.owner.id = :owner_id AND op.content.uuid = :content_uuid";
+        String jpql = "SELECT oc from OwnerContent oc " +
+            "WHERE oc.ownerId = :owner_id AND oc.contentUuid = :content_uuid";
 
-        long count = (Long) this.getEntityManager()
-            .createQuery(jpql)
-            .setParameter("owner_id", owner.getId())
-            .setParameter("content_uuid", content.getUuid())
-            .getSingleResult();
-
-        return count > 0;
+        try {
+            this.getEntityManager()
+                .createQuery(jpql)
+                .setParameter("owner_id", owner.getId())
+                .setParameter("content_uuid", content.getUuid())
+                .getSingleResult();
+            return true;
+        }
+        catch (NoResultException nre) {
+            return false;
+        }
     }
 
     @Transactional
@@ -300,7 +350,7 @@ public class OwnerContentCurator extends AbstractHibernateCurator<OwnerContent> 
     @Transactional
     public boolean removeOwnerFromContent(Content content, Owner owner) {
         String jpql = "DELETE FROM OwnerContent op " +
-            "WHERE op.content.uuid = :content_uuid AND op.owner.id = :owner_id";
+            "WHERE op.contentUuid = :content_uuid AND op.ownerId = :owner_id";
 
         int rows = this.getEntityManager()
             .createQuery(jpql)
@@ -314,7 +364,7 @@ public class OwnerContentCurator extends AbstractHibernateCurator<OwnerContent> 
     @Transactional
     public int clearOwnersForContent(Content content) {
         String jpql = "DELETE FROM OwnerContent op " +
-            "WHERE op.content.uuid = :content_uuid";
+            "WHERE op.contentUuid = :content_uuid";
 
         return this.getEntityManager()
             .createQuery(jpql)
@@ -325,7 +375,7 @@ public class OwnerContentCurator extends AbstractHibernateCurator<OwnerContent> 
     @Transactional
     public int clearContentForOwner(Owner owner) {
         String jpql = "DELETE FROM OwnerContent op " +
-            "WHERE op.owner.id = :owner_id";
+            "WHERE op.ownerId = :owner_id";
 
         return this.getEntityManager()
             .createQuery(jpql)

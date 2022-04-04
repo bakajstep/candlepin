@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+
+    <changeSet id="20220331081300-1" author="wpoteat">
+        <addColumn tableName="cp2_owner_content">
+            <column name="content_id" type="VARCHAR(255)"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20220331081300-2" author="wpoteat" dbms="postgresql">
+        <sql>
+            UPDATE cp2_owner_content oc
+            SET content_id = cont.content_id
+                FROM cp2_content cont
+                WHERE oc.content_uuid = cont.uuid
+        </sql>
+    </changeSet>
+
+    <changeSet id="20220331081300-3" author="wpoteat" dbms="mysql, mariadb">
+        <sql>
+            UPDATE cp2_owner_content oc
+            SET content_id=(SELECT cont.content_id
+                FROM cp2_content cont
+                WHERE oc.content_uuid = cont.uuid)
+        </sql>
+     </changeSet>
+
+    <!-- On MySQL/MariaDB, we need to drop *all* foreign keys before we can drop our primary key -->
+    <changeSet id="20220331081300-4" author="wpoteat" dbms="mysql, mariadb">
+        <dropAllForeignKeyConstraints baseTableName="cp2_owner_content"/>
+    </changeSet>
+
+    <changeSet id="20220331081300-5" author="wpoteat">
+        <dropPrimaryKey tableName="cp2_owner_content" constraintName="cp2_owner_content_pk"/>
+        <addPrimaryKey tableName="cp2_owner_content" columnNames="owner_id, content_id"
+            constraintName="cp2_owner_content_pk"/>
+    </changeSet>
+
+    <!-- Now that we've added the primary key back, we can re-add the foreign keys -->
+    <changeSet id="20220331081300-6" author="wpoteat" dbms="mysql, mariadb">
+       <addForeignKeyConstraint
+            constraintName="cp2_owner_content_fk1"
+            baseTableName="cp2_owner_content"
+            baseColumnNames="owner_id"
+            referencedTableName="cp_owner"
+            referencedColumnNames="id"
+        />
+
+       <addForeignKeyConstraint
+            constraintName="cp2_owner_content_fk2"
+            baseTableName="cp2_owner_content"
+            baseColumnNames="content_uuid"
+            referencedTableName="cp2_content"
+           referencedColumnNames="uuid"
+        />
+    </changeSet>
+
+</databaseChangeLog>

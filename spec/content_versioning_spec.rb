@@ -278,4 +278,40 @@ describe 'Content Versioning' do
     end
   end
 
+  it "concurrently edit content without causing db write issues" do
+    owner1 = create_owner random_string('test_owner')
+    (1..10).each do |w|
+
+      contents = []
+      (1..10).each do |i|
+        contents[i] = @cp.create_content(
+          owner1["key"],
+          "content_name#{i}",
+          "content_id#{i}",
+          "content_label#{i}",
+          "content_type#{i}",
+          "content_vendor#{i}")
+      end
+
+      threads = []
+      (1..10).each do |i|
+        threads[0] = Thread.new do
+          @cp.update_content(owner1["key"], "content_id#{i}", { :type => "content_type#{i}-update" })
+        end
+        threads[1] = Thread.new do
+          @cp.update_content(owner1["key"], "content_id#{i}", { :vendor => "content_vendor#{i}-update" })
+        end
+        threads[2] = Thread.new do
+          @cp.update_content(owner1["key"], "content_id#{i}", { :arches => "content_arches#{i}-update" })
+        end
+        (0..2).each do |i|
+          threads[i].join
+        end
+        content = @cp.get_content(owner1["key"], "content_id#{i}")
+        expect(content.type).to eq("content_type#{i}-update")
+        expect(content.vendor).to eq("content_vendor#{i}-update")
+        expect(content.arches).to eq("content_arches#{i}-update")
+      end
+    end
+  end
 end

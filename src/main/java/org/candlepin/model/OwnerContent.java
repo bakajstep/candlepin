@@ -66,6 +66,9 @@ public class OwnerContent implements Persisted, Serializable {
     private String ownerId;
 
     @Id
+    @Column(name = "content_id")
+    private String contentId;
+
     @Column(name = "content_uuid")
     private String contentUuid;
 
@@ -125,7 +128,12 @@ public class OwnerContent implements Persisted, Serializable {
             throw new IllegalStateException("Content must be persisted before it can be linked to an owner");
         }
 
+        if (this.content.getId() == null) {
+            throw new IllegalStateException("Content must have a value for the Id field");
+        }
+
         this.ownerId = owner.getId();
+        this.contentId = content.getId();
         this.contentUuid = content.getUuid();
     }
 

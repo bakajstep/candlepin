@@ -2127,6 +2127,33 @@ public class OwnerResource implements OwnersApi {
         return content;
     }
 
+    /**
+     * Retrieves the content entity with the given content ID for the specified owner. If a
+     * matching entity could not be found, this method throws a NotFoundException.
+     *
+     * @param owner
+     *  The owner in which to search for the content
+     *
+     * @param contentId
+     *  The Red Hat ID of the content to retrieve
+     *
+     * @throws NotFoundException
+     *  If a content with the specified Red Hat ID could not be found
+     *
+     * @return
+     *  the content entity with the given owner and content ID
+     */
+    protected Content fetchAndLockContent(Owner owner, String contentId) {
+        // Lock the owner_content while we are doing the update for this org.
+        // This is done in order to prevent collisions in updates on the content.
+        if (!this.ownerContentCurator.lockOwnerContent(owner, contentId, LockModeType.PESSIMISTIC_WRITE)) {
+            throw new NotFoundException(
+                i18n.tr("Content with ID \"{0}\" could not be found.", contentId)
+            );
+        }
+        return this.ownerContentCurator.getContentById(owner, contentId);
+    }
+
     @Override
     public CandlepinQuery<ContentDTO> listOwnerContent(@Verify(Owner.class) String ownerKey) {
         final Owner owner = this.getOwnerByKey(ownerKey);
@@ -2223,7 +2250,7 @@ public class OwnerResource implements OwnersApi {
         this.validator.validateCollectionElementsNotNull(content::getModifiedProductIds);
 
         Owner owner = this.getOwnerByKey(ownerKey);
-        Content existing = this.fetchContent(owner, contentId);
+        Content existing = this.fetchAndLockContent(owner, contentId);
 
         if (existing.isLocked()) {
             throw new ForbiddenException(i18n.tr("content \"{0}\" is locked", existing.getId()));
@@ -2240,13 +2267,13 @@ public class OwnerResource implements OwnersApi {
     @Transactional
     public void remove(String ownerKey, String contentId) {
         Owner owner = this.getOwnerByKey(ownerKey);
-        Content content = this.fetchContent(owner, contentId);
+        Content existing = fetchAndLockContent(owner, contentId);
 
-        if (content.isLocked()) {
-            throw new ForbiddenException(i18n.tr("content \"{0}\" is locked", content.getId()));
+        if (existing.isLocked()) {
+            throw new ForbiddenException(i18n.tr("content \"{0}\" is locked", existing.getId()));
         }
 
-        this.contentManager.removeContent(owner, content, true);
+        this.contentManager.removeContent(owner, existing, true);
         this.contentAccessManager.syncOwnerLastContentUpdate(owner);
     }
 
