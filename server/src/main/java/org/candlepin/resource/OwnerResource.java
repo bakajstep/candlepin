@@ -811,6 +811,9 @@ public class OwnerResource {
     @ApiOperation(notes = "Retrieves a list of Owners", value = "List Owners", response = OwnerDTO.class,
         responseContainer = "list")
     public CandlepinQuery<OwnerDTO> list(@QueryParam("key") String keyFilter) {
+
+        log.trace("Entering OwnerResource.list with keyFilter=", keyFilter);
+
         CandlepinQuery<Owner> query = keyFilter != null ?
             this.ownerCurator.getByKeys(Arrays.asList(keyFilter)) :
             this.ownerCurator.listAll();
