@@ -213,6 +213,8 @@ public class OwnerCurator extends AbstractHibernateCurator<Owner> {
             return Collections.emptySet();
         }
 
+        log.trace("Entering getOwnersWithProducts with productIds: {0}", productIds);
+
         CriteriaBuilder criteriaBuilder = this.entityManager.get().getCriteriaBuilder();
         CriteriaQuery<Owner> query = criteriaBuilder.createQuery(Owner.class);
         Root<Owner> owner = query.from(Owner.class);

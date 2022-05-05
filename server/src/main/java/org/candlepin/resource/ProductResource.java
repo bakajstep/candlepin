@@ -268,6 +268,8 @@ public class ProductResource {
         @ApiParam(value = "Multiple product UUIDs", required = true)
         @QueryParam("product") List<String> productUuids) {
 
+        log.trace("Entering getProductOwners with productUuids: {0}", productUuids);
+
         if (productUuids.isEmpty()) {
             throw new BadRequestException(i18n.tr("No product IDs specified"));
         }

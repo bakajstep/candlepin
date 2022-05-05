@@ -196,6 +196,7 @@ public class ConsumerResourceTest {
         this.i18n = I18nFactory.getI18n(getClass(), Locale.US, I18nFactory.FALLBACK);
         when(eventBuilder.setEventData(any(Consumer.class))).thenReturn(eventBuilder);
         when(eventFactory.getEventBuilder(any(Target.class), any(Type.class))).thenReturn(eventBuilder);
+        // TODO: asdf
 
         this.factValidator = new FactValidator(this.config, this.i18nProvider);
 
