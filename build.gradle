@@ -2,6 +2,7 @@ import groovy.text.GStringTemplateEngine
 import org.yaml.snakeyaml.Yaml
 
 plugins {
+    id "distribution"
     id "nebula.lint"
     /*
     The Versions plugin is used to provide the dependencyUpdates task which is used
@@ -511,4 +512,23 @@ publishing {
         }
     }
   }
+}
+
+distributions {
+    main {
+        distributionBaseName = project.name
+        contents {
+            from(".") {
+                dirMode = 0755
+                fileMode = 0644
+            }
+            distTar {
+//                archiveClassifier = "dist"
+                archiveExtension = "tar.gz"
+                compression = Compression.GZIP
+                exclude("**/build/**")
+                exclude("**/.settings/**")
+            }
+        }
+    }
 }
