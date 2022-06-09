@@ -184,7 +184,8 @@ dependencies {
 
     // Use wildcard because this could be called jss4.jar or jss.jar
     // (depending on if we are before Fedora35/RHEL9 or after)
-    providedCompile fileTree(dir: '/usr/lib64/jss', include: '*.jar')
+//    providedCompile fileTree(dir: '/usr/lib64/jss', include: '*.jar')
+    providedCompile "org.mozilla:jss:4.4.6"
     providedCompile libraries["javaxServlet"]
 
     // DB Drivers
