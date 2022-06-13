@@ -486,6 +486,7 @@ distributions {
                 exclude("**/build/**")
                 exclude("**/.settings/**")
             }
+            distZip.enabled = false
         }
     }
 }
