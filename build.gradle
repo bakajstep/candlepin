@@ -12,7 +12,6 @@ plugins {
     // Openapi version is set in the buildscript block for use in the pom generation as well
     id "org.openapi.generator"
     id "java"
-    id "maven-publish"
     id "war"
     id "checkstyle"
     id "org.owasp.dependencycheck"
@@ -25,7 +24,6 @@ plugins {
     id "org.candlepin.gradle.gettext"
     id "org.candlepin.gradle.msgfmt"
     id "org.candlepin.gradle.SpecVersion"
-    id "org.candlepin.gradle.PomToolkit"
 }
 
 apply from: "dependencies.gradle"
@@ -173,7 +171,8 @@ dependencies {
     implementation libraries["quartz"]
 
     // Keycloak
-    implementation libraries["keycloak"]
+    implementation libraries["keycloak-core"]
+    implementation libraries["keycloak-filter"]
 
     // Hibernate JPA integration
     implementation libraries["hibernateJpamodelgen"]
@@ -470,55 +469,6 @@ war {
 // Exclude the generated i18n translation files from checkstyle
 tasks.withType(Checkstyle) {
     exclude "**/i18n/Messages*"
-}
-
-task pom {
-    dependsOn "generatePomFileForLocalPublication"
-}
-
-publishing {
-  publications {
-    local(MavenPublication) {
-
-        generatePomFileForLocalPublication {
-           destination = file("./pom.xml")
-        }
-
-        pom {
-            description = 'The Candlepin Entitlement Engine'
-            packaging = 'war'
-            licenses {
-                license {
-                    name = 'GNU Public License (GPL) version 2.0'
-                    url = 'http://www.gnu.org/licenses/gpl-2.0.html'
-                    distribution = 'repo'
-                }
-            }
-
-            scm {
-                connection = 'scm:git:git://github.com/candlepin/candlepin.git'
-                developerConnection = 'scm:git:git@github.com:candlepin/candlepin.git'
-            }
-
-            pom.withXml {
-                PomToolkit.generatePomDependencies(
-                    asNode(),
-                    configurations.annotationProcessor.dependencies,
-                    configurations.compileOnly.dependencies,
-                    configurations.implementation.dependencies,
-                    configurations.providedCompile.dependencies,
-                    configurations.runtimeOnly.dependencies,
-                    configurations.testImplementation.dependencies,
-                    configurations.testRuntimeOnly.dependencies
-                )
-
-                PomToolkit.generateRepositories(asNode())
-                PomToolkit.generateBuild(asNode())
-                PomToolkit.generateProfiles(asNode())
-            }
-        }
-    }
-  }
 }
 
 //distributions {
