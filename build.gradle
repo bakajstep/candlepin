@@ -471,6 +471,7 @@ tasks.withType(Checkstyle) {
     exclude "**/i18n/Messages*"
 }
 
+
 distributions {
     main {
         distributionBaseName = project.name
@@ -483,6 +484,7 @@ distributions {
 //                archiveClassifier = "dist"
                 archiveExtension = "tar.gz"
                 compression = Compression.GZIP
+                // Todo exclude all unnecessary files
                 exclude("**/build/**")
                 exclude("**/.settings/**")
             }
