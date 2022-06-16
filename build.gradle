@@ -13,6 +13,7 @@ plugins {
     id "org.openapi.generator"
     id "java"
     id "war"
+    id "maven-publish"
     id "checkstyle"
     id "org.owasp.dependencycheck"
     id "jacoco"
@@ -489,6 +490,25 @@ distributions {
                 exclude("**/.settings/**")
             }
             distZip.enabled = false
+        }
+    }
+}
+
+publishing {
+    repositories {
+        maven {
+            url = "$buildDir/repo"
+        }
+    }
+    publications {
+        mavenWeb(MavenPublication) {
+            from components.web
+        }
+        create('jar', MavenPublication) {
+            artifact apiJar
+            groupId project.group
+            artifactId 'candlepin-api'
+            version project.version
         }
     }
 }
