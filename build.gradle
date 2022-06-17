@@ -147,7 +147,6 @@ dependencies {
     // Sun jaxb
     implementation libraries["jaxb"]
     implementation libraries["jaxbCore"]
-    implementation libraries["jaxbRuntime"]
 
     // Swagger
     implementation libraries["swagger"]
