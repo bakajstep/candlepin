@@ -535,16 +535,17 @@ publishing {
     }
 }
 
-repositories {
-    maven {
-        url = System.getProperty('AProxDeployUrl')
-
-        credentials(HttpHeaderCredentials) {
-            name = "Authorization"
-            value = "Bearer " + System.getProperty('accessToken')
-        }
-        authentication {
-            header(HttpHeaderAuthentication)
-        }
-    }
-}
+//repositories {
+//    maven {
+//        //url = "file://${buildDir}/repo"
+//        url = System.getProperty('AProxDeployUrl')
+//
+//        credentials(HttpHeaderCredentials) {
+//            name = "Authorization"
+//            value = "Bearer " + System.getProperty('accessToken')
+//        }
+//        authentication {
+//            header(HttpHeaderAuthentication)
+//        }
+//    }
+//}
