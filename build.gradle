@@ -513,11 +513,10 @@ distributions {
 //    }
 //}
 
-apply plugin: 'maven-publish'
-task sourcesJar(type: Jar) {
-    classifier = 'sources'
-    from sourceSets.main.allJava
-}
+//task sourcesJar(type: Jar) {
+//    classifier = 'sources'
+//    from sourceSets.main.allJava
+//}
 
 publishing {
     publications {
@@ -525,17 +524,12 @@ publishing {
             groupId 'org.candlepin.test'
             artifactId 'candlepin.test'
             version '4.1.RC.redhat-00001'
-            from components.java
-            artifact sourcesJar
+            from components.web
+//            artifact sourcesJar
+            artifactId 'candlepin-api'
             pom {
                 name = 'Candlepin test'
-                description = 'Library Description'
-                licenses {
-                    license {
-                        name = 'The Apache License, Version 2.0'
-                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-                    }
-                }
+                description = 'Candlepin Library Description'
             }
         }
     }
@@ -543,7 +537,7 @@ publishing {
 
 repositories {
     maven {
-        url = "file://${buildDir}/repo" url System.getProperty('AProxDeployUrl')
+        url = System.getProperty('AProxDeployUrl')
 
         credentials(HttpHeaderCredentials) {
             name = "Authorization"
