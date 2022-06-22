@@ -172,7 +172,7 @@ dependencies {
     implementation libraries["quartz"]
 
     // Keycloak
-    implementation libraries["keycloak-core"]
+//    implementation libraries["keycloak-core"]
     implementation libraries["keycloak-filter"]
 
     // Hibernate JPA integration
