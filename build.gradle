@@ -482,7 +482,7 @@ distributions {
                 fileMode = 0644
             }
             distTar {
-//                archiveClassifier = "dist"
+                archiveClassifier = "complete"
                 archiveExtension = "tar.gz"
                 compression = Compression.GZIP
                 // Todo exclude all unnecessary files
