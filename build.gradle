@@ -482,7 +482,7 @@ distributions {
                 fileMode = 0644
             }
             distTar {
-                // archiveClassifier = "complete"
+                archiveClassifier = "complete"
                 archiveExtension = "tar.gz"
                 compression = Compression.GZIP
                 // Todo exclude all unnecessary files
@@ -525,6 +525,7 @@ publishing {
             artifactId 'candlepin.test'
             version '4.1.RC.redhat-00001'
             from components.web
+            artifact distTar
 //            artifact sourcesJar
             artifactId 'candlepin-api'
             pom {
