@@ -523,7 +523,7 @@ publishing {
         mavenJava(MavenPublication) {
             groupId 'org.candlepin.test'
             artifactId 'candlepin.test'
-            version '4.1.RC.redhat-00001'
+//            version '4.1.RC.redhat-00001'
             from components.web
             artifact distTar
 //            artifact sourcesJar
