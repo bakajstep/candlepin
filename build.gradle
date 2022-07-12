@@ -525,7 +525,7 @@ publishing {
             artifactId 'candlepin.test'
 //            version '4.1.RC.redhat-00001'
             from components.web
-            artifact distTar
+//            artifact distTar
 //            artifact sourcesJar
             artifactId 'candlepin-api'
             pom {
