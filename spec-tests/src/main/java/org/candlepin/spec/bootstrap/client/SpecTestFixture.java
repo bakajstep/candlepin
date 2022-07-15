@@ -53,6 +53,8 @@ public abstract class SpecTestFixture {
                 return (O) new OwnerClient(apiClientFactory.createAdminClient());
             case "org.candlepin.spec.bootstrap.client.JobsClient":
                 return (O) new JobsClient(apiClientFactory.createAdminClient());
+            case "org.candlepin.spec.bootstrap.client.HostedTestResourceClient":
+                return (O) new HostedTestResourceClient(apiClientFactory.createAdminClient());
             default:
                 return null;
         }

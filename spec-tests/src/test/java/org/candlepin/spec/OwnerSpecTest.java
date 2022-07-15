@@ -18,6 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.candlepin.spec.bootstrap.assertions.StatusCodeAssertions.assertNotFound;
 
 import org.candlepin.dto.api.v1.OwnerDTO;
+import org.candlepin.spec.bootstrap.client.HostedTestResourceClient;
 import org.candlepin.spec.bootstrap.client.OwnerClient;
 import org.candlepin.spec.bootstrap.client.SpecTest;
 import org.candlepin.spec.bootstrap.client.SpecTestFixture;
@@ -40,6 +41,12 @@ class OwnerSpecTest extends SpecTestFixture {
         assertThat(status.getContentAccessModeList()).isNotNull();
         assertThat(status.getKey()).isEqualTo(ownerDTO.getKey());
         assertThat(status.getDisplayName()).isEqualTo(ownerDTO.getDisplayName());
+    }
+
+    @Test
+    void checkHostedResourceStatus() throws Exception {
+        HostedTestResourceClient client = getClient(HostedTestResourceClient.class);
+        assertThat(client.isHostedTestResourceAlive()).isEqualTo("true");
     }
 
     @Test
