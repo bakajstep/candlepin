@@ -32,6 +32,9 @@ class Rspec extends DefaultTask {
     @Input
     String spec = ""
 
+    @Input
+    boolean fileOutput = true
+
     @Option(option = 'spec', description = 'The name of the spec file to search. Example: "core_and_ram"')
     void setSpec(final String specfile_name) {
         this.spec = specfile_name
@@ -42,20 +45,33 @@ class Rspec extends DefaultTask {
         this.test = test_name
     }
 
+    @Option(option = 'no-file', description = 'Do not write output to an html file (the output is saved to a file by default)')
+    void setFileOutput(final boolean out) {
+        this.fileOutput = false
+    }
+
     @TaskAction
     runRspec() {
         def rspec_args = [
                 "--format", "documentation",
                 "--force-color",
-                "--require", "${project.rootDir}/server/spec/failure_formatter",
+                "--require", "${project.rootDir}/spec/failure_formatter",
                 "--format", "ModifiedRSpec::FailuresFormatter",
                 "-I", "${project.getProjectDir()}/client/ruby"
         ]
 
+        if (fileOutput) {
+            rspec_args.add("--format")
+            rspec_args.add("h")
+            rspec_args.add("--force-color")
+            rspec_args.add("--out")
+            rspec_args.add("build/reports/tests/rspec/index.html")
+        }
+
         // Use --pattern to match the name of the spec file for the spec argument
         if (spec){
             rspec_args.add("--pattern")
-            rspec_args.add("**/${spec}*_spec.rb")
+            rspec_args.add("**/${spec}*.rb")
         }
 
         // use -e to match the name of a specific test within the matched spec files

@@ -1,507 +1,516 @@
-import org.gradle.api.tasks.testing.logging.TestExceptionFormat
-import org.gradle.api.tasks.testing.logging.TestLogEvent
-
-// vim: set expandtab sts=4 sw=4 ai:
-
-buildscript {
-    ext.openapi_version = '4.2.3'
-    repositories {
-        mavenCentral()
-    }
-    dependencies {
-        classpath group: 'org.yaml', name: 'snakeyaml', version: '1.19'
-        classpath "org.openapitools:openapi-generator-gradle-plugin:${openapi_version}"
-    }
-}
+import groovy.text.GStringTemplateEngine
+import org.yaml.snakeyaml.Yaml
 
 plugins {
-    id "io.spring.dependency-management" version "1.0.8.RELEASE"
-    id "nebula.lint" version "16.2.3"
+    id "nebula.lint"
     /*
     The Versions plugin is used to provide the dependencyUpdates task which is used
     to look for libraries that have newer versions available.
      */
-    id "com.github.ben-manes.versions" version "0.28.0"
-    id "org.candlepin.gradle.SpecVersion"
+    id "com.github.ben-manes.versions"
+    // Openapi version is set in the buildscript block for use in the pom generation as well
+    id "org.openapi.generator"
     id "java"
+    id "maven-publish"
+    id "war"
+    id "checkstyle"
+    id "org.owasp.dependencycheck"
+    id "jacoco"
+    id "org.sonarqube"
+    id "com.adarshr.test-logger"
+
+
+    // The following are plugins are plugins we wrote in the buildSrc folder
+    id "org.candlepin.gradle.gettext"
+    id "org.candlepin.gradle.msgfmt"
+    id "org.candlepin.gradle.SpecVersion"
+    id "org.candlepin.gradle.PomToolkit"
 }
 
-ext.versions = [
-    jackson   : "2.10.1",
-    guice     : "4.2.3",
-    checkstyle: "8.29",
-    junit5    : "5.4.2"
-]
+apply from: "dependencies.gradle"
 
-ext.libraries = [
-    resteasy: [
-        "org.jboss.resteasy:resteasy-jaxb-provider",
-        "org.jboss.resteasy:resteasy-guice",
-        "org.jboss.resteasy:resteasy-atom-provider",
-        "org.jboss.resteasy:resteasy-multipart-provider",
-        "javax.ws.rs:javax.ws.rs-api",
-        "org.eclipse.microprofile.config:microprofile-config-api",
-    ],
-    jackson: [
-        "com.fasterxml.jackson.core:jackson-annotations",
-        "com.fasterxml.jackson.core:jackson-core",
-        "com.fasterxml.jackson.core:jackson-databind",
-        "com.fasterxml.jackson.jaxrs:jackson-jaxrs-base",
-        "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider",
-        "com.fasterxml.jackson.module:jackson-module-jsonSchema",
-        "com.fasterxml.jackson.module:jackson-module-jaxb-annotations",
-        "com.fasterxml.jackson.datatype:jackson-datatype-hibernate5",
-        "com.fasterxml.jackson.datatype:jackson-datatype-jdk8",
-    ],
-    swagger: [
-        "io.swagger:swagger-jaxrs",
-        "io.swagger:swagger-annotations",
-        "org.apache.commons:commons-lang3",
-    ],
-    sun_jaxb: [
-        "com.sun.xml.bind:jaxb-impl",
-        "com.sun.xml.bind:jaxb-core",
-    ],
-    core_testing: [
-        "org.junit.jupiter:junit-jupiter-api",
-        "org.junit.jupiter:junit-jupiter-params",
-        "org.junit.jupiter:junit-jupiter-engine",
-        "org.junit.vintage:junit-vintage-engine",
-        "org.hamcrest:hamcrest-library",
-        "org.hamcrest:hamcrest-core",
-        "org.mockito:mockito-junit-jupiter",
-        "org.mockito:mockito-core",
-        "junit:junit",
-    ],
-    logging_deps: [
-        "ch.qos.logback:logback-classic",
-        // Artifacts that bridge other logging frameworks to slf4j. Mime4j uses
-        // JCL for example.
-        "org.slf4j:jcl-over-slf4j",
-        "org.slf4j:log4j-over-slf4j",
-        "net.logstash.logback:logstash-logback-encoder",
-    ],
-    javax: [
-        "org.hibernate.javax.persistence:hibernate-jpa-2.1-api",
-        "javax.transaction:jta",
-        "javax.persistence:javax.persistence-api",
-        "javax.xml.bind:jaxb-api",
-        "javax.annotation:javax.annotation-api", 
-    ],
-    commons: [
-        "commons-codec:commons-codec",
-        "commons-collections:commons-collections",
-        "commons-io:commons-io",
-        "commons-lang:commons-lang",
-    ],
-    guice: [
-        "com.google.inject.extensions:guice-assistedinject",
-        "com.google.inject.extensions:guice-multibindings",
-        "com.google.inject.extensions:guice-servlet",
-        "com.google.inject.extensions:guice-throwingproviders",
-        "com.google.inject.extensions:guice-persist",
-        "com.google.inject:guice",
-        "aopalliance:aopalliance",
-        "javax.inject:javax.inject",
-    ],
-    liquibase: "org.liquibase:liquibase-core",
-    liquibase_slf4j: "com.mattbertolini:liquibase-slf4j",
-    oauth: [
-        "net.oauth.core:oauth",
-        "net.oauth.core:oauth-provider",
-    ],
-    collections: "com.google.guava:guava:30.1-jre",
-    hibernate_validator_ap: "org.hibernate.validator:hibernate-validator-annotation-processor",
-    checkstyle: [
-        "com.puppycrawl.tools:checkstyle",
-        "com.github.sevntu-checkstyle:sevntu-checks"
-    ],
-    gettext: "com.googlecode.gettext-commons:gettext-commons",
-    javax_servlet: "javax.servlet:servlet-api",
-    javax_validation: "javax.validation:validation-api",
-    jmock                 : [
-        "org.jmock:jmock",
-        "org.jmock:jmock-junit4",
-    ],
-    validator             : [
-        "org.hibernate.validator:hibernate-validator",
-        "org.hibernate.validator:hibernate-validator-annotation-processor",
-    ],
-    keycloak: "org.keycloak:keycloak-servlet-filter-adapter",
-    hibernate: "org.hibernate:hibernate-c3p0",
-    ehcache: [
-        "org.hibernate:hibernate-jcache",
-        "org.ehcache:ehcache",
-        "javax.cache:cache-api",
-    ],
-    artemis: [
-        "org.apache.activemq:artemis-server",
-        "org.apache.activemq:artemis-stomp-protocol",
-    ],
-    amqp: [
-        "org.apache.qpid:qpid-common",
-        "org.apache.qpid:qpid-client",
-        "geronimo-spec:geronimo-spec-jms",
-    ],
-]
+group = "org.candlepin"
 
-allprojects {
-    group = "org.candlepin"
-    apply plugin: "maven"
-    apply plugin: "nebula.lint"
-    apply plugin: "io.spring.dependency-management"
-    apply plugin: com.github.benmanes.gradle.versions.VersionsPlugin
+ext {
+    api_spec_path = "${projectDir}/api/candlepin-api-spec.yaml"
+    config_file = "${projectDir}/api/candlepin-api-config.json"
 
-    dependencyManagement {
-        dependencies {
-            dependency group: 'aopalliance', name: 'aopalliance', version: '1.0'
-            dependency group: 'javax.inject', name: 'javax.inject', version: '1'
-            dependency group: 'javax.transaction', name: 'jta', version: '1.1'
-            dependency group: 'javax.persistence', name: 'javax.persistence-api', version: '2.2'
-            dependency group: 'javax.xml.bind', name: 'jaxb-api', version: '2.3.1'
-            dependency group: 'javax.validation', name: 'validation-api', version: '2.0.1.Final'
-            dependency group: 'javax.ws.rs', name: 'javax.ws.rs-api', version: '2.1'
-            dependency group: 'javax.servlet', name: 'servlet-api', version: '2.5'
-            dependency group: 'javax.annotation', name: 'javax.annotation-api', version: '1.3.2'
-            dependency group: 'org.ehcache', name: 'ehcache', version: '3.8.0'
-            dependency group: 'javax.cache', name: 'cache-api', version: '1.0.0'
-            dependency group: 'org.mozilla', name: 'jss', version: '4.4.6'
-            dependency group: 'ldapjdk', name: 'ldapjdk', version: '4.19'
-            dependency group: 'org.quartz-scheduler', name: 'quartz', version: '2.3.2'
-            dependency group: 'geronimo-spec', name: 'geronimo-spec-jms', version: '1.1-rc4'
-            dependency group: 'org.apache.httpcomponents', name: 'httpcore', version: '4.4.7'
-            dependency group: 'org.slf4j', name: 'log4j-over-slf4j', version: '1.7.5'
-            dependency group: 'logdriver', name: 'logdriver', version: '1.0'
-            // Javascript engine
-            dependency group: 'org.mozilla', name: 'rhino', version: '1.7R3'
-            dependency group: 'org.hibernate.javax.persistence', name: 'hibernate-jpa-2.1-api', version: '1.0.2.Final'
-            dependency group: 'org.hibernate.validator', name: 'hibernate-validator-annotation-processor', version: '6.1.5.Final'
-            dependency group: 'org.hibernate', name: 'hibernate-jcache', version: '5.4.6.Final'
-            dependency group: 'commons-codec', name: 'commons-codec', version: '1.11'
-            dependency group: 'commons-collections', name: 'commons-collections', version: '3.2.2'
-            dependency group: 'commons-io', name: 'commons-io', version: '1.4'
-            dependency group: 'commons-lang', name: 'commons-lang', version: '2.5'
-            dependency group: 'org.apache.commons', name: 'commons-lang3', version: '3.2.1'
-            dependency group: 'com.googlecode.gettext-commons', name: 'gettext-commons', version: '0.9.8'
-            dependency group: 'com.puppycrawl.tools', name: 'checkstyle', version: "$versions.checkstyle"
-            dependency group: 'com.github.sevntu-checkstyle', name: 'sevntu-checks', version: '1.36.0'
-            dependency group: 'com.google.inject', name: 'guice', version: "$versions.guice"
-            // DB Drivers
-            dependency group: 'org.postgresql', name: 'postgresql', version: '42.2.2'
-            dependency group: 'mysql', name: 'mysql-connector-java', version: '8.0.20'
-            dependency group: 'org.mariadb.jdbc', name: 'mariadb-java-client', version: '2.3.0'
-            dependency group: 'org.junit.vintage', name: 'junit-vintage-engine', version: "$versions.junit5"
-            dependency group: 'junit', name: 'junit', version: '4.13.1'
-            // Testing DB Drivers
-            dependency group: 'org.hsqldb', name: 'hsqldb', version: '2.3.3'
-            dependency group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'
-            dependency group: 'net.logstash.logback', name: 'logstash-logback-encoder', version: '5.3'
-            dependency group: 'org.liquibase', name: 'liquibase-core', version: '3.1.0'
-            dependency group: 'com.mattbertolini', name: 'liquibase-slf4j', version: '1.2.1'
-            dependency group: 'org.eclipse.microprofile.config', name: 'microprofile-config-api', version:'1.3'
-            dependency group: 'com.mchange', name: 'c3p0', version: '0.9.5.4'
-            dependency group: 'org.keycloak', name: 'keycloak-servlet-filter-adapter', version: '7.0.0'
+    cpdb_username = "candlepin"
+    cpdb_password = ""
+    db_name = "candlepin"
 
-            dependencySet(group: "org.jboss.resteasy", version: "4.4.2.Final") {
-                entry "resteasy-core"
-                entry "resteasy-multipart-provider"
-                entry "resteasy-jaxb-provider"
-                entry "resteasy-guice"
-                entry "resteasy-atom-provider"
-            }
-            dependencySet(group: "org.hibernate", version: "5.4.9.Final") {
-                entry "hibernate-c3p0"
-            }
-            dependencySet(group: "org.hibernate.validator", version: "6.1.5.Final") {
-                entry "hibernate-validator"
-                entry "hibernate-validator-annotation-processor"
-            }
-            dependencySet(group: "org.apache.activemq", version: "2.12.0") {
-                entry "artemis-server"
-                entry "artemis-stomp-protocol"
-            }
-            dependencySet(group: "io.swagger", version: "1.5.7") {
-                entry "swagger-jaxrs"
-                entry "swagger-annotations"
-            }
-            dependencySet(group: "com.fasterxml.jackson.core", version: "$versions.jackson") {
-                entry "jackson-annotations"
-                entry "jackson-core"
-                entry "jackson-databind"
-            }
-            dependencySet(group: "com.fasterxml.jackson.dataformat", version: "$versions.jackson") {
-                entry "jackson-dataformat-yaml"
-                entry "jackson-dataformat-xml"
-            }
-            dependencySet(group: "com.fasterxml.jackson.datatype", version: "$versions.jackson") {
-                entry "jackson-datatype-hibernate5"
-                entry "jackson-datatype-jdk8"
-                //entry "jackson-datatype-jsr310"
-            }
-            dependencySet(group: "com.fasterxml.jackson.jaxrs", version: "$versions.jackson") {
-                entry "jackson-jaxrs-base"
-                entry "jackson-jaxrs-json-provider"
-            }
-            dependencySet(group: "com.fasterxml.jackson.module", version: "$versions.jackson") {
-                entry "jackson-module-jsonSchema"
-                entry "jackson-module-jaxb-annotations"
-            }
-            dependencySet(group: "com.google.inject.extensions", version: "$versions.guice") {
-                entry "guice-assistedinject"
-                entry "guice-multibindings"
-                entry "guice-servlet"
-                entry "guice-throwingproviders"
-                entry "guice-persist"
-            }
-            dependencySet(group: "com.sun.xml.bind", version: "2.3.0") {
-                entry "jaxb-impl"
-                entry "jaxb-core"
-            }
-            dependencySet(group: "net.oauth.core", version: "20100527") {
-                entry "oauth"
-                entry "oauth-provider"
-            }
-            //logging
-            dependencySet(group: "ch.qos.logback", version: "1.2.3") {
-                entry "logback-core"
-                entry "logback-classic"
-            }
-            dependencySet(group: "org.slf4j", version: "1.7.12") {
-                entry "jcl-over-slf4j"
-                entry "log4j-over-slf4j"
-            }
-            dependencySet(group: "org.apache.qpid", version: "0.32") {
-                entry "qpid-common"
-                entry "qpid-client"
-            }
-            dependencySet(group: "org.jmock", version: "2.5.1") {
-                entry "jmock"
-                entry "jmock-junit4"
-            }
-            dependencySet(group: "org.mockito", version: "2.23.4") {
-                entry "mockito-junit-jupiter"
-                entry "mockito-core"
-            }
-            dependencySet(group: "org.junit.jupiter", version: "$versions.junit5") {
-                entry "junit-jupiter-api"
-                entry "junit-jupiter-params"
-                entry "junit-jupiter-engine"
-            }
-            dependencySet(group: "org.hamcrest", version: "1.3") {
-                entry "hamcrest-library"
-                entry "hamcrest-core"
-            }
-        }
+    if (project.findProperty("hidden_resources")) {
+        hidden_resources = project.findProperty("hidden_resources")
     }
 
-    gradleLint {
-        rules = ["dependency-parentheses"]
-        // Turn these on selectively.  They are a little too sensitive to leave on all the time,
-        // but they provide useful information when run occasionally.
-        // rules = ["dependency-parentheses", "unused-exclude-by-dep"]
-        // criticalRules = ["unused-dependency"]
+    if (project.findProperty("hidden_capabilities")) {
+        hidden_capabilities = project.findProperty("hidden_capabilities")
+    }
+
+    if (!project.findProperty("db_host") ||
+        (project.findProperty("db_host") && "".equals(project.findProperty("db_host")))) {
+
+        db_host = "localhost"
+    }
+
+    if (project.findProperty("app_db_name") && !"".equals(project.findProperty("app_db_name"))) {
+        db_name = project.findProperty("app_db_name")
+    }
+
+    // If MYSQL set up the mysql stuff else set up postgres (default)
+    if (project.findProperty("database_server") == "mysql") {
+        jdbc_driver_class = "org.mariadb.jdbc.Driver"
+        jdbc_dialect = "org.hibernate.dialect.MySQL5InnoDBDialect"
+        jdbc_quartz_driver_class = "org.quartz.impl.jdbcjobstore.StdJDBCDelegate"
+        jdbc_url = "jdbc:mariadb://${db_host}/${db_name}"
+    } else {
+        jdbc_driver_class = "org.postgresql.Driver"
+        jdbc_dialect = "org.hibernate.dialect.PostgreSQL92Dialect"
+        jdbc_quartz_driver_class = "org.quartz.impl.jdbcjobstore.PostgreSQLDelegate"
+        jdbc_url = "jdbc:postgresql://${db_host}/${db_name}"
+    }
+
+    external_broker = "true".equals(project.findProperty("external_broker"))
+    hostedtest = "true".equals(project.findProperty("hostedtest"))
+    async_scheduler_enabled = !project.findProperty("async_scheduler_enabled") ||
+        "true".equals(project.findProperty("async_scheduler_enabled"))
+
+    generatedMetamodels = "${buildDir}/generated/api/src/gen/java"
+}
+
+ext {
+    // Denotes BOM versions
+    resteasy_version = "4.4.3.Final"
+    jackson_version = "2.13.2"
+    guice_version = "5.1.0"
+    junit_version = "5.8.2"
+}
+
+dependencies {
+    // Commons
+    implementation libraries["commonsCodec"]
+    implementation libraries["commonsCollections"]
+    implementation libraries["commonsIo"]
+    implementation libraries["commonsLang"]
+
+    // Collections
+    implementation libraries["guava"]
+
+    // Gettext libraries used for internationalization & translation
+    implementation libraries["gettext"]
+
+    // Guice Libraries
+    implementation libraries["guiceAssistedInject"]
+    implementation libraries["guiceServlet"]
+    implementation libraries["guicePersist"]
+
+    // Jackson
+    implementation libraries["jacksonJaxrs"]
+    implementation libraries["jacksonJsonSchema"]
+    implementation libraries["jacksonHibernate"]
+    implementation libraries["jacksonJdk8"]
+    implementation libraries["jacksonJsr310"]
+    implementation libraries["jacksonYaml"]
+    implementation libraries["jacksonXml"]
+
+    // Bean validation API is explicitly added to this version
+    // This is a transitive dependency of
+    // com.fasterxml.jackson.module:jackson-module-jsonSchema
+    implementation libraries["javaxValidation"]
+
+    // Javax
+    implementation libraries["hibernate"]
+    implementation libraries["javaxAnnotation"]
+
+    // Liquibase
+    implementation libraries["liquibase"]
+    implementation libraries["picocli"]
+
+    // Logging
+    implementation libraries["logback"]
+    // Artifacts that bridge other logging frameworks to slf4j. Mime4j uses
+    // JCL for example.
+    implementation libraries["jclOverSlf4j"]
+    implementation libraries["log4jOverSlf4j"]
+    implementation libraries["logstash"]
+
+    // Oauth
+    implementation libraries["oauth"]
+
+    // Resteasy
+    implementation libraries["resteasyGuice"]
+    implementation libraries["resteasyAtom"]
+    implementation libraries["resteasyMultipart"]
+
+    implementation libraries["javaxRs"]
+
+    // Sun jaxb
+    implementation libraries["jaxb"]
+    implementation libraries["jaxbCore"]
+
+    // Swagger
+    implementation libraries["swagger"]
+
+    // Validator
+    implementation libraries["hibernateValidator"]
+    implementation libraries["hibernateValidatorProcessor"]
+
+    // Hibernate
+    implementation libraries["hibernateC3p0"]
+    // Ehcache (for use with hibernate primarily)
+    implementation libraries["hibernateJcache"]
+    implementation libraries["ehcache"]
+    implementation libraries["javaxCache"]
+
+    // Artemis server & client
+    implementation libraries["artemisServer"]
+    implementation libraries["artemisStomp"]
+
+    // Javascript Engine
+    implementation libraries["rhino"]
+
+    implementation libraries["quartz"]
+
+    // Keycloak
+    implementation libraries["keycloak"]
+
+    // Hibernate JPA integration
+    implementation libraries["hibernateJpamodelgen"]
+    annotationProcessor libraries["hibernateJpamodelgenProcessor"]
+
+    checkstyle libraries["checkstyle"]
+    checkstyle libraries["checkstyleSevntu"]
+
+    // Use wildcard because this could be called jss4.jar or jss.jar
+    // (depending on if we are before Fedora35/RHEL9 or after)
+    providedCompile fileTree(dir: '/usr/lib64/jss', include: '*.jar')
+    providedCompile libraries["javaxServlet"]
+
+    // DB Drivers
+    runtimeOnly libraries["postgresql"]
+    runtimeOnly libraries["mariadb"]
+
+    testRuntimeOnly libraries["hsqldb"]
+    testRuntimeOnly libraries["javaxEl"]
+
+    // Core testing libraries
+    // Junit 5
+    testImplementation libraries["junitApi"]
+    testImplementation libraries["junitParams"]
+    testRuntimeOnly libraries["junitEngine"]
+
+    testImplementation libraries["hamcrest"]
+    testImplementation libraries["mockitoJunit"]
+    testImplementation libraries["liquibaseSlf4j"]
+}
+
+// Copy the resources to the main classes directory so that the
+// persistence context is in the the same classpath entry for
+// Hibernate annotation based discovery.
+sourceSets.main.output.resourcesDir = new File(buildDir, "classes/java/main")
+
+compileJava.dependsOn(processResources)
+
+// Add the openapi generated classes to the main java source sets to compile in the generated interfaces
+sourceSets {
+    main.java.srcDir generatedMetamodels
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
+gradleLint {
+    rules = ["dependency-parentheses"]
+    // Turn these on selectively.  They are a little too sensitive to leave on all the time,
+    // but they provide useful information when run occasionally.
+    // rules = ["dependency-parentheses", "unused-exclude-by-dep"]
+    // criticalRules = ["unused-dependency"]
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = "UTF-8"
+    // options.compilerArgs << "-Xlint:deprecation"
+    // options.compilerArgs.addAll(['--release', '8'])
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+
+    maven { url "https://repo.jenkins-ci.org/public/" }
+    maven { url "https://repository.jboss.org/nexus/content/groups/public/" }
+    maven { url "https://oauth.googlecode.com/svn/code/maven/" }
+    maven { url "https://awood.fedorapeople.org/ivy/candlepin/" }
+    maven { url "https://barnabycourt.fedorapeople.org/repo/candlepin/" }
+}
+
+openApiGenerate {
+    generatorName = "jaxrs-spec"
+    inputSpec = api_spec_path
+    configFile = config_file
+    outputDir = "$buildDir/generated/api"
+    configOptions = [
+            interfaceOnly: 'true',
+            generatePom: 'false',
+            dateLibrary: "java8"
+    ]
+    templateDir = "$rootDir/buildSrc/src/main/resources/templates"
+}
+
+openApiValidate {
+    inputSpec = api_spec_path
+}
+
+task generateApiDocs(type: org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
+    generatorName = "html"
+    inputSpec = api_spec_path
+    outputDir = "$buildDir/docs"
+    generateApiDocumentation = true
+    generateModelDocumentation = true
+    generateModelTests = false
+    generateApiTests = false
+    withXml = false
+}
+
+task generateOpenApiJson(type: org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
+    generatorName = "openapi"
+    inputSpec = api_spec_path
+    outputDir = "$buildDir/generated/json"
+    generateApiDocumentation = true
+    generateModelDocumentation = true
+    generateModelTests = false
+    generateApiTests = false
+    withXml = false
+}
+
+// Create a single checkstyle task to make it easier to run both the checkstyleMain, checkstyleTest,
+// and checkstyleSPec targets
+task checkstyle(dependsOn: [tasks.checkstyleMain, tasks.checkstyleTest, ":spec-tests:checkstyleSpec"]) {
+    description = 'Run checkstyle for the Main, Test, and Spec-test targets'
+    group = 'Verification'
+}
+
+//Update the compileJava & processResourcesTasks depend on the openapi generation so that the generated classes
+//can be used during compilation.
+compileJava.dependsOn tasks.openApiGenerate
+processResources.dependsOn tasks.generateOpenApiJson
+
+gettext {
+    keys_project_dir = "${project.rootDir}/"
+}
+
+msgfmt {
+    resource "org.candlepin.common.i18n.Messages"
+}
+
+test {
+    useJUnitPlatform ()
+
+    // Sometimes causes out of memory on vagrant
+    maxHeapSize = "2g"
+    jvmArgs = [
+            // We need to load the native jss lib (either libjss4.so or libjss.so) from this directory
+            '-Djava.library.path=/usr/lib64/jss',
+            '-XX:+HeapDumpOnOutOfMemoryError'
+    ]
+
+}
+
+testlogger {
+    theme 'standard'
+    showExceptions true
+    showStackTraces true
+    showFullStackTraces project.hasProperty("full")
+    showCauses true
+    slowThreshold 2000
+    showSummary true
+    showSimpleNames false
+    showPassed true
+    showSkipped true
+    showFailed true
+    showOnlySlow false
+    showStandardStreams project.hasProperty("full")
+    showPassedStandardStreams false
+    showSkippedStandardStreams false
+    showFailedStandardStreams project.hasProperty("full")
+    logLevel 'lifecycle'
+}
+
+jacocoTestReport {
+    reports {
+        xml.enabled true
+    }
+
+    doLast {
+        println "Generated unit test coverage report at $buildDir/reports/jacoco/test/html/index.html"
     }
 }
 
-subprojects {
-    apply plugin: "java"
-
-    sourceCompatibility = 11
-    targetCompatibility = 11
-
-    tasks.withType(JavaCompile) {
-        options.encoding = "UTF-8"
-        // options.compilerArgs << "-Xlint:deprecation"
-        // options.compilerArgs.addAll(['--release', '8'])
-    }
-
-    repositories {
-        mavenLocal()
-        mavenCentral()
-
-        maven { url "https://repo.jenkins-ci.org/public/" }
-        maven { url "https://repository.jboss.org/nexus/content/groups/public/" }
-        maven { url "https://oauth.googlecode.com/svn/code/maven/" }
-        // For LogDriver
-        maven { url "https://awood.fedorapeople.org/ivy/candlepin/" }
-        // Temporary repo, which stores jss 4.4.6
-        maven { url "https://barnabycourt.fedorapeople.org/repo/candlepin/" }
-    }
+// User-friendly alias for jacocoTestReport task
+task coverage {
+    dependsOn jacocoTestReport
 }
 
-project(":api") {
-    apply plugin: "org.openapi.generator"
-    apply plugin: "org.candlepin.gradle.SpecVersion"
-
-    ext {
-        api_spec_path = "${projectDir}/candlepin-api-spec.yaml"
-        config_file = "${projectDir}/candlepin-api-config.json"
-    }
-
-    openApiGenerate {
-      generatorName = "jaxrs-spec"
-      inputSpec = api_spec_path
-      configFile = config_file
-      outputDir = "$buildDir/generated"
-      configOptions = [
-          interfaceOnly: "true",
-          generatePom: "false",
-          dateLibrary: "java8"
-      ]
-      templateDir = "$rootDir/buildSrc/src/main/resources/templates"
-    }
-
-    openApiValidate {
-        inputSpec = api_spec_path
-    }
-
-    task generateApiDocs(type: org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
-        generatorName = "html"
-        inputSpec = api_spec_path
-        outputDir = "$buildDir/docs"
-        generateApiDocumentation = true
-        generateModelDocumentation = true
-        generateModelTests = false
-        generateApiTests = false
-        withXml = false
-    }
-
-    task generateOpenApiJson(type: org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
-        generatorName = "openapi"
-        inputSpec = api_spec_path
-        outputDir = "$buildDir/generated"
-        generateApiDocumentation = true
-        generateModelDocumentation = true
-        generateModelTests = false
-        generateApiTests = false
-        withXml = false
-    }
-
-    task pom {
-        doLast {
-            conf2ScopeMappings.addMapping(MavenPlugin.COMPILE_PRIORITY + 1, configurations.implementation, 'compile')
-            pom {
-                project {
-                    name "Candlepin API"
-                    description "OpenAPI-based API for Candlepin"
-                    parent {
-                        groupId "org.candlepin"
-                        artifactId "candlepin-parent"
-                        version "2.0"
-                        relativePath ".."
-                    }
-                    packaging "jar"
-                    build([:]) {
-                        plugins {
-                            plugin {
-                                groupId 'org.openapitools'
-                                artifactId 'openapi-generator-maven-plugin'
-                                version "$openapi_version"
-                                executions {
-                                    execution {
-                                        goals {
-                                            goal 'generate'
-                                        }
-                                        configuration {
-                                            inputSpec '${project.basedir}/candlepin-api-spec.yaml'
-                                            generatorName 'jaxrs-spec'
-                                            configurationFile '${project.basedir}/candlepin-api-config.json'
-                                            configOptions {
-                                                interfaceOnly 'true'
-                                                generatePom 'false'
-                                                dateLibrary 'java8'
-                                                sourceFolder 'src/gen/java/main'
-                                            }
-                                            templateDirectory '../buildSrc/src/main/resources/templates'
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }.withXml {
-                dependencyManagement.pomConfigurer.configurePom(asNode())
-            }.writeTo("pom.xml")
-        }
-    }
-
-    processResources {
-        from "$buildDir/generated/openapi.json"
-        from api_spec_path
-        rename { String fileName ->
-            api_spec_path.endsWith(fileName) ? 'openapi.yaml' : fileName  // rename yaml to openapi.yaml
-        }
-    }
-
-    dependencies {
-        compile 'com.fasterxml.jackson.core:jackson-annotations'
-        compile 'javax.validation:validation-api'
-        compile 'javax.ws.rs:javax.ws.rs-api'
-        compile 'io.swagger:swagger-annotations'
-        compile 'javax.annotation:javax.annotation-api'
-    }
-
-    sourceSets.main.java.srcDirs = ["${buildDir}/generated/src/gen/java"]
-    compileJava.dependsOn tasks.openApiGenerate
-    processResources.dependsOn tasks.generateOpenApiJson
-}
-
-configure(subprojects.findAll { it.name == "candlepin-common" || it.name == "candlepin" }) {
-    apply plugin: "checkstyle"
-
-    checkstyle {
-        toolVersion = "$versions.checkstyle"
-    }
-
-    dependencies {
-        checkstyle libraries.checkstyle
-        checkstyle project(":checks")
-    }
-
-    test {
-        useJUnitPlatform()
-
-        // Sometimes causes out of memory on vagrant
-        maxHeapSize = "2g"
-        jvmArgs "-XX:+HeapDumpOnOutOfMemoryError"
-
-        testLogging {
-            // set options for log level LIFECYCLE
-            events TestLogEvent.FAILED,
-                TestLogEvent.PASSED,
-                TestLogEvent.SKIPPED
-                // TestLogEvent.STANDARD_OUT
-            exceptionFormat TestExceptionFormat.FULL
-            showExceptions true
-            showCauses true
-            showStackTraces true
-
-            // set options for log level DEBUG and INFO
-            debug {
-                events TestLogEvent.STARTED,
-                    TestLogEvent.FAILED,
-                    TestLogEvent.PASSED,
-                    TestLogEvent.SKIPPED,
-                    TestLogEvent.STANDARD_ERROR,
-                    TestLogEvent.STANDARD_OUT
-                exceptionFormat TestExceptionFormat.FULL
-            }
-            info.events = debug.events
-            info.exceptionFormat = debug.exceptionFormat
-
-            afterSuite { desc, result ->
-                if (!desc.parent) { // will match the outermost suite
-                    def output = "Results: ${result.resultType} (${result.testCount} tests, ${result.successfulTestCount} successes, ${result.failedTestCount} failures, ${result.skippedTestCount} skipped)"
-                    def startItem = "|  ", endItem = "  |"
-                    def repeatLength = startItem.length() + output.length() + endItem.length()
-                    println("\n" + ("-" * repeatLength) + "\n" + startItem + output + endItem + "\n" + ("-" * repeatLength))
-                }
-            }
-        }
-    }
-}
+project.tasks["sonarqube"].dependsOn "test"
+project.tasks["sonarqube"].dependsOn "coverage"
 
 wrapper {
     distributionType = Wrapper.DistributionType.ALL
+}
+
+clean.doFirst {
+    delete "${rootDir}/buildSrc/build"
+    // Maven clean up
+    delete "${rootDir}/src/main/webapp/docs/candlepin-api-spec.yaml"
+    delete "${rootDir}/target"
+}
+
+// substitute the version & release in the version.properties used by the status resource at runtime
+processResources {
+    from("src/main/resources") {
+        duplicatesStrategy = "include"
+        include "version.properties"
+        expand([version: project.getVersion(), release: project.findProperty("release")])
+    }
+}
+
+task rspec(type: Rspec)
+
+// A task to generate the the candlepin config file for use in etc or other locations.
+task generateConfig() {
+    dependsOn ":processResources"
+    def template = file("$projectDir/config/candlepin/candlepin.conf.template")
+    def targetFile = file("$buildDir/candlepin.conf")
+    doLast {
+        def defaults = [candlepin: project.ext.properties]
+        def binding = [candlepin: defaults['candlepin']]
+
+        try {
+            def custom = new Yaml().load(new File("$projectDir/custom.yaml").newInputStream())
+            // Overwrite the defaults with the values from custom.yaml
+            // We have to use the key 'candlepin' instead of 'candlepin.conf' since the dot in the
+            // key name would otherwise be interpreted as a dereference in the template.
+            if (custom && custom['candlepin.conf']) {
+                binding['candlepin'] << custom['candlepin.conf']
+            }
+        }
+        catch (FileNotFoundException e) {
+            println "No custom.yaml found.  Using defaults."
+        }
+
+        // change contents via cli options
+        // change file contents
+        def tmp = new GStringTemplateEngine()
+                .createTemplate(template)
+                .make(binding)
+        targetFile.write(tmp.toString(), "UTF-8")
+    }
+}
+assemble.dependsOn(generateConfig)
+
+// task to generate candlepin-api jar that Hosted adapters build against
+// invoked as `./gradlew apiJar`
+task apiJar(type: Jar) {
+    archiveBaseName = 'candlepin-api'
+    from sourceSets.main.output
+    includes = [
+            'auth',
+            'config',
+            'controller',
+            'exceptions',
+            'jackson',
+            'model',
+            'pki',
+            'resteasy',
+            'service',
+            'util'
+    ].collect { "/org/candlepin/${it}/" }
+    duplicatesStrategy = 'exclude'
+}
+
+war {
+    if (!hostedtest) {
+        rootSpec.exclude("**/hostedtest/**")
+    }
+    manifest {
+        attributes(
+                "Implementation-Title": "The Candlepin Project",
+                "Copyright": "Red Hat, Inc. 2009-" + new Date().format("y")
+        )
+    }
+    // Copy the license file into place in the final manifest
+    from(projectDir) {
+        include "LICENSE"
+        into("META-INF")
+    }
+
+    from("./api") {
+        include "candlepin-api-spec.yaml"
+        into("docs")
+    }
+    from("$buildDir/generated/api/src/main/openapi") {
+        include "openapi.yaml"
+        into("WEB-INF/classes")
+    }
+    from("$buildDir/generated/json") {
+        include "openapi.json"
+        into("WEB-INF/classes")
+    }
+}
+
+// Exclude the generated i18n translation files from checkstyle
+tasks.withType(Checkstyle) {
+    exclude "**/i18n/Messages*"
+}
+
+task pom {
+    dependsOn "generatePomFileForLocalPublication"
+}
+
+publishing {
+  publications {
+    local(MavenPublication) {
+
+        generatePomFileForLocalPublication {
+           destination = file("./pom.xml")
+        }
+
+        pom {
+            description = 'The Candlepin Entitlement Engine'
+            packaging = 'war'
+            licenses {
+                license {
+                    name = 'GNU Public License (GPL) version 2.0'
+                    url = 'http://www.gnu.org/licenses/gpl-2.0.html'
+                    distribution = 'repo'
+                }
+            }
+
+            scm {
+                connection = 'scm:git:git://github.com/candlepin/candlepin.git'
+                developerConnection = 'scm:git:git@github.com:candlepin/candlepin.git'
+            }
+
+            pom.withXml {
+                PomToolkit.generatePomDependencies(
+                    asNode(),
+                    configurations.annotationProcessor.dependencies,
+                    configurations.compileOnly.dependencies,
+                    configurations.implementation.dependencies,
+                    configurations.providedCompile.dependencies,
+                    configurations.runtimeOnly.dependencies,
+                    configurations.testImplementation.dependencies,
+                    configurations.testRuntimeOnly.dependencies
+                )
+
+                PomToolkit.generateRepositories(asNode())
+                PomToolkit.generateBuild(asNode())
+                PomToolkit.generateProfiles(asNode())
+                PomToolkit.generateDependencyManagement(asNode())
+            }
+        }
+    }
+  }
 }

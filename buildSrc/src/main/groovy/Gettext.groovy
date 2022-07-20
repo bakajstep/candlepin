@@ -50,10 +50,7 @@ class Gettext implements Plugin<Project> {
                 List gettext_args = ["-k", "-F", "-ktrc:1c,2", "-ktrnc:1c,2,3","-ktr",
                                      "-kmarktr", "-ktrn:1,2", "--from-code=utf-8", "-o", "${keys_file}"
                 ]
-                // Only append to the existing keys file if we are adding to one in a different project.
-                if ("${extension.keys_project_dir}" != "${project.projectDir}") {
-                    gettext_args.add("-j")
-                }
+
                 gettext_args.add("-f")
                 gettext_args.add("${source_files}")
                 println(gettext_args.join(" "))
@@ -89,22 +86,13 @@ class Gettext implements Plugin<Project> {
             group = 'verification'
             doLast {
                 def po_files = new FileNameFinder().getFileNames("${extension.keys_project_dir}/po/", '*.po')
-                // Search for all lines that start with msgstr that contain an unescaped single quote.
-                def regex = ~/^msgstr(.*([^'])'([^']).*)/
-                def failed = false
                 po_files.each {
-                    def line_number = 1
-                    new File(it).eachLine { line ->
-                        def matcher = regex.matcher(line)
-                        while (matcher.find()) {
-                            println(String.format("Found unescaped single quote in %s line %s: %s",it, line_number, matcher.group(1)))
-                            failed = true
-                        }
-                        line_number++
+                    def msgfmt_args = ['-o', '/dev/null', '-c', it]
+                    project.exec {
+                        executable "msgfmt"
+                        args msgfmt_args
+                        workingDir project.getRootDir()
                     }
-                }
-                if (failed) {
-                    throw new GradleException("failed validating translation files")
                 }
             }
         }
@@ -115,7 +103,7 @@ class Gettext implements Plugin<Project> {
             doLast {
                 def po_files = new FileNameFinder().getFileNames("${extension.keys_project_dir}/po/", '*.po')
                 po_files.each {
-                    def msgattrib_args = ['--set-obsolete', '--ignore-file=common/po/keys.pot','-o', it, it]
+                    def msgattrib_args = ['--set-obsolete', '--ignore-file=po/keys.pot','-o', it, it]
                     project.exec {
                         executable "msgattrib"
                         args msgattrib_args

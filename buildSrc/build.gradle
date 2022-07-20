@@ -1,8 +1,24 @@
-apply plugin: "java"
-apply plugin: "java-gradle-plugin"
+plugins {
+    id 'java'
+    id "groovy-gradle-plugin"
+    id "java-gradle-plugin"
+}
+apply from: "../dependencies.gradle"
+
+repositories {
+    mavenCentral()
+    gradlePluginPortal()
+}
 
 dependencies {
-    implementation gradleApi()
+    implementation(gradleApi())
+    implementation(libraries["openapi"])
+
+    // add all plugin artifacts to gradle classpath as defined in dependencies.gradle
+    // this makes them available via plugin ID only across *all* projects
+    for (pluginDependency in project.ext.plugins) {
+        implementation pluginDependency
+    }
 }
 
 gradlePlugin {
@@ -12,8 +28,17 @@ gradlePlugin {
             implementationClass = "org.candlepin.gradle.SpecVersion"
         }
         gettextPlugin {
-            id = "gettext"
+            id = "org.candlepin.gradle.gettext"
             implementationClass = "Gettext"
+        }
+        msgfmtPlugin {
+            id = "org.candlepin.gradle.msgfmt"
+            implementationClass = "Msgfmt"
+        }
+
+        pomToolkitPlugin {
+            id = "org.candlepin.gradle.PomToolkit"
+            implementationClass = "PomToolkit"
         }
     }
 }

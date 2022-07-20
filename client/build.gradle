@@ -1,0 +1,38 @@
+plugins {
+    id "org.openapi.generator"
+    id "java-library"
+}
+apply from: "../dependencies.gradle"
+
+description = "Candlepin Generated Client Library"
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation libraries["swagger"]
+    implementation libraries["gson"]
+    implementation libraries["okhttp"]
+    implementation libraries["okhttpInterceptor"]
+    implementation libraries["javaxAnnotation"]
+    implementation libraries["spotbugs"]
+    implementation libraries["gsonfire"]
+    implementation libraries["javaxRs"]
+}
+
+sourceSets.main.java.srcDirs = ["${buildDir}/generated/src/main/java"]
+compileJava.dependsOn tasks.openApiGenerate
+
+openApiGenerate {
+    inputSpec = "${projectDir}/../api/candlepin-api-spec.yaml"
+    outputDir = "${buildDir}/generated"
+    configFile = "${projectDir}/../api/candlepin-api-config.json"
+    generatorName = "java"
+    validateSpec = true
+    skipValidateSpec = true
+    configOptions = [
+        dateLibrary: "java8"
+    ]
+    templateDir = "$rootDir/client/buildSrc/src/main/resources/templates"
+}

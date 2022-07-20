@@ -224,13 +224,12 @@
     </module>
     <module name="JavadocMethod">
       <property name="id" value="JavadocMethodMain"/>
-      <property name="scope" value="public" />
+      <property name="accessModifiers" value="public" />
       <property name="allowMissingParamTags" value="true" />
       <property name="allowMissingReturnTag" value="false" />
     </module>
     <module name="JavadocMethod">
       <property name="id" value="JavadocMethodTest"/>
-      <property name="scope" value="nothing" />
       <property name="allowMissingParamTags" value="true" />
       <property name="allowMissingReturnTag" value="true" />
     </module>
@@ -342,13 +341,6 @@
         SL, SLIST, SL_ASSIGN, SR, SR_ASSIGN, STAR, STAR_ASSIGN,
         TYPE_EXTENSION_AND"/>
     </module>
-
-    <!--
-       #######################################################################
-       Resource swagger annotations
-       #######################################################################
-    -->
-    <module name="org.candlepin.checks.ResourceSwaggerCheck"/>
   </module>
 </module>
 

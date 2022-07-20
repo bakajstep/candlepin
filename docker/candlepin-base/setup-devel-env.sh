@@ -14,36 +14,25 @@ export JAVA_HOME=/usr/lib/jvm/java-$JAVA_VERSION
 yum install -y epel-release
 
 PACKAGES=(
-    gcc
     gettext
     git
     hostname
     java-11-openjdk-devel
     java-$JAVA_VERSION-openjdk-devel
     jss
-    libxml2-python
-    liquibase
     mariadb
-    mysql-connector-java
-    mariadb-java-client
     openssl
-    postgresql
-    postgresql-jdbc
     python-pip
-    qpid-proton-c
-    qpid-proton-c-devel
-    rpmlint
     rsyslog
-    tig
-    tmux
     tomcat
-    vim-enhanced
+    which
     wget
     createrepo_c
     rpm-build
     rpm-sign
     python-requests
     expect
+    PyYAML
 )
 
 yum install -y ${PACKAGES[@]}
@@ -53,7 +42,7 @@ yum install -y ${PACKAGES[@]}
 # therefore we must build it
 if ! type pg_isready 2> /dev/null; then
   yum install -y centos-release-scl
-  yum install -y yum install rh-postgresql96
+  yum install -y yum install rh-postgresql12
 fi
 
 # Setup for autoconf:
@@ -73,7 +62,7 @@ git clone https://github.com/candlepin/candlepin.git /candlepin
 cd /candlepin
 
 # Setup and install rvm, ruby and pals
-gpg2 --keyserver hkp://keys.gnupg.net --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3 7D2BAF1CF37B13E2069D6956105BD0E739499BDB
+gpg2 --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3 7D2BAF1CF37B13E2069D6956105BD0E739499BDB
 # turning off verbose mode, rvm is nuts with this
 set +v
 curl -O https://raw.githubusercontent.com/rvm/rvm/master/binscripts/rvm-installer

@@ -1,0 +1,58 @@
+plugins {
+    id "java"
+    id "checkstyle"
+    id "com.adarshr.test-logger"
+}
+apply from: "../dependencies.gradle"
+
+repositories {
+    mavenCentral()
+}
+
+description = "Candlepin Spec Tests"
+
+dependencies {
+    implementation project(":client")
+
+    implementation libraries["okhttp"]
+    implementation libraries["okhttpTls"]
+    implementation libraries["slf4j"]
+    implementation libraries["junitApi"]
+    implementation libraries["slf4j"]
+    implementation libraries["jacksonDatabind"]
+    implementation libraries["jacksonJdk8"]
+    implementation libraries["jacksonJsr310"]
+    implementation libraries["assertj"]
+
+    testRuntimeOnly libraries["junitEngine"]
+
+    checkstyle libraries["checkstyle"]
+    checkstyle libraries["checkstyleSevntu"]
+}
+
+// Disable empty test task
+test {
+    enabled = false
+}
+
+task spec(type: Test) {
+    description = 'Run Java based spec tests'
+    group = 'Verification'
+
+    useJUnitPlatform()
+
+    // We have to propagate the -D params if we want them available in tests
+    System.properties.keys().each { key ->
+        def properyKey = key.toString()
+        if (properyKey.startsWith("spec.test.client")) {
+            systemProperty properyKey, System.getProperty(properyKey)
+        }
+    }
+
+}
+
+// Create a single checkstyle task to make it easier to run both the checkstyleMain & checkstyleTest targets
+task checkstyleSpec(dependsOn: [tasks.checkstyleMain, tasks.checkstyleTest]) {
+    description = "Run checkstyle for both the Main & Test targets"
+    group = "Verification"
+}

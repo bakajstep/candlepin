@@ -19,7 +19,7 @@ Basic invocations of `build-images` are as follows:
 ./build-images -c
 # build only one image
 # see the top level of docker-compose-build.yml under 'services:' for a list of image names
-./build-image <image_name>
+./build-images <image_name>
 ```
 These options can be combined.  See `build-images -h` for more information.
 
@@ -31,18 +31,23 @@ and bring up a database at hostname `db` on the running container
 
 By default the `test` script will run candlepin against a postgres database.  You can change this behavior with the
 `-m` or `-p` flags which will use mysql or postgres respectively. To change the default permanently,
-run the `switch-defaults` script.
+run the `switch-defaults` script. Additionally, you can use the `-x` flag which will use no database at all (useful
+for running tasks that do not require a running server and database, such as unit tests, checkstyle, translation
+validation). Finally, the `-q` flag does what the `-x` flag does already, plus requires a sonarqube server certificate
+(used for running the sonarqube analysis upload task).
 
 To run multiple candlepin containers simultaneously, give each invocation of `test` a unique name with the `-n` flag.
 
-You can also use the `-d` option which will containers in detached mode, which will keep them from being removed
-when the test script exits. This will also make them expose ports 8443, 8080 and 22 to the host.
+You can also use the `-d` option which will run containers in detached mode, keeping them from being removed
+when the test script exits.
+
+Using the `-e` flag will expose ports 8443, 8080 and 22 to the host.
 
 Some useful invocations of the `test` command:
 
 ```sh
 # run only unit tests
-./test -c '/usr/bin/cp-test -u'
+./test -x -c '/usr/bin/cp-test -u'
 
 # screw tests, give me a shell and a mysql db
 ./test -m -c '/bin/bash'
@@ -51,11 +56,11 @@ Some useful invocations of the `test` command:
 ./test -m -n "my_mysql_tests"
 ./test -p -n "my_postgres_tests"
 
-# run containers detached, expose ports 8443/8080/22 to the host, and don't remove
-# containers when ./test exits. The cp-test -R option will generate test data, content & rpms,
+# Run containers detached, don't remove containers when ./test exits, and expose ports
+# 8443/8080/22 to the host. The cp-test -R option will generate test data, content & rpms,
 # and the -s option will make sure the candlepin container will drop into the shell once the
 # data generation is done, to avoid the container shutting down.
-./test -d -c '/usr/bin/cp-test -R -s'
+./test -d -e -c '/usr/bin/cp-test -R -s'
 ```
 
 See `test -h` for more options.

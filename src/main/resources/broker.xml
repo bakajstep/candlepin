@@ -1,0 +1,184 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!--
+  Copyright (c) 2009 - 2020 Red Hat, Inc.
+
+  This software is licensed to you under the GNU General Public License,
+  version 2 (GPLv2). There is NO WARRANTY for this software, express or
+  implied, including the implied warranties of MERCHANTABILITY or FITNESS
+  FOR A PARTICULAR PURPOSE. You should have received a copy of GPLv2
+  along with this software; if not, see
+  http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
+
+  Red Hat trademarks are not licensed under GPLv2. No permission is
+  granted to use or replicate Red Hat trademarks that are incorporated
+  in this software or its documentation.
+-->
+
+<configuration xmlns="urn:activemq"
+               xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+               xsi:schemaLocation="urn:activemq /schema/artemis-configuration.xsd">
+
+    <core xmlns="urn:activemq:core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="urn:activemq:core ">
+
+        <!--
+            By default, Candlepin only enables the in-vm connection with no security manager, but
+            supports adding additional acceptors which can then be secured using JAAS modules.
+
+            Below is a commented-out example acceptor that accepts clients using the STOMP protocol,
+            over an SSL connection. In addition to the acceptor, the remaining JAAS configuration
+            needs to be added, such as the login.config file loaded with the Java runtime.
+
+            When configuring the login.config, Candlepin uses two sections for certificate-based
+            and non-certificate logins attempts. By default, these are named "CertificateLogin" and
+            "InVMLogin" respectively, but can be modified in candlepin.conf if necessary [1].
+
+            As Candlepin's in-vm connection does not provide any credentials, it is imperative that
+            the guest login module is present in the non-certificate login section when using the
+            embedded broker. Omitting or misconfiguring this module will prevent Candlepin from
+            communicating with its own broker, leading to an inability to operate normally and being
+            permanently stuck in suspend mode, or not starting at all.
+
+            An example of a login.config configured for Candlepin's embedded broker to allow both
+            external SSL connections and Candlepin's own in-vm connection is given below [2].
+
+            Beyond this, the security settings will need to be configured to allow the various users
+            to actually use the broker. Again, when using the embedded broker, Candlepin's in-vm
+            connection should be configured to perform any action to prevent operation failure. The
+            security settings section below has a commented-out block for the in-vm role to perform
+            any operation on any address/queue.
+
+            [1] candlepin.conf properties renaming:
+                - "candlepin.messaging.activemq.embedded.jaas_properties_login_name"
+                - "candlepin.messaging.activemq.embedded.jaas_certificate_login_name"
+
+            [2] Example login.config for an embedded broker with external clients:
+                CertificateLogin {
+                    org.apache.activemq.artemis.spi.core.security.jaas.TextFileCertificateLoginModule required
+                        debug=true
+                        org.apache.activemq.jaas.textfiledn.user="cert-users.properties"
+                        org.apache.activemq.jaas.textfiledn.role="cert-roles.properties";
+                };
+
+                InVMLogin {
+                    org.apache.activemq.artemis.spi.core.security.jaas.GuestLoginModule required
+                        debug=true
+                        credentialsInvalidate=true
+                        org.apache.activemq.jaas.guest.user="invm-user"
+                        org.apache.activemq.jaas.guest.role="invm-role";
+                };
+        -->
+
+        <acceptors>
+            <acceptor name="in-vm">vm://0</acceptor>
+
+            <!--
+            <acceptor name="netty">
+                tcp://localhost:61613?protocols=STOMP;needClientAuth=true;sslEnabled=true;keyStorePath=/path/to/certs/server-side-keystore.jks;keyStorePassword=changeme;trustStorePath=/path/to/certs/server-side-truststore.jks;trustStorePassword=changeme
+            </acceptor>
+            -->
+        </acceptors>
+
+        <!-- set this to true if using external clients -->
+        <security-enabled>false</security-enabled>
+
+        <security-settings>
+            <!--
+                Enable this when using the embedded broker with the security manager enabled.
+                Remember sure to update the role name to match the role given to the "guest"
+                in-vm user, following the login details provided above.
+
+            <security-setting match="#">
+                <permission type="createAddress" roles="invm-role"/>
+                <permission type="deleteAddress" roles="invm-role"/>
+                <permission type="createDurableQueue" roles="invm-role"/>
+                <permission type="deleteDurableQueue" roles="invm-role"/>
+                <permission type="createNonDurableQueue" roles="invm-role"/>
+                <permission type="deleteNonDurableQueue" roles="invm-role"/>
+                <permission type="send" roles="invm-role"/>
+                <permission type="consume" roles="invm-role"/>
+                <permission type="browse" roles="invm-role"/>
+                <permission type="manage" roles="invm-role"/>
+            </security-setting>
+            -->
+        </security-settings>
+
+        <!-- Silence warnings on server startup -->
+        <cluster-user></cluster-user>
+        <cluster-password></cluster-password>
+
+        <persistence-enabled>true</persistence-enabled>
+        <journal-type>NIO</journal-type>
+        <journal-pool-files>1</journal-pool-files>
+        <create-bindings-dir>true</create-bindings-dir>
+        <create-journal-dir>true</create-journal-dir>
+        <bindings-directory>/var/lib/candlepin/activemq-artemis/bindings</bindings-directory>
+        <journal-directory>/var/lib/candlepin/activemq-artemis/journal</journal-directory>
+        <large-messages-directory>/var/lib/candlepin/activemq-artemis/largemsgs</large-messages-directory>
+        <paging-directory>/var/lib/candlepin/activemq-artemis/paging</paging-directory>
+
+        <!-- Only block message delivery once the disk is 99% used (1% remaining) -->
+        <max-disk-usage>99</max-disk-usage>
+
+        <!-- Use default thread pool max sizes as defined by Artemis. -->
+        <!-- Uncomment to customize.                                  -->
+        <!-- <thread-pool-max-size>30</thread-pool-max-size> -->
+        <!-- <scheduled-thread-pool-max-size>5</scheduled-thread-pool-max-size> -->
+
+        <addresses>
+            <address name="event.default">
+                <multicast>
+                    <queue name="event.org.candlepin.audit.LoggingListener" />
+                    <queue name="event.org.candlepin.audit.ActivationListener" />
+                </multicast>
+            </address>
+            <address name="job">
+                <anycast>
+                    <queue name="jobs"/>
+                </anycast>
+            </address>
+        </addresses>
+
+        <address-settings>
+            <address-setting match="event.default">
+                <config-delete-queues>FORCE</config-delete-queues>
+                <auto-create-queues>true</auto-create-queues>
+                <max-size-bytes>10485760</max-size-bytes>
+
+                <!-- By default, Artemis will page messages when the queue address is full. -->
+                <page-size-bytes>1048576</page-size-bytes>
+
+                <!--
+                    Configure message redelivery. We set the maximum number of times that a message should
+                    be redelivered to 0 so that messages will remain in the queue and will never get sent
+                    to the dead letter queue. Since candlepin does not currently set up, or use, a dead
+                    letter queue, any messages sent there will be lost. We need to prevent this.
+                -->
+                <redelivery-delay>30000</redelivery-delay>
+                <max-redelivery-delay>3600000</max-redelivery-delay>
+                <redelivery-delay-multiplier>2</redelivery-delay-multiplier>
+                <max-delivery-attempts>0</max-delivery-attempts>
+            </address-setting>
+
+            <address-setting match="job">
+                <max-size-bytes>10485760</max-size-bytes>
+
+                <!-- By default, Artemis will page messages when the queue address is full. -->
+                <page-size-bytes>1048576</page-size-bytes>
+
+                <!--
+                    Default the consumer window size to zero so we don't have a single thread grabbing
+                    a ton of job messages and choking out other threads that are waiting for work.
+                -->
+                <default-consumer-window-size>0</default-consumer-window-size>
+
+                <!-- Redelivery config -->
+                <redelivery-delay>30000</redelivery-delay>
+                <max-redelivery-delay>3600000</max-redelivery-delay>
+                <redelivery-delay-multiplier>2</redelivery-delay-multiplier>
+                <max-delivery-attempts>0</max-delivery-attempts>
+            </address-setting>
+        </address-settings>
+
+    </core>
+</configuration>
