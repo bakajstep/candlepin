@@ -19,6 +19,8 @@ import org.candlepin.service.model.CloudRegistrationInfo;
 import org.candlepin.service.exception.CloudRegistrationAuthorizationException;
 import org.candlepin.service.exception.MalformedCloudRegistrationException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The custom implementation of the {@link CloudRegistrationAdapter}.
@@ -26,11 +28,38 @@ import org.candlepin.service.exception.MalformedCloudRegistrationException;
  * This implementation always returns organization id "snowwhite"
  */
 public class CustomCloudRegistrationAdapter implements CloudRegistrationAdapter {
+
+    private static Logger log = LoggerFactory.getLogger(CustomCloudRegistrationAdapter.class);
+
     @Override
     public String resolveCloudRegistrationData(CloudRegistrationInfo cloudRegInfo)
         throws CloudRegistrationAuthorizationException, MalformedCloudRegistrationException {
 
-        // do any custom logic here
+        if (cloudRegInfo == null) {
+            throw new MalformedCloudRegistrationException("No cloud registration information provided");
+        } else {
+            String cloudType = cloudRegInfo.getType();
+            log.debug("Cloud registration information provided");
+
+            if (cloudType == null) {
+                throw new MalformedCloudRegistrationException("No cloud type specified");
+            } else {
+                log.debug("Cloud type: {}", cloudType);
+            }
+        }
+
+        String metadata = cloudRegInfo.getMetadata();
+        if (metadata == null) {
+            throw new MalformedCloudRegistrationException(
+                "No metadata provided with the cloud registration info");
+        } else {
+            log.debug("Cloud metadata: {}", metadata);
+        }
+
+        String signature = cloudRegInfo.getSignature();
+        if (signature != null) {
+            log.debug("Signature of cloud metadata: {}", signature);
+        }
 
         return "snowwhite";
     }
