@@ -59,6 +59,8 @@ public class CustomCloudRegistrationAdapter implements CloudRegistrationAdapter 
         String signature = cloudRegInfo.getSignature();
         if (signature != null) {
             log.debug("Signature of cloud metadata: {}", signature);
+        } else {
+            log.debug("Signature is null");
         }
 
         return "snowwhite";
