@@ -51,6 +51,8 @@ import org.candlepin.spec.bootstrap.data.util.DateUtil;
 import org.candlepin.spec.bootstrap.data.util.StringUtil;
 import org.candlepin.spec.bootstrap.data.util.UserUtil;
 
+import com.google.gson.JsonObject;
+
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
@@ -154,7 +156,8 @@ class OwnerResourceSpecTest {
         ProductDTO product = createProduct(owner,
             ProductAttributes.SupportLevel.withValue("VIP")
         );
-        owners.createPool(owner.getKey(), Pools.random(product));
+//        owners.createPool(owner.getKey(), Pools.random(product));
+        JsonObject poolJson = owners.createPoolJson(owner.getKey(), Pools.random(product));
 
         List<String> serviceLevels = consumerClient.owners()
             .ownerServiceLevels(owner.getKey(), "");

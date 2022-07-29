@@ -17,6 +17,7 @@ import {{invokerPackage}}.ProgressResponseBody;
 import {{invokerPackage}}.BeanValidationException;
 {{/performBeanValidation}}
 
+import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 {{#dynamicOperations}}
 import io.swagger.v3.oas.models.Operation;
@@ -570,6 +571,14 @@ public class {{classname}} {
         return new API{{operationId}}Request({{#requiredParams}}{{paramName}}{{^-last}}, {{/-last}}{{/requiredParams}});
     }
     {{/vendorExtensions.x-group-parameters}}
+
+    public JsonObject {{operationId}}Json({{#allParams}}{{{dataType}}} {{paramName}}{{^-last}}, {{/-last}}{{/allParams}}) throws ApiException {
+        okhttp3.Call localVarCall = {{operationId}}ValidateBeforeCall({{#allParams}}{{paramName}}, {{/allParams}}null);
+        Type localVarReturnType = new TypeToken<JsonObject>(){}.getType();
+        ApiResponse<JsonObject> localVarResp = localVarApiClient.execute(localVarCall, localVarReturnType);
+        return localVarResp.getData();
+    }
+
     {{/operation}}
 }
 {{/operations}}

@@ -22,6 +22,7 @@ dependencies {
     implementation libraries["jacksonDatabind"]
     implementation libraries["jacksonJdk8"]
     implementation libraries["jacksonJsr310"]
+    implementation libraries["gson"]
     implementation libraries["assertj"]
 
     testRuntimeOnly libraries["junitEngine"]
