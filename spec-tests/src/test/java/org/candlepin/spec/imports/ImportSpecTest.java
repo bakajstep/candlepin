@@ -17,6 +17,7 @@ package org.candlepin.spec.imports;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import org.candlepin.ApiException;
 import org.candlepin.dto.api.v1.AsyncJobStatusDTO;
 import org.candlepin.dto.api.v1.BrandingDTO;
 import org.candlepin.dto.api.v1.ConsumerDTO;
@@ -41,12 +42,16 @@ import org.candlepin.spec.bootstrap.data.builder.Roles;
 import org.candlepin.spec.bootstrap.data.util.StringUtil;
 import org.candlepin.spec.bootstrap.data.util.UserUtil;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
+import java.io.InputStream;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -68,21 +73,26 @@ public class ImportSpecTest {
     }
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws ApiException {
         this.owner = admin.owners().createOwner(Owners.random());
         this.user = UserUtil.createUser(admin, owner);
-        this.userClient = ApiClients.basic(this.user.getUsername(), "password");
+        this.userClient = ApiClients.trustedUser(this.user.getUsername());
+        URL manifest = ImportSpecTest.class.getClassLoader().getResource("manifests/manifest");
+        try {
+            File file = new File(manifest.toURI());
+            importNow(this.owner.getKey(), file);
+        }
+        catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    public static UserDTO randomUser() {
-        UserDTO newUser = new UserDTO();
-        newUser.setSuperAdmin(false);
-        newUser.setUsername(StringUtil.random("username"));
-        newUser.setPassword(StringUtil.random("password"));
-        return newUser;
+    @AfterEach
+    void tearDown() throws ApiException {
+        admin.owners().deleteOwner(owner.getKey(), true, true);
     }
 
-//    private void initializeData() throws Exception {
+    //    private void initializeData() throws Exception {
 //        OwnerDTO owner = admin.owners().createOwner(Owners.random());
 //        String ownerKey = owner.getKey();
 //
@@ -193,7 +203,7 @@ public class ImportSpecTest {
 //    end
     @Test
     @DisplayName("should create pools")
-    void createsPools() {
+    void createsPools() throws ApiException {
         List<PoolDTO> pools = userClient.pools().listPoolsByOwner(owner.getKey());
         assertThat(pools).hasSize(8);
 
@@ -207,7 +217,7 @@ public class ImportSpecTest {
 //    }
 //    end
 
-    private void importNow(String ownerKey, File export) {
+    private void importNow(String ownerKey, File export) throws ApiException {
         admin.owners().importManifest(ownerKey, null, export);
     }
 //    def import_and_wait
@@ -224,7 +234,7 @@ public class ImportSpecTest {
 //    }
 //    end
 
-    private void importAsync(String ownerKey, File export) {
+    private void importAsync(String ownerKey, File export) throws ApiException {
 //        new Request(admin.getApiClient())
 //            .addHeader("X-Correlation-ID", CORRELATION_ID)
 //            .;
