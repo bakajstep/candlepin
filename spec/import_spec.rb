@@ -68,58 +68,7 @@ describe 'Import Test Group:', :serial => true do
       }
     end
 
-    it 'creates pools' do
-      pools = @import_owner_client.list_pools({:owner => @import_owner['id']})
-      pools.length.should == 8
-
-      # Some of these pools must carry provided/derived provided products,
-      # don't care which pool just need to be sure that they're getting
-      # imported at all:
-      provided_found = false
-      derived_found = false
-      pools.each do |pool|
-        if pool['providedProducts'].size > 0
-          provided_found = true
-        end
-        if pool['derivedProvidedProducts'].size > 0
-          derived_found = true
-        end
-      end
-      provided_found.should be true
-      derived_found.should be true
-    end
-
-    it 'ignores multiplier for pool quantity' do
-      pools = @import_owner_client.list_pools({:owner => @import_owner['id']})
-      pools.length.should == 8
-      # 1 product has a multiplier of 2 upstream, the others 1.
-      # 1 entitlement is consumed from each pool for the export, so
-      # quantity should be 1 on each.
-      # remove unmapped guest pool, not part of test
-      filter_unmapped_guest_pools(pools)
-
-      pools.each do |p|
-        p['quantity'].should == 1
-      end
-    end
-
-    it 'modifies owner to reference upstream consumer' do
-      owner = @cp.get_owner(@import_owner['key'])
-      owner.upstreamConsumer.uuid.should == @cp_export.candlepin_client.uuid
-    end
-
-    it "originating information should be populated in the import record" do
-      @import_owner_client.list_imports(@import_owner['key']).find_all do |import|
-        consumer = @candlepin_consumer
-        import['generatedBy'].should == consumer['uuid']
-        import['generatedDate'].should_not be_nil
-        import['fileName'].should == @cp_export_file.split("/").last
-        import['upstreamConsumer']['uuid'].should == consumer['uuid']
-        import['upstreamConsumer']['name'].should == consumer['name']
-        import['upstreamConsumer']['ownerId'].should == @import_owner.id
-      end
-    end
-
+    # TODO
     it 'can be undone' do
       # Make a custom pool so we can be sure it does not get wiped
       # out during either the undo or a subsequent re-import:
@@ -161,13 +110,7 @@ describe 'Import Test Group:', :serial => true do
       @import_method.call(@import_owner['key'], @cp_export_file)
     end
 
-    it 'should create a SUCCESS record of the import' do
-      # Look for at least one valid entry
-      @import_owner_client.list_imports(@import_owner['key']).find_all do |import|
-        import.status == 'SUCCESS'
-      end.should_not be_empty
-    end
-
+    # TODO
     it 'should create a DELETE record on a deleted import' do
       job = @import_owner_client.undo_import(@import_owner['key'])
       wait_for_job(job['id'], 30)
@@ -178,6 +121,7 @@ describe 'Import Test Group:', :serial => true do
       @import_method.call(@import_owner['key'], @cp_export_file)
     end
 
+    # TODO
     it 'should return a 409 on a duplicate import' do
       exception = false
       begin
@@ -202,6 +146,7 @@ describe 'Import Test Group:', :serial => true do
       end
     end
 
+    # TODO
     it 'should not allow importing an old manifest' do
       owner = create_owner(random_string("test_owner"))
       exporter = StandardExporter.new
@@ -236,6 +181,7 @@ describe 'Import Test Group:', :serial => true do
       end
     end
 
+    # TODO
     it 'should create a FAILURE record on a duplicate import' do
       # This is probably bad - relying on the previous test
       # to actually generate this record
@@ -244,6 +190,7 @@ describe 'Import Test Group:', :serial => true do
       end.should_not be_empty
     end
 
+    # TODO
     it 'should set the correct error status message' do
       # Again - relying on the 409 test to set this - BAD!
       error = @import_owner_client.list_imports(@import_owner['key']).find do |import|
@@ -253,12 +200,14 @@ describe 'Import Test Group:', :serial => true do
       error.statusMessage.should == 'Import is the same as existing data'
     end
 
+    # TODO
     it 'should allow forcing the same manifest' do
       # This test must run after a successful import has already occurred.
       @import_method.call(@import_owner['key'], @cp_export_file,
         {:force => ["MANIFEST_SAME", "DISTRIBUTOR_CONFLICT"]})
     end
 
+    # TODO
     it 'should allow importing older manifests into another owner' do
       old_exporter = StandardExporter.new
       @exporters << old_exporter
@@ -274,6 +223,7 @@ describe 'Import Test Group:', :serial => true do
       @import_method.call(owner2['key'], older)
     end
 
+    # TODO
     it 'should return 409 when importing manifest from different subscription management application' do
       exporter = StandardExporter.new
       @exporters << exporter
@@ -335,6 +285,7 @@ describe 'Import Test Group:', :serial => true do
       end
     end
 
+    # TODO
     it 'should allow forcing a manifest from a different subscription management application' do
       exporter = StandardExporter.new
       @exporters << exporter
@@ -352,19 +303,7 @@ describe 'Import Test Group:', :serial => true do
       new_pool_ids.should_not =~ pool_ids
     end
 
-    it 'should import arch content correctly' do
-        contents = @cp.list_content(@import_owner['key'])
-        contents.each do |content|
-          if content.has_key('content_url')
-            if content['content_url'] == '/path/to/arch/specific/content'
-                content['arches'].should == ['i386', 'x86_64']
-                pp "#{content['label']}"
-                pp "#{content['arches']}"
-            end
-          end
-        end
-    end
-
+    # TODO
     it 'should return 400 when importing manifest in use by another owner' do
       # Because the previous tests put the original import into a different state
       # than if you just run this single one, we need to clear first and then

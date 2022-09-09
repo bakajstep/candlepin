@@ -17,208 +17,191 @@ package org.candlepin.spec.imports;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.candlepin.ApiException;
-import org.candlepin.dto.api.v1.AsyncJobStatusDTO;
-import org.candlepin.dto.api.v1.BrandingDTO;
-import org.candlepin.dto.api.v1.ConsumerDTO;
-import org.candlepin.dto.api.v1.ContentDTO;
-import org.candlepin.dto.api.v1.OwnerDTO;
-import org.candlepin.dto.api.v1.PoolDTO;
-import org.candlepin.dto.api.v1.ProductDTO;
-import org.candlepin.dto.api.v1.ProvidedProductDTO;
-import org.candlepin.dto.api.v1.ReleaseVerDTO;
-import org.candlepin.dto.api.v1.RoleDTO;
-import org.candlepin.dto.api.v1.UserDTO;
+import org.candlepin.dto.api.client.v1.AsyncJobStatusDTO;
+import org.candlepin.dto.api.client.v1.AttributeDTO;
+import org.candlepin.dto.api.client.v1.ContentDTO;
+import org.candlepin.dto.api.client.v1.ImportRecordDTO;
+import org.candlepin.dto.api.client.v1.ImportUpstreamConsumerDTO;
+import org.candlepin.dto.api.client.v1.OwnerDTO;
+import org.candlepin.dto.api.client.v1.PoolDTO;
+import org.candlepin.dto.api.client.v1.ProvidedProductDTO;
+import org.candlepin.dto.api.client.v1.SubscriptionDTO;
+import org.candlepin.dto.api.client.v1.UserDTO;
+import org.candlepin.invoker.client.ApiException;
 import org.candlepin.spec.bootstrap.client.ApiClient;
 import org.candlepin.spec.bootstrap.client.ApiClients;
-import org.candlepin.spec.bootstrap.data.builder.Branding;
-import org.candlepin.spec.bootstrap.data.builder.ConsumerTypes;
-import org.candlepin.spec.bootstrap.data.builder.Consumers;
-import org.candlepin.spec.bootstrap.data.builder.Content;
 import org.candlepin.spec.bootstrap.data.builder.Owners;
-import org.candlepin.spec.bootstrap.data.builder.ProductAttributes;
-import org.candlepin.spec.bootstrap.data.builder.Products;
-import org.candlepin.spec.bootstrap.data.builder.Roles;
-import org.candlepin.spec.bootstrap.data.util.StringUtil;
 import org.candlepin.spec.bootstrap.data.util.UserUtil;
 
-import org.junit.jupiter.api.AfterEach;
+import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
-import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class ImportSpecTest {
 
     private static final String CORRELATION_ID = "a7b79f6d-63ca-40d8-8bfb-f255041f4e3a";
+    public static final String UNMAPPED_ATTRIBUTE_NAME = "unmapped_guests_only";
+    public static final String IMPORT_CONSUMER_UUID = "7e46cc0f-e129-45f2-9d18-68bee849f88a";
+    public static final String EXPECTED_CONTENT_URL = "/path/to/arch/specific/content";
 
     private static ApiClient admin;
 
-    private OwnerDTO owner;
-    private UserDTO user;
-    private ApiClient userClient;
+    private static OwnerDTO owner;
+    private static UserDTO user;
+    private static ApiClient userClient;
 
     @BeforeAll
-    static void beforeAll() {
+    static void beforeAll() throws ApiException {
         admin = ApiClients.admin();
-    }
-
-    @BeforeEach
-    void setUp() throws ApiException {
-        this.owner = admin.owners().createOwner(Owners.random());
-        this.user = UserUtil.createUser(admin, owner);
-        this.userClient = ApiClients.trustedUser(this.user.getUsername());
+//    }
+//
+//    @BeforeEach
+//    void setUp() throws ApiException {
+        owner = admin.owners().createOwner(Owners.random());
+        user = UserUtil.createUser(admin, owner);
+        userClient = ApiClients.trustedUser(user.getUsername());
         URL manifest = ImportSpecTest.class.getClassLoader().getResource("manifests/manifest");
         try {
             File file = new File(manifest.toURI());
-            importNow(this.owner.getKey(), file);
+            importNow(owner.getKey(), file);
         }
         catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }
     }
 
-    @AfterEach
-    void tearDown() throws ApiException {
+    @AfterAll
+    static void tearDown() throws ApiException {
         admin.owners().deleteOwner(owner.getKey(), true, true);
     }
 
-    //    private void initializeData() throws Exception {
-//        OwnerDTO owner = admin.owners().createOwner(Owners.random());
-//        String ownerKey = owner.getKey();
-//
-//        RoleDTO role = admin.roles().createRole(Roles.all(owner));
-//        UserDTO user = admin.users().createUser(randomUser());
-//        role = admin.roles().addUserToRole(role.getName(), user.getUsername());
-//        ConsumerDTO consumer = admin.consumers().createConsumer(Consumers.random(owner, ConsumerTypes.Candlepin),
-//            user.getUsername(), owner.getKey(), null, true);
-//
-//        ProductDTO engProduct = admin.ownerProducts().createProductByOwner(ownerKey, Products.randomEng());
-//        productIdToProduct.put(engProduct.getId(), engProduct);
-//
-//        Set<BrandingDTO> brandings = Set.of(Branding.build("Branded Eng Product", "OS")
-//            .productId(engProduct.getId()));
-//
-//        ProductDTO derivedProvidedProduct = ownerProductApi
-//            .createProductByOwner(ownerKey, Products.random());
-//        productIdToProduct.put(derivedProvidedProduct.getId(), derivedProvidedProduct);
-//
-//        ProductDTO derivedProduct = Products.random();
-//        derivedProduct.setProvidedProducts(Set.of(derivedProvidedProduct));
-//        derivedProduct = ownerProductApi.createProductByOwner(ownerKey, derivedProduct);
-//        productIdToProduct.put(derivedProduct.getId(), derivedProduct);
-//
-//        ProductDTO product1 = Products.random();
-//        product1.setMultiplier(2L);
-//        product1.setBranding(brandings);
-//        product1.setProvidedProducts(Set.of(engProduct));
-//        product1 = ownerProductApi.createProductByOwner(ownerKey, product1);
-//        productIdToProduct.put(product1.getId(), product1);
-//
-//        ProductDTO product2 = Products.random();
-//        product2 = ownerProductApi.createProductByOwner(ownerKey, product2);
-//        productIdToProduct.put(product2.getId(), product2);
-//
-//        ProductDTO virtProduct = Products.withAttributes(ProductAttributes.VirtualOnly.withValue("true"));
-//        virtProduct = ownerProductApi.createProductByOwner(ownerKey, virtProduct);
-//        productIdToProduct.put(virtProduct.getId(), virtProduct);
-//
-//        ProductDTO product3 = Products.withAttributes(ProductAttributes.Arch.withValue("x86_64"),
-//            ProductAttributes.VirtualLimit.withValue("unlimited"));
-//        product3.setDerivedProduct(derivedProduct);
-//        product3 = ownerProductApi.createProductByOwner(ownerKey, product3);
-//        productIdToProduct.put(product3.getId(), product3);
-//
-//        ProductDTO productVdc = createVDCProduct(client, ownerKey);
-//        productIdToProduct.put(productVdc.getId(), productVdc);
-//        ProductDTO productDc = productVdc.getDerivedProduct();
-//        productIdToProduct.put(productDc.getId(), productDc);
-//
-//        // this is for the update process
-//        ProductDTO productUp = ownerProductApi.createProductByOwner(ownerKey, Products.random());
-//        productIdToProduct.put(productUp.getId(), productUp);
-//
-//        ContentDTO content1 = Content.random()
-//            .metadataExpire(6000L)
-//            .requiredTags("TAG1,TAG2");
-//        content1 = ownerContentApi.createContent(ownerKey, content1);
-//
-//        ContentDTO archContent = Content.random()
-//            .metadataExpire(6000L)
-//            .contentUrl("/path/to/arch/specific/content")
-//            .requiredTags("TAG1,TAG2")
-//            .arches("i386,x86_64");
-//        archContent = ownerContentApi.createContent(ownerKey, archContent);
-//
-//        ownerProductApi.addContent(ownerKey, product1.getId(), content1.getId(), true);
-//        ownerProductApi.addContent(ownerKey, product2.getId(), content1.getId(), true);
-//        ownerProductApi.addContent(ownerKey, product2.getId(), archContent.getId(), true);
-//        ownerProductApi.addContent(ownerKey, derivedProduct.getId(), content1.getId(), true);
-//
-//        List<ProductDTO> poolProducts =
-//            List.of(product1, product2, virtProduct, product3, productUp, productVdc);
-//        Map<String, PoolDTO> poolIdToPool =
-//            createPoolsForProducts(ownerApi, ownerKey, poolProducts, brandings);
-//
-//        consumer.setFacts(Map.of("distributor_version", "sam-1.3"));
-//        ReleaseVerDTO releaseVer = new ReleaseVerDTO()
-//            .releaseVer("");
-//        consumer.setReleaseVer(releaseVer);
-//        admin.consumers().updateConsumer(consumer.getUuid(), consumer);
-//        consumer = admin.consumers().getConsumer(consumer.getUuid());
-//
-//        bindPoolsToConsumer(consumerApi, consumer.getUuid(), poolIdToPool.keySet());
-//
-//        cdn = cdnApi.createCdn(Cdns.random());
-//    }
-
-//    it 'creates pools' do
-//    pools = @import_owner_client.list_pools({:owner => @import_owner['id']})
-//    pools.length.should == 8
-//
-//        # Some of these pools must carry provided/derived provided products,
-//        # don't care which pool just need to be sure that they're getting
-//      # imported at all:
-//    provided_found = false
-//    derived_found = false
-//    pools.each do |pool|
-//        if pool['providedProducts'].size > 0
-//    provided_found = true
-//    end
-//        if pool['derivedProvidedProducts'].size > 0
-//    derived_found = true
-//    end
-//        end
-//    provided_found.should be true
-//    derived_found.should be true
-//    end
     @Test
-    @DisplayName("should create pools")
-    void createsPools() throws ApiException {
-        List<PoolDTO> pools = userClient.pools().listPoolsByOwner(owner.getKey());
+    void shouldCreatePools() throws ApiException {
+        List<PoolDTO> pools = userClient.pools().listPoolsByOwner(owner.getId());
         assertThat(pools).hasSize(8);
 
         assertAnyNonEmpty(pools, PoolDTO::getProvidedProducts);
         assertAnyNonEmpty(pools, PoolDTO::getDerivedProvidedProducts);
     }
 
-    //    def import_now
-//    lambda { |owner_key, export_file, param_map={}|
-//        @cp.import(owner_key, export_file, param_map)
-//    }
-//    end
+    @Test
+    void shouldIgnoreMultiplierForPoolQuantity() throws ApiException {
+        List<PoolDTO> pools = userClient.pools().listPoolsByOwner(owner.getId());
+        assertThat(pools).hasSize(8);
 
-    private void importNow(String ownerKey, File export) throws ApiException {
-        admin.owners().importManifest(ownerKey, null, export);
+        Set<PoolDTO> mappedPools = filterMappedPools(pools);
+
+        assertThat(mappedPools)
+            .map(PoolDTO::getQuantity)
+            .containsOnly(1L);
+    }
+
+    @Test
+    void shouldModifyTheOwnerToReferenceUpstreamConsumer() throws ApiException {
+        OwnerDTO updatedOwner = userClient.owners().getOwner(owner.getKey());
+        List<PoolDTO> pools = userClient.pools().listPoolsByOwner(owner.getId());
+        assertThat(pools).hasSize(8);
+
+        assertThat(updatedOwner.getUpstreamConsumer().getUuid()).isEqualTo(IMPORT_CONSUMER_UUID);
+    }
+
+    @Test
+    void shouldPopulateOriginInfoOfTheImportRecord() throws ApiException {
+        List<ImportRecordDTO> imports = userClient.owners().getImports(owner.getKey());
+
+        for (ImportRecordDTO anImport : imports) {
+            assertThat(anImport.getGeneratedBy()).isEqualTo("admin");
+            assertThat(anImport.getGeneratedDate()).isAtSameInstantAs(toDate(1662640168));
+            assertThat(anImport.getFileName()).isEqualTo("manifest");
+
+            ImportUpstreamConsumerDTO consumer = anImport.getUpstreamConsumer();
+            assertThat(consumer.getUuid()).isEqualTo(IMPORT_CONSUMER_UUID);
+            assertThat(consumer.getName()).isEqualTo("test_consumer-4D0D09D3");
+            assertThat(consumer.getOwnerId()).isEqualTo(owner.getId());
+        }
+    }
+
+    @Test
+    void shouldCreateSuccessRecordOfTheImport() throws ApiException {
+        List<ImportRecordDTO> imports = userClient.owners().getImports(owner.getKey());
+
+        assertThat(imports)
+            .map(ImportRecordDTO::getStatus)
+            .containsOnly("SUCCESS");
+    }
+
+    @Test
+    void shouldImportArchContentCorrectly() throws ApiException {
+        List<ContentDTO> ownerContent = userClient.ownerContent().listOwnerContent(owner.getKey());
+
+        assertThat(ownerContent)
+            .filteredOn(content -> EXPECTED_CONTENT_URL.equalsIgnoreCase(content.getContentUrl()))
+            .map(ContentDTO::getArches)
+            .containsExactly("i386,x86_64");
+    }
+
+//    @Test
+//    void shouldStoreTheSubscriptionUpstreamEntitlementCert() throws ApiException {
+//        List<SubscriptionDTO> subscriptions = admin.owners().getOwnerSubscriptions(owner.getKey());
+//
+//        // we only want the product that maps to a normal pool
+//        // i.e. no virt, no multipliers, etc.
+//        // this is to fix a intermittent test failures when trying
+//        // to bind to a virt_only or other weird pool
+////        sub = sublist.find_all {
+////        |s| s.product.id.start_with?("prod2")
+////        }
+//
+//        for (SubscriptionDTO subscription : subscriptions) {
+//            System.out.println(subscription);
+//        }
+//
+//        List<PoolDTO> pools = userClient.pools().listPoolsByOwner(owner.getId());
+//
+//        Set<String> collect = pools.stream()
+//            .map(PoolDTO::getSubscriptionSubKey)
+//            .collect(Collectors.toSet());
+//        System.out.println(collect);
+//
+//    }
+
+    private static OffsetDateTime toDate(int epochSecond) {
+        return OffsetDateTime.ofInstant(Instant.ofEpochSecond(epochSecond), ZoneOffset.UTC);
+    }
+
+    private Set<PoolDTO> filterMappedPools(List<PoolDTO> pools) {
+        return pools.stream()
+            .filter(this::isMapped)
+            .collect(Collectors.toSet());
+    }
+
+    private boolean isMapped(PoolDTO pool) {
+        if (pool == null || pool.getAttributes() == null || pool.getAttributes().isEmpty()) {
+            return false;
+        }
+
+        boolean isUnmapped = pool.getAttributes().stream()
+            .filter(attribute -> UNMAPPED_ATTRIBUTE_NAME.equalsIgnoreCase(attribute.getName()))
+            .map(AttributeDTO::getValue)
+            .anyMatch(Boolean::parseBoolean);
+
+        return !isUnmapped;
+    }
+
+    private static void importNow(String ownerKey, File export) throws ApiException {
+        admin.owners().importManifest(ownerKey, List.of("DISTRIBUTOR_CONFLICT"), export);
     }
 //    def import_and_wait
 //    lambda { |owner_key, export_file, param_map={}|
