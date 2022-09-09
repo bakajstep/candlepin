@@ -19,6 +19,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.candlepin.dto.api.client.v1.AsyncJobStatusDTO;
 import org.candlepin.dto.api.client.v1.AttributeDTO;
+import org.candlepin.dto.api.client.v1.CdnDTO;
+import org.candlepin.dto.api.client.v1.ConsumerDTO;
 import org.candlepin.dto.api.client.v1.ContentDTO;
 import org.candlepin.dto.api.client.v1.ImportRecordDTO;
 import org.candlepin.dto.api.client.v1.ImportUpstreamConsumerDTO;
@@ -26,17 +28,23 @@ import org.candlepin.dto.api.client.v1.OwnerDTO;
 import org.candlepin.dto.api.client.v1.PoolDTO;
 import org.candlepin.dto.api.client.v1.ProvidedProductDTO;
 import org.candlepin.dto.api.client.v1.SubscriptionDTO;
+import org.candlepin.dto.api.client.v1.UpstreamConsumerDTO;
 import org.candlepin.dto.api.client.v1.UserDTO;
 import org.candlepin.invoker.client.ApiException;
 import org.candlepin.spec.bootstrap.client.ApiClient;
 import org.candlepin.spec.bootstrap.client.ApiClients;
+import org.candlepin.spec.bootstrap.data.builder.Consumers;
 import org.candlepin.spec.bootstrap.data.builder.Owners;
 import org.candlepin.spec.bootstrap.data.util.UserUtil;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
 
 import java.io.File;
 import java.net.URISyntaxException;
@@ -45,6 +53,7 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -61,6 +70,7 @@ public class ImportSpecTest {
     private static OwnerDTO owner;
     private static UserDTO user;
     private static ApiClient userClient;
+    private static ConsumerDTO consumer;
 
     @BeforeAll
     static void beforeAll() throws ApiException {
@@ -72,6 +82,7 @@ public class ImportSpecTest {
         owner = admin.owners().createOwner(Owners.random());
         user = UserUtil.createUser(admin, owner);
         userClient = ApiClients.trustedUser(user.getUsername());
+        consumer = userClient.consumers().createConsumer(Consumers.random(owner));
         URL manifest = ImportSpecTest.class.getClassLoader().getResource("manifests/manifest");
         try {
             File file = new File(manifest.toURI());
@@ -152,30 +163,80 @@ public class ImportSpecTest {
             .containsExactly("i386,x86_64");
     }
 
-//    @Test
-//    void shouldStoreTheSubscriptionUpstreamEntitlementCert() throws ApiException {
-//        List<SubscriptionDTO> subscriptions = admin.owners().getOwnerSubscriptions(owner.getKey());
-//
-//        // we only want the product that maps to a normal pool
-//        // i.e. no virt, no multipliers, etc.
-//        // this is to fix a intermittent test failures when trying
-//        // to bind to a virt_only or other weird pool
-////        sub = sublist.find_all {
-////        |s| s.product.id.start_with?("prod2")
-////        }
-//
-//        for (SubscriptionDTO subscription : subscriptions) {
-//            System.out.println(subscription);
-//        }
-//
+    // TODO refactor
+    @Test
+    void shouldStoreTheSubscriptionUpstreamEntitlementCert() throws ApiException, JsonProcessingException {
+        List<SubscriptionDTO> subscriptions = admin.owners().getOwnerSubscriptions(owner.getKey());
+
+        // we only want the product that maps to a normal pool
+        // i.e. no virt, no multipliers, etc.
+        // this is to fix a intermittent test failures when trying
+        // to bind to a virt_only or other weird pool
+        SubscriptionDTO subscription = subscriptions.stream()
+            .filter(sub -> "test_product-DBC471A1".equals(sub.getProduct().getId()))
+            .findAny()
+            .orElseThrow();
+
+        List<PoolDTO> pools = userClient.pools().listPoolsByOwner(owner.getId());
+
+        PoolDTO pool = pools.stream()
+            .filter(poolDTO -> subscription.getId().equals(poolDTO.getSubscriptionId()) && "master".equalsIgnoreCase(poolDTO.getSubscriptionSubKey()))
+            .findAny()
+            .orElseThrow();
+
+        Map<String, String> subCert = admin.pools().getCert(pool.getId());
+
+        assertThat(subCert.get("key"))
+            .startsWith("-----BEGIN PRIVATE KEY-----");
+        assertThat(subCert.get("cert"))
+            .startsWith("-----BEGIN CERTIFICATE-----");
+
+        JsonNode jsonNode = userClient.consumers().bindPool(consumer.getUuid(), pool.getId(), 1);
+        String ent = admin.entitlements().getUpstreamCert(jsonNode.get(0).get("id").asText());
+
+        assertThat(ent)
+            .contains(subCert.get("key"))
+            .contains(subCert.get("cert"));
+    }
+
+    // TODO fixme
+    @Test
+    void shouldContainsUpstreamConsumer() throws ApiException {
+        OwnerDTO importOwner = admin.owners().getOwner(owner.getKey());
+        UpstreamConsumerDTO upstreamConsumer = importOwner.getUpstreamConsumer();
+
+        assertThat(upstreamConsumer)
+            .hasFieldOrPropertyWithValue("uuid", consumer.getUuid())
+            .hasFieldOrPropertyWithValue("name", consumer.getName())
+            .hasFieldOrPropertyWithValue("apiUrl", "api1")
+            .hasFieldOrPropertyWithValue("webUrl", "webapp1");
+        assertThat(upstreamConsumer.getId()).isNotNull();
+        assertThat(upstreamConsumer.getIdCert()).isNotNull();
+        assertThat(upstreamConsumer.getType()).isEqualTo(consumer.getType());
+    }
+
+
+    @Test
+    void shouldContainAllDerivedProductData() throws ApiException {
+//        List<PoolDTO> pools = userClient.pools().listPoolsByProduct(owner.getId(), "");
+    }
+
+
+    @Test
+    void shouldContainBrandingInfo() throws ApiException {
 //        List<PoolDTO> pools = userClient.pools().listPoolsByOwner(owner.getId());
-//
-//        Set<String> collect = pools.stream()
-//            .map(PoolDTO::getSubscriptionSubKey)
-//            .collect(Collectors.toSet());
-//        System.out.println(collect);
-//
-//    }
+    }
+
+
+    @Test
+    void shouldPutTheCdnFromTheManifestIntoTheCreatedSubscriptions() throws ApiException {
+        List<SubscriptionDTO> subscriptions = admin.owners().getOwnerSubscriptions(owner.getKey());
+
+        assertThat(subscriptions)
+            .map(SubscriptionDTO::getCdn)
+            .map(CdnDTO::getLabel)
+            .containsOnly("cdn-labelB309AFE8");
+    }
 
     private static OffsetDateTime toDate(int epochSecond) {
         return OffsetDateTime.ofInstant(Instant.ofEpochSecond(epochSecond), ZoneOffset.UTC);
