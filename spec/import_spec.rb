@@ -69,138 +69,6 @@ describe 'Import Test Group:', :serial => true do
     end
 
     # TODO
-    it 'can be undone' do
-      # Make a custom pool so we can be sure it does not get wiped
-      # out during either the undo or a subsequent re-import:
-      prod_name = random_string("custom_pool_prod-")
-      prod = create_product(prod_name, prod_name, {:owner => @import_owner['key']})
-      custom_pool = @cp.create_pool(@import_owner['key'], prod['id'])
-
-      job = @import_owner_client.undo_import(@import_owner['key'])
-      wait_for_job(job['id'], 30)
-
-      pools = @import_owner_client.list_pools({:owner => @import_owner['id']})
-      pools.length.should == 1 # this is our custom pool
-      pools[0]['id'].should == custom_pool['id']
-
-      o = @cp.get_owner(@import_owner['key'])
-      o['upstreamConsumer'].should be_nil
-
-      # should be able to re-import without an "older than existing" error:
-      @import_method.call(@import_owner['key'], @cp_export_file)
-      o = @cp.get_owner(@import_owner['key'])
-      o['upstreamConsumer']['uuid'].should == @cp_export.candlepin_client.uuid
-
-      # Delete again and make sure another owner is clear to import the
-      # same manifest:
-      job = @import_owner_client.undo_import(@import_owner['key'])
-      wait_for_job(job['id'], 30)
-
-      # Verify our custom sub still exists
-      pools = @import_owner_client.list_pools({:owner => @import_owner['id']})
-      pools.length.should == 1 # this is our custom pool
-      pools[0]['id'].should == custom_pool['id']
-
-      another_owner = @cp.create_owner(random_string('testowner'))
-      @import_method.call(another_owner['key'], @cp_export_file)
-      @cp.delete_owner(another_owner['key'])
-      @cp.delete_pool(custom_pool['id'])
-
-      # Re-import so the rest of the tests can pass:
-      @import_method.call(@import_owner['key'], @cp_export_file)
-    end
-
-    # TODO
-    it 'should create a DELETE record on a deleted import' do
-      job = @import_owner_client.undo_import(@import_owner['key'])
-      wait_for_job(job['id'], 30)
-      @import_owner_client.list_imports(@import_owner['key']).find_all do |import|
-        import.status == 'DELETE'
-      end.should_not be_empty
-      # Re-import so the rest of the tests can pass:
-      @import_method.call(@import_owner['key'], @cp_export_file)
-    end
-
-    # TODO
-    it 'should return a 409 on a duplicate import' do
-      exception = false
-      begin
-        @import_method.call(@import_owner['key'], @cp_export_file)
-      rescue RestClient::Conflict => e
-        async.should be false
-        json = JSON.parse(e.http_body)
-        exception = true
-      rescue AsyncImportFailure => aif
-        async.should be true
-        json = aif.data["resultData"]
-        json.should_not be_nil
-        exception = true
-      end
-
-      exception.should be true
-      if async
-        json.include?("MANIFEST_SAME").should be true
-      else
-        expect(json["conflicts"].size).to eq(1)
-        json["conflicts"].include?("MANIFEST_SAME").should be true
-      end
-    end
-
-    # TODO
-    it 'should not allow importing an old manifest' do
-      owner = create_owner(random_string("test_owner"))
-      exporter = StandardExporter.new
-      @exporters << exporter
-      older = exporter.create_candlepin_export().export_filename
-
-      sleep 2
-
-      newer = exporter.create_candlepin_export().export_filename
-
-      @import_method.call(owner['key'], newer)
-      exception = false
-      begin
-        @import_method.call(owner['key'], older)
-      rescue RestClient::Conflict => e
-        async.should be false
-        json = JSON.parse(e.http_body)
-        exception = true
-      rescue AsyncImportFailure => aif
-        async.should be true
-        json = aif.data["resultData"]
-        json.should_not be_nil
-        exception = true
-      end
-
-      exception.should be true
-      if async
-        json.include?("MANIFEST_OLD").should be true
-      else
-        expect(json["conflicts"].size).to eq(1)
-        json["conflicts"].include?("MANIFEST_OLD").should be true
-      end
-    end
-
-    # TODO
-    it 'should create a FAILURE record on a duplicate import' do
-      # This is probably bad - relying on the previous test
-      # to actually generate this record
-      @import_owner_client.list_imports(@import_owner['key']).find_all do |import|
-        import.status == 'FAILURE'
-      end.should_not be_empty
-    end
-
-    # TODO
-    it 'should set the correct error status message' do
-      # Again - relying on the 409 test to set this - BAD!
-      error = @import_owner_client.list_imports(@import_owner['key']).find do |import|
-        import.status == 'FAILURE'
-      end
-
-      error.statusMessage.should == 'Import is the same as existing data'
-    end
-
-    # TODO
     it 'should allow forcing the same manifest' do
       # This test must run after a successful import has already occurred.
       @import_method.call(@import_owner['key'], @cp_export_file,
@@ -342,6 +210,8 @@ describe 'Import Test Group:', :serial => true do
       end
     end
 
+
+    #### TODO
     it 'contains upstream consumer' do
       # this information used to be on /imports but now exists on Owner
       # checking for api and webapp overrides
