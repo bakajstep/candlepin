@@ -17,6 +17,7 @@ package org.candlepin.spec.imports;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.candlepin.spec.bootstrap.assertions.StatusCodeAssertions.assertBadRequest;
 import static org.candlepin.spec.bootstrap.assertions.StatusCodeAssertions.assertConflict;
 
 import org.candlepin.dto.api.client.v1.AsyncJobStatusDTO;
@@ -161,24 +162,6 @@ public class ImportErrorSpecTest {
             .hasMessageContaining("DISTRIBUTOR_CONFLICT");
     }
 
-       # TODO
-    it 'should allow forcing a manifest from a different subscription management application' do
-    exporter = StandardExporter.new
-    @exporters << exporter
-        another = exporter.create_candlepin_export().export_filename
-
-    old_upstream_uuid = @cp.get_owner(@import_owner['key'])['upstreamConsumer']['uuid']
-    pools = @cp.list_owner_pools(@import_owner['key'])
-    pool_ids = pools.collect { |p| p['id'] }
-    @import_method.call(@import_owner['key'], another,
-        {:force => ['DISTRIBUTOR_CONFLICT']})
-    @cp.get_owner(@import_owner['key'])['upstreamConsumer']['uuid'].should_not == old_upstream_uuid
-        pools = @cp.list_owner_pools(@import_owner['key'])
-        new_pool_ids = pools.collect { |p| p['id'] }
-      # compare without considering order, pools should have changed completely:
-    new_pool_ids.should_not =~ pool_ids
-        end
-
 //    # TODO
 //    it 'should return 400 when importing manifest in use by another owner' do
 //        # Because the previous tests put the original import into a different state
@@ -218,10 +201,10 @@ public class ImportErrorSpecTest {
 //        end
 //    end
     @Test
-    void sasdhouldAllowForcingManifestFromDifferentSubscriptionManagementApplication() throws ApiException {
+    void shouldReturnBadRequestWhenImportingManifestInUseByAnotherOwner() throws ApiException {
         OwnerDTO otherOrg = admin.owners().createOwner(Owners.random());
 
-        assertConflict(() -> importNow(otherOrg.getKey(), importFile))
+        assertBadRequest(() -> importNow(otherOrg.getKey(), importFile))
             .hasMessageContaining("DISTRIBUTOR_CONFLICT");
 
         assertThat(owner.getUpstreamConsumer().getUuid()).isEqualTo(IMPORT_CONSUMER_UUID);
