@@ -101,9 +101,7 @@ public class OwnerContentResource implements OwnerContentApi {
     public Stream<ContentDTO> listOwnerContent(@Verify(Owner.class) String ownerKey) {
         Owner owner = this.getOwnerByKey(ownerKey);
 
-        return this.ownerContentCurator.getContentByOwner(owner)
-            .list()
-            .stream()
+        return this.ownerContentCurator.streamContentByOwner(owner)
             .map(this.translator.getMapper(Content.class, ContentDTO.class));
     }
 

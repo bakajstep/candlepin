@@ -152,6 +152,7 @@ import org.candlepin.resteasy.filter.StoreFactory;
 import org.candlepin.resteasy.filter.SuperAdminAuthorizationFilter;
 import org.candlepin.resteasy.filter.VerifyAuthorizationFilter;
 import org.candlepin.resteasy.filter.VersionResponseFilter;
+import org.candlepin.resteasy.interceptors.PagedStreamInterceptor;
 import org.candlepin.service.UniqueIdGenerator;
 import org.candlepin.service.impl.DefaultUniqueIdGenerator;
 import org.candlepin.service.impl.HypervisorUpdateAction;
@@ -400,6 +401,7 @@ public class CandlepinModule extends AbstractModule {
     private void configureInterceptors() {
         bind(ConsumerCheckInFilter.class);
         bind(PageRequestFilter.class);
+        bind(PagedStreamInterceptor.class);
         bind(VersionResponseFilter.class);
         bind(LinkHeaderResponseFilter.class);
         bind(DynamicJsonFilter.class);

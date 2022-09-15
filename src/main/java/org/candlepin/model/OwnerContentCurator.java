@@ -33,6 +33,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import javax.inject.Singleton;
 import javax.persistence.EntityManager;
@@ -135,6 +136,35 @@ public class OwnerContentCurator extends AbstractHibernateCurator<OwnerContent> 
             .getResultList();
 
         return uuids != null ? uuids : Collections.<String>emptyList();
+    }
+
+    private TypedQuery<Content> buildContentByOwnerQuery() {
+        String jpql = "SELECT oc.content FROM OwnerContent oc WHERE oc.owner.id = :owner_id";
+
+        return this.getEntityManager()
+            .createQuery(jpql, Content.class);
+    }
+
+    public Stream<Content> streamContentByOwner(String ownerId) {
+        return this.buildContentByOwnerQuery()
+            .setParameter("owner_id", ownerId)
+            .getResultList()
+            .stream();
+            // .getResultStream();
+    }
+
+    public Stream<Content> streamContentByOwner(Owner owner) {
+        return this.streamContentByOwner(owner != null ? owner.getId() : null);
+    }
+
+    public List<Content> listContentByOwner(String ownerId) {
+        return this.buildContentByOwnerQuery()
+            .setParameter("owner_id", ownerId)
+            .getResultList();
+    }
+
+    public List<Content> listContentByOwner(Owner owner) {
+        return this.listContentByOwner(owner != null ? owner.getId() : null);
     }
 
     /**
