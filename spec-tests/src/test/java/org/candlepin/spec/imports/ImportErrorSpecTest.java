@@ -244,7 +244,7 @@ public class ImportErrorSpecTest {
     }
 
     private static void importNow(String ownerKey, File export) throws ApiException {
-        admin.owners().importManifest(ownerKey, List.of("DISTRIBUTOR_CONFLICT"), export);
+        admin.owners().importManifest(ownerKey, null, export);
     }
 
     private static void importNow(String ownerKey, File export, String... force) throws ApiException {
