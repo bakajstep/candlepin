@@ -24,14 +24,11 @@ import org.candlepin.dto.api.client.v1.AsyncJobStatusDTO;
 import org.candlepin.dto.api.client.v1.ImportRecordDTO;
 import org.candlepin.dto.api.client.v1.OwnerDTO;
 import org.candlepin.dto.api.client.v1.PoolDTO;
-import org.candlepin.dto.api.client.v1.ProductDTO;
 import org.candlepin.dto.api.client.v1.UserDTO;
 import org.candlepin.invoker.client.ApiException;
 import org.candlepin.spec.bootstrap.client.ApiClient;
 import org.candlepin.spec.bootstrap.client.ApiClients;
 import org.candlepin.spec.bootstrap.data.builder.Owners;
-import org.candlepin.spec.bootstrap.data.builder.Pools;
-import org.candlepin.spec.bootstrap.data.builder.Products;
 import org.candlepin.spec.bootstrap.data.util.UserUtil;
 
 import org.junit.jupiter.api.AfterAll;
@@ -64,7 +61,7 @@ public class ImportErrorSpecTest {
         UserDTO user = UserUtil.createUser(admin, owner);
         userClient = ApiClients.trustedUser(user.getUsername());
 
-        manifest = loadExport("manifests/manifest_error");
+        manifest = loadExport("manifests/import/manifest_error");
         importNow(owner.getKey(), manifest);
     }
 
@@ -132,7 +129,7 @@ public class ImportErrorSpecTest {
 
         @Test
         void shouldAllowImportingOlderManifestsIntoAnotherOwner() {
-            File oldManifest = loadExport("manifests/manifest_error_old");
+            File oldManifest = loadExport("manifests/import/manifest_error_old");
 
             assertThatNoException()
                 .isThrownBy(() -> importNow(otherOrg.getKey(), oldManifest, "MANIFEST_SAME", "DISTRIBUTOR_CONFLICT"));
