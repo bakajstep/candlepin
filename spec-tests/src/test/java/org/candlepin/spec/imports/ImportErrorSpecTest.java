@@ -27,7 +27,6 @@ import org.candlepin.dto.api.client.v1.PoolDTO;
 import org.candlepin.dto.api.client.v1.ProductDTO;
 import org.candlepin.dto.api.client.v1.UserDTO;
 import org.candlepin.invoker.client.ApiException;
-import org.candlepin.spec.bootstrap.assertions.StatusCodeAssertions;
 import org.candlepin.spec.bootstrap.client.ApiClient;
 import org.candlepin.spec.bootstrap.client.ApiClients;
 import org.candlepin.spec.bootstrap.data.builder.Owners;
@@ -36,11 +35,11 @@ import org.candlepin.spec.bootstrap.data.builder.Products;
 import org.candlepin.spec.bootstrap.data.util.UserUtil;
 
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.parallel.Execution;
-import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import java.io.File;
 import java.net.URISyntaxException;
@@ -56,8 +55,7 @@ public class ImportErrorSpecTest {
 
     private static OwnerDTO owner;
     private static ApiClient userClient;
-    private static File importFile;
-    private static PoolDTO customPool;
+    private static File manifest;
 
     @BeforeAll
     static void beforeAll() throws ApiException {
@@ -65,12 +63,9 @@ public class ImportErrorSpecTest {
         owner = admin.owners().createOwner(Owners.random());
         UserDTO user = UserUtil.createUser(admin, owner);
         userClient = ApiClients.trustedUser(user.getUsername());
-        ProductDTO product = admin.ownerProducts().createProductByOwner(owner.getKey(), Products.random());
-        customPool = admin.owners().createPool(owner.getKey(), Pools.random(product));
 
-        URL manifest = ImportErrorSpecTest.class.getClassLoader().getResource("manifests/manifest");
-        importFile = getImportFile(manifest);
-        importNow(owner.getKey(), importFile);
+        manifest = loadExport("manifests/manifest_error");
+        importNow(owner.getKey(), manifest);
     }
 
     @AfterAll
@@ -78,9 +73,19 @@ public class ImportErrorSpecTest {
         admin.owners().deleteOwner(owner.getKey(), true, true);
     }
 
+    private static File loadExport(String path) {
+        URL manifest = ImportErrorSpecTest.class.getClassLoader().getResource(path);
+        try {
+            return new File(manifest.toURI());
+        }
+        catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     @Test
     void shouldReturnAnErrorOnADuplicateImport() {
-        assertConflict(() -> importNow(owner.getKey(), importFile))
+        assertConflict(() -> importNow(owner.getKey(), manifest))
             .hasMessageContaining("MANIFEST_SAME");
     }
 
@@ -107,31 +112,45 @@ public class ImportErrorSpecTest {
     @Test
     void shouldAllowForcingTheSameManifest() {
         assertThatNoException()
-            .isThrownBy(() -> importNow(owner.getKey(), importFile, "MANIFEST_SAME", "DISTRIBUTOR_CONFLICT"));
+            .isThrownBy(() -> importNow(owner.getKey(), manifest, "MANIFEST_SAME", "DISTRIBUTOR_CONFLICT"));
     }
 
-    @Test
-    void shouldAllowImportingOlderManifestsIntoAnotherOwner() {
-        // TODO use old import
-        assertThatNoException()
-            .isThrownBy(() -> importNow(owner.getKey(), importFile, "MANIFEST_SAME", "DISTRIBUTOR_CONFLICT"));
-    }
+    @Nested
+    class OtherOrg {
 
-    @Test
-    void shouldReturnConflictWhenImportingManifestFromDifferentSubscriptionManagementApplication() throws ApiException {
-        OwnerDTO otherOrg = admin.owners().createOwner(Owners.random());
+        private OwnerDTO otherOrg;
 
-        assertConflict(() -> importNow(otherOrg.getKey(), importFile))
-            .hasMessageContaining("DISTRIBUTOR_CONFLICT");
+        @BeforeEach
+        void setUp() {
+            otherOrg = admin.owners().createOwner(Owners.random());
+        }
 
-        assertThat(owner.getUpstreamConsumer().getUuid()).isEqualTo(IMPORT_CONSUMER_UUID);
+        @AfterEach
+        void tearDown() {
+            admin.owners().deleteOwner(otherOrg.getKey(), true, true);
+        }
 
-        assertConflict(() -> importNow(otherOrg.getKey(), importFile))
-            .hasMessageNotContaining("MANIFEST_SAME")
-            .hasMessageContaining("DISTRIBUTOR_CONFLICT");
-    }
+        @Test
+        void shouldAllowImportingOlderManifestsIntoAnotherOwner() {
+            File oldManifest = loadExport("manifests/manifest_error_old");
 
-//       # TODO
+            assertThatNoException()
+                .isThrownBy(() -> importNow(otherOrg.getKey(), oldManifest, "MANIFEST_SAME", "DISTRIBUTOR_CONFLICT"));
+        }
+
+        @Test
+        void shouldReturnConflictWhenImportingManifestFromDifferentSubscriptionManagementApplication() throws ApiException {
+            assertConflict(() -> importNow(otherOrg.getKey(), manifest))
+                .hasMessageContaining("DISTRIBUTOR_CONFLICT");
+
+            assertThat(owner.getUpstreamConsumer().getUuid()).isEqualTo(IMPORT_CONSUMER_UUID);
+
+            assertConflict(() -> importNow(otherOrg.getKey(), manifest))
+                .hasMessageNotContaining("MANIFEST_SAME")
+                .hasMessageContaining("DISTRIBUTOR_CONFLICT");
+        }
+
+        //       # TODO
 //    it 'should allow forcing a manifest from a different subscription management application' do
 //    exporter = StandardExporter.new
 //    @exporters << exporter
@@ -148,21 +167,19 @@ public class ImportErrorSpecTest {
 //      # compare without considering order, pools should have changed completely:
 //    new_pool_ids.should_not =~ pool_ids
 //        end
-    @Test
-    void shouldAllowForcingManifestFromDifferentSubscriptionManagementApplication() throws ApiException {
-        OwnerDTO otherOrg = admin.owners().createOwner(Owners.random());
+        @Test
+        void shouldAllowForcingManifestFromDifferentSubscriptionManagementApplication() throws ApiException {
+            assertConflict(() -> importNow(otherOrg.getKey(), manifest))
+                .hasMessageContaining("DISTRIBUTOR_CONFLICT");
 
-        assertConflict(() -> importNow(otherOrg.getKey(), importFile))
-            .hasMessageContaining("DISTRIBUTOR_CONFLICT");
+            assertThat(owner.getUpstreamConsumer().getUuid()).isEqualTo(IMPORT_CONSUMER_UUID);
 
-        assertThat(owner.getUpstreamConsumer().getUuid()).isEqualTo(IMPORT_CONSUMER_UUID);
+            assertConflict(() -> importNow(otherOrg.getKey(), manifest))
+                .hasMessageNotContaining("MANIFEST_SAME")
+                .hasMessageContaining("DISTRIBUTOR_CONFLICT");
+        }
 
-        assertConflict(() -> importNow(otherOrg.getKey(), importFile))
-            .hasMessageNotContaining("MANIFEST_SAME")
-            .hasMessageContaining("DISTRIBUTOR_CONFLICT");
-    }
-
-//    # TODO
+        //    # TODO
 //    it 'should return 400 when importing manifest in use by another owner' do
 //        # Because the previous tests put the original import into a different state
 //      # than if you just run this single one, we need to clear first and then
@@ -200,18 +217,17 @@ public class ImportErrorSpecTest {
 //    message.should == expected
 //        end
 //    end
-    @Test
-    void shouldReturnBadRequestWhenImportingManifestInUseByAnotherOwner() throws ApiException {
-        OwnerDTO otherOrg = admin.owners().createOwner(Owners.random());
+        @Test
+        void shouldReturnBadRequestWhenImportingManifestInUseByAnotherOwner() throws ApiException {
+            String msg = "This subscription management application has already been imported by another owner.";
+            assertBadRequest(() -> importNow(otherOrg.getKey(), manifest))
+                .hasMessageContaining("DISTRIBUTOR_CONFLICT");
 
-        assertBadRequest(() -> importNow(otherOrg.getKey(), importFile))
-            .hasMessageContaining("DISTRIBUTOR_CONFLICT");
+            assertThat(owner.getUpstreamConsumer().getUuid()).isEqualTo(IMPORT_CONSUMER_UUID);
 
-        assertThat(owner.getUpstreamConsumer().getUuid()).isEqualTo(IMPORT_CONSUMER_UUID);
-
-        assertConflict(() -> importNow(otherOrg.getKey(), importFile))
-            .hasMessageNotContaining("MANIFEST_SAME")
-            .hasMessageContaining("DISTRIBUTOR_CONFLICT");
+            assertConflict(() -> importNow(otherOrg.getKey(), manifest))
+                .hasMessageContaining(msg);
+        }
     }
 
     private static void undoImport(OwnerDTO owner) throws ApiException {
@@ -225,15 +241,6 @@ public class ImportErrorSpecTest {
             .hasSize(1)
             .map(PoolDTO::getId)
             .containsExactly(customPool.getId());
-    }
-
-    private static File getImportFile(URL manifest) {
-        try {
-            return new File(manifest.toURI());
-        }
-        catch (URISyntaxException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     private static void importNow(String ownerKey, File export) throws ApiException {

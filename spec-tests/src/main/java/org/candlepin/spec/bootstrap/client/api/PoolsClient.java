@@ -36,11 +36,11 @@ public class PoolsClient extends PoolsApi {
         return super.listPools(null, consumer, null, true, null, null, null, null, null);
     }
 
-    public List<PoolDTO> listPoolsByProduct(String ownerKey, String productId) throws ApiException {
+    public List<PoolDTO> listPoolsByProduct(String ownerKey, String productId) {
         return super.listPools(ownerKey, null, productId, true, null, null, null, null, null);
     }
 
-    public Map<String, String> getCert(String poolId) throws ApiException {
+    public Map<String, String> getCert(String poolId) {
         return (Map<String, String>) super.getSubCert(poolId);
     }
 }
