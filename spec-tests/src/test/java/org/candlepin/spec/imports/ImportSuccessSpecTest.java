@@ -31,20 +31,21 @@ import org.candlepin.dto.api.client.v1.SubscriptionDTO;
 import org.candlepin.dto.api.client.v1.UpstreamConsumerDTO;
 import org.candlepin.dto.api.client.v1.UserDTO;
 import org.candlepin.invoker.client.ApiException;
+import org.candlepin.spec.bootstrap.assertions.OnlyInStandalone;
 import org.candlepin.spec.bootstrap.client.ApiClient;
 import org.candlepin.spec.bootstrap.client.ApiClients;
 import org.candlepin.spec.bootstrap.data.builder.Consumers;
+import org.candlepin.spec.bootstrap.data.builder.Export;
+import org.candlepin.spec.bootstrap.data.builder.ExportGenerator;
 import org.candlepin.spec.bootstrap.data.builder.Owners;
 import org.candlepin.spec.bootstrap.data.util.UserUtil;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
 
 import java.io.File;
 import java.net.URISyntaxException;
@@ -58,7 +59,8 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class ImportSpecTest {
+@OnlyInStandalone
+public class ImportSuccessSpecTest {
 
     private static final String CORRELATION_ID = "a7b79f6d-63ca-40d8-8bfb-f255041f4e3a";
     public static final String UNMAPPED_ATTRIBUTE_NAME = "unmapped_guests_only";
@@ -71,26 +73,24 @@ public class ImportSpecTest {
     private static UserDTO user;
     private static ApiClient userClient;
     private static ConsumerDTO consumer;
+    private static Export export;
 
     @BeforeAll
     static void beforeAll() throws ApiException {
         admin = ApiClients.admin();
-//    }
-//
-//    @BeforeEach
-//    void setUp() throws ApiException {
+        export = new ExportGenerator(admin).full().export();
         owner = admin.owners().createOwner(Owners.random());
         user = UserUtil.createUser(admin, owner);
         userClient = ApiClients.trustedUser(user.getUsername());
         consumer = userClient.consumers().createConsumer(Consumers.random(owner));
-        URL manifest = ImportSpecTest.class.getClassLoader().getResource("manifests/manifest");
-        try {
-            File file = new File(manifest.toURI());
-            importNow(owner.getKey(), file);
-        }
-        catch (URISyntaxException e) {
-            throw new RuntimeException(e);
-        }
+//        URL manifest = ImportSuccessSpecTest.class.getClassLoader().getResource("manifests/manifest");
+//        try {
+//            File file = new File(manifest.toURI());
+            importNow(owner.getKey(), export.file());
+//        }
+//        catch (URISyntaxException e) {
+//            throw new RuntimeException(e);
+//        }
     }
 
     @AfterAll
@@ -125,7 +125,7 @@ public class ImportSpecTest {
         List<PoolDTO> pools = userClient.pools().listPoolsByOwner(owner.getId());
         assertThat(pools).hasSize(8);
 
-        assertThat(updatedOwner.getUpstreamConsumer().getUuid()).isEqualTo(IMPORT_CONSUMER_UUID);
+        assertThat(updatedOwner.getUpstreamConsumer().getUuid()).isEqualTo(export.consumerUuid());
     }
 
     @Test
@@ -134,13 +134,13 @@ public class ImportSpecTest {
 
         for (ImportRecordDTO anImport : imports) {
             assertThat(anImport.getGeneratedBy()).isEqualTo("admin");
-            assertThat(anImport.getGeneratedDate()).isAtSameInstantAs(toDate(1662640168));
-            assertThat(anImport.getFileName()).isEqualTo("manifest");
+            assertThat(anImport.getGeneratedDate()).isNotNull();
+            assertThat(anImport.getFileName()).isEqualTo(export.file().getName());
 
-            ImportUpstreamConsumerDTO consumer = anImport.getUpstreamConsumer();
-            assertThat(consumer.getUuid()).isEqualTo(IMPORT_CONSUMER_UUID);
-            assertThat(consumer.getName()).isEqualTo("test_consumer-4D0D09D3");
-            assertThat(consumer.getOwnerId()).isEqualTo(owner.getId());
+            ImportUpstreamConsumerDTO upstreamConsumer = anImport.getUpstreamConsumer();
+            assertThat(upstreamConsumer.getUuid()).isEqualTo(export.consumerUuid());
+            assertThat(upstreamConsumer.getName()).isEqualTo(export.consumerName());
+            assertThat(upstreamConsumer.getOwnerId()).isEqualTo(owner.getId());
         }
     }
 
@@ -165,22 +165,15 @@ public class ImportSpecTest {
 
     // TODO refactor
     @Test
-    void shouldStoreTheSubscriptionUpstreamEntitlementCert() throws ApiException, JsonProcessingException {
-        List<SubscriptionDTO> subscriptions = admin.owners().getOwnerSubscriptions(owner.getKey());
-
+    void shouldStoreTheSubscriptionUpstreamEntitlementCert() {
         // we only want the product that maps to a normal pool
         // i.e. no virt, no multipliers, etc.
         // this is to fix a intermittent test failures when trying
         // to bind to a virt_only or other weird pool
-        SubscriptionDTO subscription = subscriptions.stream()
-            .filter(sub -> "test_product-DBC471A1".equals(sub.getProduct().getId()))
-            .findAny()
-            .orElseThrow();
-
         List<PoolDTO> pools = userClient.pools().listPoolsByOwner(owner.getId());
 
         PoolDTO pool = pools.stream()
-            .filter(poolDTO -> subscription.getId().equals(poolDTO.getSubscriptionId()) && "master".equalsIgnoreCase(poolDTO.getSubscriptionSubKey()))
+            .filter(poolDTO -> "master".equalsIgnoreCase(poolDTO.getSubscriptionSubKey()))
             .findAny()
             .orElseThrow();
 
@@ -206,9 +199,9 @@ public class ImportSpecTest {
         UpstreamConsumerDTO upstreamConsumer = importOwner.getUpstreamConsumer();
 
         assertThat(upstreamConsumer)
-            .hasFieldOrPropertyWithValue("uuid", consumer.getUuid())
-            .hasFieldOrPropertyWithValue("name", consumer.getName())
-            .hasFieldOrPropertyWithValue("apiUrl", "api1")
+            .hasFieldOrPropertyWithValue("uuid", export.consumerUuid())
+            .hasFieldOrPropertyWithValue("name", export.consumerName())
+            .hasFieldOrPropertyWithValue("apiUrl", "https://cdn.test.com")
             .hasFieldOrPropertyWithValue("webUrl", "webapp1");
         assertThat(upstreamConsumer.getId()).isNotNull();
         assertThat(upstreamConsumer.getIdCert()).isNotNull();
@@ -235,7 +228,7 @@ public class ImportSpecTest {
         assertThat(subscriptions)
             .map(SubscriptionDTO::getCdn)
             .map(CdnDTO::getLabel)
-            .containsOnly("cdn-labelB309AFE8");
+            .containsOnly(export.cdnLabel());
     }
 
     private static OffsetDateTime toDate(int epochSecond) {
