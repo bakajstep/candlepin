@@ -26,6 +26,7 @@ import org.candlepin.dto.api.client.v1.ImportRecordDTO;
 import org.candlepin.dto.api.client.v1.ImportUpstreamConsumerDTO;
 import org.candlepin.dto.api.client.v1.OwnerDTO;
 import org.candlepin.dto.api.client.v1.PoolDTO;
+import org.candlepin.dto.api.client.v1.ProductDTO;
 import org.candlepin.dto.api.client.v1.ProvidedProductDTO;
 import org.candlepin.dto.api.client.v1.SubscriptionDTO;
 import org.candlepin.dto.api.client.v1.UpstreamConsumerDTO;
@@ -55,6 +56,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -86,7 +88,7 @@ public class ImportSuccessSpecTest {
 //        URL manifest = ImportSuccessSpecTest.class.getClassLoader().getResource("manifests/manifest");
 //        try {
 //            File file = new File(manifest.toURI());
-            importNow(owner.getKey(), export.file());
+        importNow(owner.getKey(), export.file());
 //        }
 //        catch (URISyntaxException e) {
 //            throw new RuntimeException(e);
@@ -125,7 +127,7 @@ public class ImportSuccessSpecTest {
         List<PoolDTO> pools = userClient.pools().listPoolsByOwner(owner.getId());
         assertThat(pools).hasSize(8);
 
-        assertThat(updatedOwner.getUpstreamConsumer().getUuid()).isEqualTo(export.consumerUuid());
+        assertThat(updatedOwner.getUpstreamConsumer().getUuid()).isEqualTo(export.consumer().getUuid());
     }
 
     @Test
@@ -138,8 +140,8 @@ public class ImportSuccessSpecTest {
             assertThat(anImport.getFileName()).isEqualTo(export.file().getName());
 
             ImportUpstreamConsumerDTO upstreamConsumer = anImport.getUpstreamConsumer();
-            assertThat(upstreamConsumer.getUuid()).isEqualTo(export.consumerUuid());
-            assertThat(upstreamConsumer.getName()).isEqualTo(export.consumerName());
+            assertThat(upstreamConsumer.getUuid()).isEqualTo(export.consumer().getUuid());
+            assertThat(upstreamConsumer.getName()).isEqualTo(export.consumer().getName());
             assertThat(upstreamConsumer.getOwnerId()).isEqualTo(owner.getId());
         }
     }
@@ -174,7 +176,7 @@ public class ImportSuccessSpecTest {
 
         PoolDTO pool = pools.stream()
             .filter(poolDTO -> "master".equalsIgnoreCase(poolDTO.getSubscriptionSubKey()))
-            .findAny()
+            .findFirst()
             .orElseThrow();
 
         Map<String, String> subCert = admin.pools().getCert(pool.getId());
@@ -199,25 +201,62 @@ public class ImportSuccessSpecTest {
         UpstreamConsumerDTO upstreamConsumer = importOwner.getUpstreamConsumer();
 
         assertThat(upstreamConsumer)
-            .hasFieldOrPropertyWithValue("uuid", export.consumerUuid())
-            .hasFieldOrPropertyWithValue("name", export.consumerName())
-            .hasFieldOrPropertyWithValue("apiUrl", "https://cdn.test.com")
-            .hasFieldOrPropertyWithValue("webUrl", "webapp1");
+            .isNotNull()
+            .hasFieldOrPropertyWithValue("uuid", export.consumer().getUuid())
+            .hasFieldOrPropertyWithValue("name", export.consumer().getName())
+            .hasFieldOrPropertyWithValue("apiUrl", export.cdn().apiUrl())
+            .hasFieldOrPropertyWithValue("webUrl", export.cdn().webUrl());
         assertThat(upstreamConsumer.getId()).isNotNull();
         assertThat(upstreamConsumer.getIdCert()).isNotNull();
-        assertThat(upstreamConsumer.getType()).isEqualTo(consumer.getType());
+        assertThat(upstreamConsumer.getType()).isEqualTo(export.consumer().getType());
     }
 
 
     @Test
     void shouldContainAllDerivedProductData() throws ApiException {
-//        List<PoolDTO> pools = userClient.pools().listPoolsByProduct(owner.getId(), "");
-    }
+        String prod3 = export.product(Export.ProductId.product3).getId();
+        String derivedProductId = export.product(Export.ProductId.derived_product).getId();
+        String derivedProvidedProductId = export.product(Export.ProductId.derived_provided_prod).getId();
+        List<PoolDTO> pools = userClient.pools().listPoolsByProduct(owner.getId(), prod3);
+//        pool = @cp.list_pools(:owner => @import_owner.id,
+//            :product => @cp_export.products[:product3].id)[0]
+//        pool.should_not be_nil
+//        pool["derivedProductId"].should == @cp_export.products[:derived_product].id
+//        pool["derivedProvidedProducts"].length.should == 1
+//        pool["derivedProvidedProducts"][0]["productId"].should == @cp_export.products[:derived_provided_prod].id
+        PoolDTO pool = pools.stream().findFirst().orElseThrow();
 
+        assertThat(pool.getDerivedProductId()).isEqualTo(derivedProductId);
+        assertThat(pool.getDerivedProvidedProducts())
+            .hasSize(1)
+            .first()
+            .hasFieldOrPropertyWithValue("productId", derivedProvidedProductId);
+    }
 
     @Test
     void shouldContainBrandingInfo() throws ApiException {
-//        List<PoolDTO> pools = userClient.pools().listPoolsByOwner(owner.getId());
+        String productId = export.product(Export.ProductId.product1).getId();
+        String engProductId = export.product(Export.ProductId.eng_product).getId();
+        List<PoolDTO> pools = userClient.pools().listPoolsByProduct(owner.getId(), productId);
+        PoolDTO pool = pools.stream().findFirst().orElseThrow();
+
+        assertThat(pool.getBranding())
+            .hasSize(1)
+            .first()
+            .satisfies(branding -> {
+                assertThat(branding.getProductId()).isEqualTo(engProductId);
+                assertThat(branding.getName()).isEqualTo("Branded Eng Product");
+            });
+    }
+
+    @Test
+    void shouldNotContainBrandingInfo() throws ApiException {
+        String productId = export.product(Export.ProductId.product2).getId();
+        List<PoolDTO> pools = userClient.pools().listPoolsByProduct(owner.getId(), productId);
+
+        PoolDTO pool = pools.stream().findFirst().orElseThrow();
+
+        assertThat(pool.getBranding()).isEmpty();
     }
 
 
@@ -228,7 +267,7 @@ public class ImportSuccessSpecTest {
         assertThat(subscriptions)
             .map(SubscriptionDTO::getCdn)
             .map(CdnDTO::getLabel)
-            .containsOnly(export.cdnLabel());
+            .containsOnly(export.cdn().label());
     }
 
     private static OffsetDateTime toDate(int epochSecond) {

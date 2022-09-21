@@ -49,6 +49,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.zip.ZipFile;
 
 public class ExportGenerator {
@@ -76,11 +78,11 @@ public class ExportGenerator {
 
     private OwnerDTO owner;
     private ConsumerDTO consumer;
-    private CdnDTO cdn;
+    private ExportCdn cdn;
     private ZipFile export;
     private File manifest;
     private Map<String, ProductDTO> productIdToProduct = new HashMap<>();
-
+    private Map<Export.ProductId, ProductDTO> products;
 
     public ExportGenerator(ApiClient adminClient) {
         client = adminClient;
@@ -111,99 +113,18 @@ public class ExportGenerator {
 
         this.client.owners().deleteOwner(owner.getKey(), true, true);
 
-        return new Export(consumer.getUuid(), consumer.getName(), cdn.getLabel(), manifest);
+        return new Export(manifest, consumer, cdn, products);
     }
 
     private void initializeSimpleExport() {
-        owner = ownerApi.createOwner(Owners.random());
-        String ownerKey = owner.getKey();
-
-        RoleDTO role = rolesApi.createRole(Roles.all(owner));
-        UserDTO user = usersApi.createUser(Users.random());
-        role = rolesApi.addUserToRole(role.getName(), user.getUsername());
-        consumer = consumerApi.createConsumer(Consumers.random(owner, ConsumerTypes.Candlepin),
-            user.getUsername(), owner.getKey(), null, true);
-
-        ProductDTO engProduct = ownerProductApi.createProductByOwner(ownerKey, Products.randomEng());
-        productIdToProduct.put(engProduct.getId(), engProduct);
-
-        Set<BrandingDTO> brandings = Set.of(Branding.build("Branded Eng Product", "OS")
-            .productId(engProduct.getId()));
-
-        ProductDTO derivedProvidedProduct = ownerProductApi
-            .createProductByOwner(ownerKey, Products.random());
-        productIdToProduct.put(derivedProvidedProduct.getId(), derivedProvidedProduct);
-
-        ProductDTO derivedProduct = Products.random();
-        derivedProduct.setProvidedProducts(Set.of(derivedProvidedProduct));
-        derivedProduct = ownerProductApi.createProductByOwner(ownerKey, derivedProduct);
-        productIdToProduct.put(derivedProduct.getId(), derivedProduct);
-
-        ProductDTO product1 = Products.random();
-        product1.setMultiplier(2L);
-        product1.setBranding(brandings);
-        product1.setProvidedProducts(Set.of(engProduct));
-        product1 = ownerProductApi.createProductByOwner(ownerKey, product1);
-        productIdToProduct.put(product1.getId(), product1);
-
-        ProductDTO product2 = Products.random();
-        product2 = ownerProductApi.createProductByOwner(ownerKey, product2);
-        productIdToProduct.put(product2.getId(), product2);
-
-        ProductDTO virtProduct = Products.withAttributes(ProductAttributes.VirtOnly.withValue("true"));
-        virtProduct = ownerProductApi.createProductByOwner(ownerKey, virtProduct);
-        productIdToProduct.put(virtProduct.getId(), virtProduct);
-
-        ProductDTO product3 = Products.withAttributes(ProductAttributes.Arch.withValue("x86_64"),
-            ProductAttributes.VirtualLimit.withValue("unlimited"));
-        product3.setDerivedProduct(derivedProduct);
-        product3 = ownerProductApi.createProductByOwner(ownerKey, product3);
-        productIdToProduct.put(product3.getId(), product3);
-
-        ProductDTO productVdc = createVDCProduct(client, ownerKey);
-        productIdToProduct.put(productVdc.getId(), productVdc);
-        ProductDTO productDc = productVdc.getDerivedProduct();
-        productIdToProduct.put(productDc.getId(), productDc);
-
-        // this is for the update process
-        ProductDTO productUp = ownerProductApi.createProductByOwner(ownerKey, Products.random());
-        productIdToProduct.put(productUp.getId(), productUp);
-
-        ContentDTO content1 = Content.random()
-            .metadataExpire(6000L)
-            .requiredTags("TAG1,TAG2");
-        content1 = ownerContentApi.createContent(ownerKey, content1);
-
-        ContentDTO archContent = Content.random()
-            .metadataExpire(6000L)
-            .contentUrl("/path/to/arch/specific/content")
-            .requiredTags("TAG1,TAG2")
-            .arches("i386,x86_64");
-        archContent = ownerContentApi.createContent(ownerKey, archContent);
-
-        ownerProductApi.addContent(ownerKey, product1.getId(), content1.getId(), true);
-        ownerProductApi.addContent(ownerKey, product2.getId(), content1.getId(), true);
-        ownerProductApi.addContent(ownerKey, product2.getId(), archContent.getId(), true);
-        ownerProductApi.addContent(ownerKey, derivedProduct.getId(), content1.getId(), true);
-
-        List<ProductDTO> poolProducts =
-            List.of(product1, product2, virtProduct, product3, productUp, productVdc);
-        Map<String, PoolDTO> poolIdToPool =
-            createPoolsForProducts(ownerKey, poolProducts, brandings);
-
-        consumer.setFacts(Map.of("distributor_version", "sam-1.3"));
-        ReleaseVerDTO releaseVer = new ReleaseVerDTO()
-            .releaseVer("");
-        consumer.setReleaseVer(releaseVer);
-        consumerApi.updateConsumer(consumer.getUuid(), consumer);
-        consumer = consumerApi.getConsumer(consumer.getUuid());
-
-        bindPoolsToConsumer(consumerApi, consumer.getUuid(), poolIdToPool.keySet());
-
-        cdn = cdnApi.createCdn(Cdns.random());
+        initialize();
     }
 
     private void initializeFullExport() {
+        initialize();
+    }
+
+    private void initialize() {
         owner = ownerApi.createOwner(Owners.random());
         String ownerKey = owner.getKey();
 
@@ -219,102 +140,107 @@ public class ExportGenerator {
         Set<BrandingDTO> brandings = Set.of(Branding.build("Branded Eng Product", "OS")
             .productId(engProduct.getId()));
 
-        ProductDTO derivedProvidedProduct = ownerProductApi
-            .createProductByOwner(ownerKey, Products.random());
+        ProductDTO derivedProvidedProduct = ownerProductApi.createProductByOwner(ownerKey, Products.random());
         productIdToProduct.put(derivedProvidedProduct.getId(), derivedProvidedProduct);
 
-        ProductDTO derivedProduct = Products.random();
-        derivedProduct.setProvidedProducts(Set.of(derivedProvidedProduct));
-        derivedProduct = ownerProductApi.createProductByOwner(ownerKey, derivedProduct);
+        ProductDTO derivedProduct = ownerProductApi.createProductByOwner(ownerKey, Products
+            .withAttributes(ProductAttributes.Cores.withValue("2"))
+            .providedProducts(Set.of(derivedProvidedProduct)));
         productIdToProduct.put(derivedProduct.getId(), derivedProduct);
 
-        ProductDTO product1 = Products.random();
-        product1.setMultiplier(2L);
-        product1.setBranding(brandings);
-        product1.setProvidedProducts(Set.of(engProduct));
-        product1 = ownerProductApi.createProductByOwner(ownerKey, product1);
+        ProductDTO product1 = ownerProductApi.createProductByOwner(ownerKey, Products.random()
+            .multiplier(2L)
+            .branding(brandings)
+            .providedProducts(Set.of(engProduct)));
         productIdToProduct.put(product1.getId(), product1);
 
-        ProductDTO product2 = Products.random();
-        product2 = ownerProductApi.createProductByOwner(ownerKey, product2);
+        ProductDTO product2 = ownerProductApi.createProductByOwner(ownerKey, Products.random());
         productIdToProduct.put(product2.getId(), product2);
 
-        ProductDTO virtProduct = Products.withAttributes(ProductAttributes.VirtOnly.withValue("true"));
-        virtProduct = ownerProductApi.createProductByOwner(ownerKey, virtProduct);
+        ProductDTO virtProduct = ownerProductApi.createProductByOwner(ownerKey, Products
+            .withAttributes(ProductAttributes.VirtOnly.withValue("true")));
         productIdToProduct.put(virtProduct.getId(), virtProduct);
 
-        ProductDTO product3 = Products.withAttributes(ProductAttributes.Arch.withValue("x86_64"),
-            ProductAttributes.VirtualLimit.withValue("unlimited"));
-        product3.setDerivedProduct(derivedProduct);
-        product3 = ownerProductApi.createProductByOwner(ownerKey, product3);
+        ProductDTO product3 = ownerProductApi.createProductByOwner(ownerKey, Products
+            .withAttributes(
+                ProductAttributes.Arch.withValue("x86_64"),
+                ProductAttributes.VirtualLimit.withValue("unlimited")
+            )
+            .derivedProduct(derivedProduct));
         productIdToProduct.put(product3.getId(), product3);
 
-        ProductDTO productVdc = createVDCProduct(client, ownerKey);
+        ProductDTO productDc = client.ownerProducts().createProductByOwner(ownerKey, Products.withAttributes(
+            ProductAttributes.Arch.withValue("x86_64"),
+            ProductAttributes.StackingId.withValue("stack-dc")
+        ));
+
+        ProductDTO productVdc = client.ownerProducts().createProductByOwner(ownerKey, Products
+            .withAttributes(
+                ProductAttributes.Arch.withValue("x86_64"),
+                ProductAttributes.VirtualLimit.withValue("unlimited"),
+                ProductAttributes.StackingId.withValue("stack-vdc")
+            )
+            .derivedProduct(productDc));
+
         productIdToProduct.put(productVdc.getId(), productVdc);
-        ProductDTO productDc = productVdc.getDerivedProduct();
         productIdToProduct.put(productDc.getId(), productDc);
 
         // this is for the update process
         ProductDTO productUp = ownerProductApi.createProductByOwner(ownerKey, Products.random());
         productIdToProduct.put(productUp.getId(), productUp);
 
-        ContentDTO content1 = Content.random()
-            .metadataExpire(6000L)
-            .requiredTags("TAG1,TAG2");
-        content1 = ownerContentApi.createContent(ownerKey, content1);
+        products = Map.ofEntries(
+            Map.entry(Export.ProductId.eng_product, engProduct),
+            Map.entry(Export.ProductId.derived_provided_prod, derivedProvidedProduct),
+            Map.entry(Export.ProductId.derived_product, derivedProduct),
+            Map.entry(Export.ProductId.product1, product1),
+            Map.entry(Export.ProductId.product2, product2),
+            Map.entry(Export.ProductId.product3, product3),
+            Map.entry(Export.ProductId.virt_product, virtProduct),
+            Map.entry(Export.ProductId.product_dc, productDc),
+            Map.entry(Export.ProductId.product_vdc, productVdc),
+            Map.entry(Export.ProductId.product_up, productUp)
+        );
 
-        ContentDTO archContent = Content.random()
+        ContentDTO content1 = ownerContentApi.createContent(ownerKey, Content.random()
+            .metadataExpire(6000L)
+            .requiredTags("TAG1,TAG2"));
+
+        ContentDTO archContent = ownerContentApi.createContent(ownerKey, Content.random()
             .metadataExpire(6000L)
             .contentUrl("/path/to/arch/specific/content")
             .requiredTags("TAG1,TAG2")
-            .arches("i386,x86_64");
-        archContent = ownerContentApi.createContent(ownerKey, archContent);
+            .arches("i386,x86_64"));
 
         ownerProductApi.addContent(ownerKey, product1.getId(), content1.getId(), true);
         ownerProductApi.addContent(ownerKey, product2.getId(), content1.getId(), true);
         ownerProductApi.addContent(ownerKey, product2.getId(), archContent.getId(), true);
         ownerProductApi.addContent(ownerKey, derivedProduct.getId(), content1.getId(), true);
 
-        List<ProductDTO> poolProducts =
-            List.of(product1, product2, virtProduct, product3, productUp, productVdc);
-        Map<String, PoolDTO> poolIdToPool =
-            createPoolsForProducts(ownerKey, poolProducts, brandings);
+        List<ProductDTO> poolProducts = List.of(
+            product1, product2, virtProduct, product3, productUp, productVdc);
+        Map<String, PoolDTO> poolIdToPool = createPoolsForProducts(ownerKey, poolProducts);
 
-        consumer.setFacts(Map.of("distributor_version", "sam-1.3"));
-        ReleaseVerDTO releaseVer = new ReleaseVerDTO()
-            .releaseVer("");
-        consumer.setReleaseVer(releaseVer);
+        consumer.putFactsItem("distributor_version", "sam-1.3")
+            .releaseVer(new ReleaseVerDTO().releaseVer(""));
         consumerApi.updateConsumer(consumer.getUuid(), consumer);
         consumer = consumerApi.getConsumer(consumer.getUuid());
 
-        bindPoolsToConsumer(consumerApi, consumer.getUuid(), poolIdToPool.keySet());
+        bindPoolsToConsumer(consumerApi, consumer.getUuid(), poolIdToPool.values().stream().map(PoolDTO::getId).collect(Collectors.toSet()));
+//        consumerApi.bindPool(consumer.getUuid(), poolIdToPool.get(product3.getId()).getId(), 1);
 
-        cdn = cdnApi.createCdn(Cdns.random());
+        CdnDTO cdn2 = cdnApi.createCdn(Cdns.random());
+        cdn = Cdns.toExport(cdn2);
     }
 
-    private File createExport(String consumerUuid, CdnDTO cdn) {
-        String cdnLabel = cdn == null ? null : cdn.getLabel();
-        String cdnName = cdn == null ? null : cdn.getName();
-        String cdnUrl = cdn == null ? null : cdn.getUrl();
-        File export = client.consumers().exportData(consumerUuid, cdnLabel, cdnName, cdnUrl);
+    private File createExport(String consumerUuid, ExportCdn cdn) {
+//        String cdnLabel = cdn == null ? null : cdn.getLabel();
+//        String cdnName = cdn == null ? null : cdn.getName();
+//        String cdnUrl = cdn == null ? null : cdn.getUrl();
+        File export = client.consumers().exportData(consumerUuid, cdn.label(), cdn.webUrl(), cdn.apiUrl());
         export.deleteOnExit();
 
         return export;
-    }
-
-    private ProductDTO createVDCProduct(ApiClient client, String ownerKey) throws ApiException {
-        OwnerProductApi ownerProductsApi = client.ownerProducts();
-        ProductDTO productDc = Products.withAttributes(ProductAttributes.Arch.withValue("x86_64"),
-            ProductAttributes.StackingId.withValue("stack-dc"));
-        productDc = ownerProductsApi.createProductByOwner(ownerKey, productDc);
-
-        ProductDTO productVdc = Products.withAttributes(ProductAttributes.Arch.withValue("x86_64"),
-            ProductAttributes.VirtualLimit.withValue("unlimited"),
-            ProductAttributes.StackingId.withValue("stack-vdc"));
-        productVdc.setDerivedProduct(productDc);
-        productVdc = ownerProductsApi.createProductByOwner(ownerKey, productVdc);
-
-        return productVdc;
     }
 
     private void bindPoolsToConsumer(ConsumerClient consumerApi, String consumerUuid,
@@ -324,25 +250,29 @@ public class ExportGenerator {
         }
     }
 
-    private Map<String, PoolDTO> createPoolsForProducts(String ownerKey,
-        Collection<ProductDTO> products, Collection<BrandingDTO> brandings) throws ApiException {
-        Map<String, PoolDTO> poolIdToPool = new HashMap<>();
-        for (ProductDTO product : products) {
-            PoolDTO pool = createPool(ownerKey, product, brandings);
-            poolIdToPool.put(pool.getId(), pool);
-        }
+    private Map<String, PoolDTO> createPoolsForProducts(String ownerKey, Collection<ProductDTO> products) {
+        Set<PoolDTO> collect = products.stream()
+            .map(product -> createPool(ownerKey, product))
+            .collect(Collectors.toSet());
 
-        return poolIdToPool;
+        return collect.stream()
+            .collect(Collectors.toMap(PoolDTO::getProductId, Function.identity()));
     }
 
-    private PoolDTO createPool(String ownerKey, ProductDTO product,
-        Collection<BrandingDTO> brandings) throws ApiException {
+    private PoolDTO createPool(String ownerKey, ProductDTO product) throws ApiException {
         PoolDTO pool = Pools.random(product)
             .providedProducts(new HashSet<>())
+            .contractNumber("")
             .accountNumber("12345")
             .orderNumber("6789")
-            .endDate(OffsetDateTime.now().plusYears(5))
-            .branding(new HashSet<>(brandings));
+            .endDate(OffsetDateTime.now().plusYears(5));
+
+        if (product.getBranding() == null || product.getBranding().isEmpty()) {
+            pool.setBranding(null);
+        } else {
+            pool.setBranding(new HashSet<>(product.getBranding()));
+        }
+
 
         return ownerApi.createPool(ownerKey, pool);
     }

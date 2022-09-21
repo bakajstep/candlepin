@@ -15,32 +15,50 @@
 
 package org.candlepin.spec.bootstrap.data.builder;
 
+import org.candlepin.dto.api.client.v1.BrandingDTO;
+import org.candlepin.dto.api.client.v1.ConsumerDTO;
+import org.candlepin.dto.api.client.v1.ProductDTO;
+
 import java.io.File;
+import java.util.Map;
 
 public class Export {
 
-    private final String consumerUuid;
-    private final String consumerName;
-    private final String cdnLabel;
+    public enum ProductId {
+        eng_product,
+        derived_provided_prod,
+        derived_product,
+        product1,
+        product2,
+        product3,
+        virt_product,
+        product_dc,
+        product_vdc,
+        product_up
+    }
+
+    private final ConsumerDTO consumer;
+    private final ExportCdn cdn;
     private final File file;
+    private final Map<ProductId, ProductDTO> products;
 
-    public Export(String consumerUuid, String consumerName, String cdnLabel, File file) {
-        this.consumerUuid = consumerUuid;
-        this.consumerName = consumerName;
-        this.cdnLabel = cdnLabel;
+    public Export(File file, ConsumerDTO consumer, ExportCdn cdn, Map<ProductId, ProductDTO> products) {
         this.file = file;
+        this.consumer = consumer;
+        this.cdn = cdn;
+        this.products = products;
     }
 
-    public String consumerUuid() {
-        return consumerUuid;
+    public ConsumerDTO consumer() {
+        return consumer;
     }
 
-    public String consumerName() {
-        return consumerName;
+    public ExportCdn cdn() {
+        return cdn;
     }
 
-    public String cdnLabel() {
-        return cdnLabel;
+    public ProductDTO product(ProductId productId) {
+        return products.get(productId);
     }
 
     public File file() {
