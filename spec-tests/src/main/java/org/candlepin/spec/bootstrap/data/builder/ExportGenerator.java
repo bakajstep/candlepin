@@ -53,7 +53,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.zip.ZipFile;
 
-public class ExportGenerator {
+public class ExportGenerator implements AutoCloseable {
     private static final String RECORD_CLEANER_JOB_KEY = "ImportRecordCleanerJob";
     private static final String UNDO_IMPORTS_JOB_KEY = "UndoImportsJob";
     // The following are directory location paths within a manifest
@@ -96,6 +96,13 @@ public class ExportGenerator {
         usersApi = client.users();
     }
 
+    @Override
+    public void close() {
+        if (owner != null) {
+            this.client.owners().deleteOwner(owner.getKey(), true, true);
+        }
+    }
+
     public ExportGenerator full() {
         initializeFullExport();
 
@@ -110,8 +117,6 @@ public class ExportGenerator {
 
     public Export export() {
         manifest = createExport(consumer.getUuid(), cdn);
-
-        this.client.owners().deleteOwner(owner.getKey(), true, true);
 
         return new Export(manifest, consumer, cdn, products);
     }
@@ -276,5 +281,4 @@ public class ExportGenerator {
 
         return ownerApi.createPool(ownerKey, pool);
     }
-
 }

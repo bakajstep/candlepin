@@ -28,6 +28,8 @@ import org.candlepin.invoker.client.ApiException;
 import org.candlepin.spec.bootstrap.client.ApiClient;
 import org.candlepin.spec.bootstrap.client.ApiClients;
 import org.candlepin.spec.bootstrap.data.builder.Consumers;
+import org.candlepin.spec.bootstrap.data.builder.Export;
+import org.candlepin.spec.bootstrap.data.builder.ExportGenerator;
 import org.candlepin.spec.bootstrap.data.builder.Owners;
 import org.candlepin.spec.bootstrap.data.builder.Pools;
 import org.candlepin.spec.bootstrap.data.builder.Products;
@@ -36,6 +38,7 @@ import org.candlepin.spec.bootstrap.data.util.UserUtil;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
@@ -53,8 +56,8 @@ public class ImportUndoSpecTest {
 
     private static OwnerDTO owner;
     private static ApiClient userClient;
-    private static File importFile;
     private static PoolDTO customPool;
+    private static Export export;
 
     @BeforeAll
     static void beforeAll() throws ApiException {
@@ -65,15 +68,12 @@ public class ImportUndoSpecTest {
         ProductDTO product = admin.ownerProducts().createProductByOwner(owner.getKey(), Products.random());
         customPool = admin.owners().createPool(owner.getKey(), Pools.random(product));
 
-        URL manifest = ImportUndoSpecTest.class.getClassLoader().getResource("manifests/manifest");
-        importFile = getImportFile(manifest);
-        importNow(owner.getKey(), importFile);
-        undoImport(owner);
-    }
+        try (ExportGenerator exportGenerator = new ExportGenerator(admin)) {
+            export = exportGenerator.simple().export();
+        }
 
-    @AfterAll
-    static void tearDown() throws ApiException {
-        admin.owners().deleteOwner(owner.getKey(), true, true);
+        importNow(owner.getKey(), export.file());
+        undoImport(owner);
     }
 
     @Test
@@ -100,21 +100,20 @@ public class ImportUndoSpecTest {
 
         @Test
         void shouldBeAbleToReimportWithoutError() throws ApiException {
-            importNow(owner.getKey(), importFile);
+            importNow(owner.getKey(), export.file());
             OwnerDTO asd2 = admin.owners().getOwner(owner.getKey());
             assertThat(asd2.getUpstreamConsumer())
-                .hasFieldOrPropertyWithValue("uuid", IMPORT_CONSUMER_UUID);
+                .hasFieldOrPropertyWithValue("uuid", export.consumer().getUuid());
 
             undoImport(owner);
 
             assertOnlyCustomPoolPresent(customPool);
         }
 
-
         @Test
         void shouldAllowAnotherOrgToImportTheSameManifest() throws ApiException {
             OwnerDTO otherOrg = admin.owners().createOwner(Owners.random());
-            importNow(otherOrg.getKey(), importFile);
+            importNow(otherOrg.getKey(), export.file());
             admin.owners().deleteOwner(otherOrg.getKey(), true, true);
 
             assertOnlyCustomPoolPresent(customPool);
