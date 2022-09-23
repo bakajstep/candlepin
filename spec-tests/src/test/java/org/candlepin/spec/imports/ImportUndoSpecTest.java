@@ -50,8 +50,6 @@ import java.util.List;
 
 public class ImportUndoSpecTest {
 
-    public static final String IMPORT_CONSUMER_UUID = "7e46cc0f-e129-45f2-9d18-68bee849f88a";
-
     private static ApiClient admin;
 
     private static OwnerDTO owner;
@@ -78,9 +76,9 @@ public class ImportUndoSpecTest {
 
     @Test
     void shouldUnlinkUpstreamConsumer() throws ApiException {
-        OwnerDTO asd = admin.owners().getOwner(owner.getKey());
+        OwnerDTO updatedOwner = admin.owners().getOwner(owner.getKey());
 
-        assertThat(asd.getUpstreamConsumer()).isNull();
+        assertThat(updatedOwner.getUpstreamConsumer()).isNull();
         assertOnlyCustomPoolPresent(customPool);
     }
 
@@ -114,6 +112,7 @@ public class ImportUndoSpecTest {
         void shouldAllowAnotherOrgToImportTheSameManifest() throws ApiException {
             OwnerDTO otherOrg = admin.owners().createOwner(Owners.random());
             importNow(otherOrg.getKey(), export.file());
+
             admin.owners().deleteOwner(otherOrg.getKey(), true, true);
 
             assertOnlyCustomPoolPresent(customPool);

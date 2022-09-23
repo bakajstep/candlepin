@@ -80,7 +80,9 @@ public class ImportSuccessSpecTest {
     @BeforeAll
     static void beforeAll() throws ApiException {
         admin = ApiClients.admin();
-        export = new ExportGenerator(admin).full().export();
+        try (ExportGenerator exportGenerator = new ExportGenerator(admin)) {
+            export = exportGenerator.full().export();
+        }
         owner = admin.owners().createOwner(Owners.random());
         user = UserUtil.createUser(admin, owner);
         userClient = ApiClients.trustedUser(user.getUsername());
@@ -93,11 +95,6 @@ public class ImportSuccessSpecTest {
 //        catch (URISyntaxException e) {
 //            throw new RuntimeException(e);
 //        }
-    }
-
-    @AfterAll
-    static void tearDown() throws ApiException {
-        admin.owners().deleteOwner(owner.getKey(), true, true);
     }
 
     @Test

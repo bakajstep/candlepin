@@ -122,7 +122,50 @@ public class ExportGenerator implements AutoCloseable {
     }
 
     private void initializeSimpleExport() {
-        initialize();
+        owner = ownerApi.createOwner(Owners.random());
+        String ownerKey = owner.getKey();
+
+        RoleDTO role = rolesApi.createRole(Roles.all(owner));
+        UserDTO user = usersApi.createUser(Users.random());
+        role = rolesApi.addUserToRole(role.getName(), user.getUsername());
+        consumer = consumerApi.createConsumer(Consumers.random(owner, ConsumerTypes.Candlepin),
+            user.getUsername(), owner.getKey(), null, true);
+
+        ProductDTO engProduct = ownerProductApi.createProductByOwner(ownerKey, Products.randomEng());
+        productIdToProduct.put(engProduct.getId(), engProduct);
+
+        Set<BrandingDTO> brandings = Set.of(Branding.build("Branded Eng Product", "OS")
+            .productId(engProduct.getId()));
+
+        ProductDTO product1 = ownerProductApi.createProductByOwner(ownerKey, Products.random()
+            .multiplier(2L)
+            .branding(brandings)
+            .providedProducts(Set.of(engProduct)));
+        productIdToProduct.put(product1.getId(), product1);
+
+        products = Map.ofEntries(
+            Map.entry(Export.ProductId.product1, product1)
+        );
+
+        ContentDTO content1 = ownerContentApi.createContent(ownerKey, Content.random()
+            .metadataExpire(6000L)
+            .requiredTags("TAG1,TAG2"));
+
+        ownerProductApi.addContent(ownerKey, product1.getId(), content1.getId(), true);
+
+        List<ProductDTO> poolProducts = List.of(product1);
+        Map<String, PoolDTO> poolIdToPool = createPoolsForProducts(ownerKey, poolProducts);
+
+        consumer.putFactsItem("distributor_version", "sam-1.3")
+            .releaseVer(new ReleaseVerDTO().releaseVer(""));
+        consumerApi.updateConsumer(consumer.getUuid(), consumer);
+        consumer = consumerApi.getConsumer(consumer.getUuid());
+
+        bindPoolsToConsumer(consumerApi, consumer.getUuid(),
+            poolIdToPool.values().stream().map(PoolDTO::getId).collect(Collectors.toSet()));
+
+        CdnDTO cdn2 = cdnApi.createCdn(Cdns.random());
+        cdn = Cdns.toExport(cdn2);
     }
 
     private void initializeFullExport() {
@@ -238,6 +281,29 @@ public class ExportGenerator implements AutoCloseable {
         cdn = Cdns.toExport(cdn2);
     }
 
+    public ExportGenerator update() {
+        String ownerKey = owner.getKey();
+        ProductDTO product2 = ownerProductApi.createProductByOwner(ownerKey, Products.random());
+
+        products = Map.ofEntries(
+            Map.entry(Export.ProductId.product1, products.get(Export.ProductId.product1)),
+            Map.entry(Export.ProductId.product2, product2)
+        );
+
+        ContentDTO content1 = ownerContentApi.createContent(ownerKey, Content.random()
+            .metadataExpire(6000L)
+            .requiredTags("TAG1,TAG2"));
+
+        ownerProductApi.addContent(ownerKey, product2.getId(), content1.getId(), true);
+
+        List<ProductDTO> poolProducts = List.of(product2);
+        Map<String, PoolDTO> poolIdToPool = createPoolsForProducts(ownerKey, poolProducts);
+
+        bindPoolsToConsumer(consumerApi, consumer.getUuid(), poolIdToPool.values().stream().map(PoolDTO::getId).collect(Collectors.toSet()));
+
+        return this;
+    }
+
     private File createExport(String consumerUuid, ExportCdn cdn) {
 //        String cdnLabel = cdn == null ? null : cdn.getLabel();
 //        String cdnName = cdn == null ? null : cdn.getName();
@@ -274,7 +340,8 @@ public class ExportGenerator implements AutoCloseable {
 
         if (product.getBranding() == null || product.getBranding().isEmpty()) {
             pool.setBranding(null);
-        } else {
+        }
+        else {
             pool.setBranding(new HashSet<>(product.getBranding()));
         }
 
