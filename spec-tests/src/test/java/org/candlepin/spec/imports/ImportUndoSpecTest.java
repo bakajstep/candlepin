@@ -17,65 +17,74 @@ package org.candlepin.spec.imports;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import org.candlepin.dto.api.client.v1.AsyncJobStatusDTO;
 import org.candlepin.dto.api.client.v1.ImportRecordDTO;
 import org.candlepin.dto.api.client.v1.OwnerDTO;
 import org.candlepin.dto.api.client.v1.PoolDTO;
 import org.candlepin.dto.api.client.v1.ProductDTO;
 import org.candlepin.dto.api.client.v1.UserDTO;
 import org.candlepin.invoker.client.ApiException;
+import org.candlepin.spec.bootstrap.assertions.OnlyInStandalone;
 import org.candlepin.spec.bootstrap.client.ApiClient;
 import org.candlepin.spec.bootstrap.client.ApiClients;
+import org.candlepin.spec.bootstrap.client.SpecTest;
 import org.candlepin.spec.bootstrap.data.builder.Export;
-import org.candlepin.spec.bootstrap.data.builder.ExportGenerator;
 import org.candlepin.spec.bootstrap.data.builder.Owners;
 import org.candlepin.spec.bootstrap.data.builder.Pools;
 import org.candlepin.spec.bootstrap.data.builder.Products;
+import org.candlepin.spec.bootstrap.data.util.Importer;
 import org.candlepin.spec.bootstrap.data.util.UserUtil;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 
-import java.io.File;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.util.List;
 
 /**
  * These tests are run sequentially as they imports/reimports which are heavily
  * modifying the state and as such would not work in concurrent manner.
  */
+@SpecTest
+@OnlyInStandalone
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Execution(ExecutionMode.SAME_THREAD)
 public class ImportUndoSpecTest {
 
-    private static ApiClient admin;
-
-    private static OwnerDTO owner;
-    private static ApiClient userClient;
-    private static PoolDTO customPool;
-    private static Export export;
+    private ApiClient admin;
+    private OwnerDTO owner;
+    private ApiClient userClient;
+    private PoolDTO customPool;
+    private Export export;
+    private Importer importer;
 
     @BeforeAll
-    static void beforeAll() throws ApiException {
+    public void beforeAll() throws ApiException {
         admin = ApiClients.admin();
+        importer = getImporter(admin);
         owner = admin.owners().createOwner(Owners.random());
         UserDTO user = UserUtil.createUser(admin, owner);
         userClient = ApiClients.trustedUser(user.getUsername());
         ProductDTO product = admin.ownerProducts().createProductByOwner(owner.getKey(), Products.random());
         customPool = admin.owners().createPool(owner.getKey(), Pools.random(product));
 
-        try (ExportGenerator exportGenerator = new ExportGenerator(admin)) {
-            export = exportGenerator.simple().export();
-        }
+        export = importer.generateSimpleExport();
+    }
+
+    /**
+     * Create an instance of importer in overridable method so that async test can replace it.
+     */
+    protected Importer getImporter(ApiClient client) {
+        return new Importer(client, false);
     }
 
     @Test
     void shouldUnlinkUpstreamConsumer() throws ApiException {
-        importNow(owner.getKey(), export.file());
-        undoImport(owner);
+        this.importer.doImport(owner.getKey(), export.file());
+        this.importer.undoImport(owner);
 
         OwnerDTO updatedOwner = admin.owners().getOwner(owner.getKey());
 
@@ -85,8 +94,8 @@ public class ImportUndoSpecTest {
 
     @Test
     void shouldCreateADeleteRecordOnADeletedImport() throws ApiException {
-        importNow(owner.getKey(), export.file());
-        undoImport(owner);
+        this.importer.doImport(owner.getKey(), export.file());
+        this.importer.undoImport(owner);
 
         List<ImportRecordDTO> pools = userClient.owners().getImports(owner.getKey());
 
@@ -99,36 +108,28 @@ public class ImportUndoSpecTest {
 
     @Test
     void shouldBeAbleToReimportWithoutError() throws ApiException {
-        importNow(owner.getKey(), export.file());
-        undoImport(owner);
+        this.importer.doImport(owner.getKey(), export.file());
+        this.importer.undoImport(owner);
 
-        importNow(owner.getKey(), export.file());
+        this.importer.doImport(owner.getKey(), export.file());
         OwnerDTO asd2 = admin.owners().getOwner(owner.getKey());
 
         assertThat(asd2.getUpstreamConsumer())
             .hasFieldOrPropertyWithValue("uuid", export.consumer().getUuid());
-        undoImport(owner);
+        this.importer.undoImport(owner);
         assertOnlyCustomPoolPresent(customPool);
     }
 
     @Test
     void shouldAllowAnotherOrgToImportTheSameManifest() throws ApiException {
-        importNow(owner.getKey(), export.file());
-        undoImport(owner);
+        this.importer.doImport(owner.getKey(), export.file());
+        this.importer.undoImport(owner);
         OwnerDTO otherOrg = admin.owners().createOwner(Owners.random());
 
-        assertThatNoException().isThrownBy(() -> importNow(otherOrg.getKey(), export.file()));
+        assertThatNoException().isThrownBy(() -> this.importer.doImport(otherOrg.getKey(), export.file()));
 
         admin.owners().deleteOwner(otherOrg.getKey(), true, true);
         assertOnlyCustomPoolPresent(customPool);
-    }
-
-    private static void undoImport(OwnerDTO owner) throws ApiException {
-        List<ImportRecordDTO> imports = admin.owners().getImports(owner.getKey());
-        if (imports.stream().map(ImportRecordDTO::getStatus).noneMatch("DELETED"::equals)) {
-            AsyncJobStatusDTO job = admin.owners().undoImports(owner.getKey());
-            admin.jobs().waitForJob(job);
-        }
     }
 
     private void assertOnlyCustomPoolPresent(PoolDTO customPool) throws ApiException {
@@ -137,27 +138,6 @@ public class ImportUndoSpecTest {
             .hasSize(1)
             .map(PoolDTO::getId)
             .containsExactly(customPool.getId());
-    }
-
-    private static File getImportFile(URL manifest) {
-        try {
-            return new File(manifest.toURI());
-        }
-        catch (URISyntaxException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private static void importNow(String ownerKey, File export) throws ApiException {
-        admin.owners().importManifest(ownerKey, List.of("DISTRIBUTOR_CONFLICT"), export);
-    }
-
-    private void importAsync(String ownerKey, File export) throws ApiException {
-//        new Request(admin.getApiClient())
-//            .addHeader("X-Correlation-ID", CORRELATION_ID)
-//            .;
-        AsyncJobStatusDTO importJob = admin.owners().importManifestAsync(ownerKey, null, export);
-        admin.jobs().waitForJob(importJob);
     }
 
 }

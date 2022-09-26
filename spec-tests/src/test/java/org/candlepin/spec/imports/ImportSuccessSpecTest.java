@@ -16,9 +16,7 @@
 package org.candlepin.spec.imports;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.candlepin.spec.bootstrap.assertions.ConsumerAssert.assertSameUuid;
 
-import org.candlepin.dto.api.client.v1.AsyncJobStatusDTO;
 import org.candlepin.dto.api.client.v1.AttributeDTO;
 import org.candlepin.dto.api.client.v1.CdnDTO;
 import org.candlepin.dto.api.client.v1.ConsumerDTO;
@@ -27,76 +25,68 @@ import org.candlepin.dto.api.client.v1.ImportRecordDTO;
 import org.candlepin.dto.api.client.v1.ImportUpstreamConsumerDTO;
 import org.candlepin.dto.api.client.v1.OwnerDTO;
 import org.candlepin.dto.api.client.v1.PoolDTO;
-import org.candlepin.dto.api.client.v1.ProductDTO;
 import org.candlepin.dto.api.client.v1.ProvidedProductDTO;
 import org.candlepin.dto.api.client.v1.SubscriptionDTO;
 import org.candlepin.dto.api.client.v1.UpstreamConsumerDTO;
 import org.candlepin.dto.api.client.v1.UserDTO;
 import org.candlepin.invoker.client.ApiException;
-import org.candlepin.spec.bootstrap.assertions.ConsumerAssert;
 import org.candlepin.spec.bootstrap.assertions.OnlyInStandalone;
 import org.candlepin.spec.bootstrap.client.ApiClient;
 import org.candlepin.spec.bootstrap.client.ApiClients;
+import org.candlepin.spec.bootstrap.client.SpecTest;
 import org.candlepin.spec.bootstrap.data.builder.Consumers;
 import org.candlepin.spec.bootstrap.data.builder.Export;
-import org.candlepin.spec.bootstrap.data.builder.ExportGenerator;
 import org.candlepin.spec.bootstrap.data.builder.Owners;
+import org.candlepin.spec.bootstrap.data.builder.ProductAttributes;
+import org.candlepin.spec.bootstrap.data.util.Importer;
 import org.candlepin.spec.bootstrap.data.util.UserUtil;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 
-import java.io.File;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+@SpecTest
 @OnlyInStandalone
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class ImportSuccessSpecTest {
 
-    private static final String CORRELATION_ID = "a7b79f6d-63ca-40d8-8bfb-f255041f4e3a";
-    public static final String UNMAPPED_ATTRIBUTE_NAME = "unmapped_guests_only";
-    public static final String IMPORT_CONSUMER_UUID = "7e46cc0f-e129-45f2-9d18-68bee849f88a";
-    public static final String EXPECTED_CONTENT_URL = "/path/to/arch/specific/content";
+    private static final String UNMAPPED_ATTRIBUTE_NAME = "unmapped_guests_only";
+    private static final String EXPECTED_CONTENT_URL = "/path/to/arch/specific/content";
 
-    private static ApiClient admin;
-
-    private static OwnerDTO owner;
-    private static UserDTO user;
-    private static ApiClient userClient;
-    private static ConsumerDTO consumer;
-    private static Export export;
+    private ApiClient admin;
+    private OwnerDTO owner;
+    private UserDTO user;
+    private ApiClient userClient;
+    private ConsumerDTO consumer;
+    private Export export;
+    private Importer importer;
 
     @BeforeAll
-    static void beforeAll() throws ApiException {
+    public void beforeAll() throws ApiException {
         admin = ApiClients.admin();
-        try (ExportGenerator exportGenerator = new ExportGenerator(admin)) {
-            export = exportGenerator.full().export();
-        }
+        importer = getImporter(admin);
+        export = importer.generateFullExport();
         owner = admin.owners().createOwner(Owners.random());
         user = UserUtil.createUser(admin, owner);
         userClient = ApiClients.trustedUser(user.getUsername());
         consumer = userClient.consumers().createConsumer(Consumers.random(owner));
-//        URL manifest = ImportSuccessSpecTest.class.getClassLoader().getResource("manifests/manifest");
-//        try {
-//            File file = new File(manifest.toURI());
-        importNow(owner.getKey(), export.file());
-//        }
-//        catch (URISyntaxException e) {
-//            throw new RuntimeException(e);
-//        }
+
+        importer.doImport(owner.getKey(), export.file());
+    }
+
+    /**
+     * Create an instance of importer in overridable method so that async test can replace it.
+     */
+    protected Importer getImporter(ApiClient client) {
+        return new Importer(client, false);
     }
 
     @Test
@@ -164,7 +154,6 @@ public class ImportSuccessSpecTest {
             .containsExactly("i386,x86_64");
     }
 
-    // TODO refactor
     @Test
     void shouldStoreTheSubscriptionUpstreamEntitlementCert() {
         // we only want the product that maps to a normal pool
@@ -172,9 +161,9 @@ public class ImportSuccessSpecTest {
         // this is to fix a intermittent test failures when trying
         // to bind to a virt_only or other weird pool
         List<PoolDTO> pools = userClient.pools().listPoolsByOwner(owner.getId());
-
         PoolDTO pool = pools.stream()
-            .filter(poolDTO -> "master".equalsIgnoreCase(poolDTO.getSubscriptionSubKey()))
+            .filter(dto -> "master".equalsIgnoreCase(dto.getSubscriptionSubKey()))
+            .filter(dto -> !isVirtOnly(dto))
             .findFirst()
             .orElseThrow();
 
@@ -193,7 +182,6 @@ public class ImportSuccessSpecTest {
             .contains(subCert.get("cert"));
     }
 
-    // TODO fixme
     @Test
     void shouldContainsUpstreamConsumer() throws ApiException {
         OwnerDTO importOwner = admin.owners().getOwner(owner.getKey());
@@ -210,19 +198,12 @@ public class ImportSuccessSpecTest {
         assertThat(upstreamConsumer.getType()).isEqualTo(export.consumer().getType());
     }
 
-
     @Test
     void shouldContainAllDerivedProductData() throws ApiException {
         String prod3 = export.product(Export.ProductId.product3).getId();
         String derivedProductId = export.product(Export.ProductId.derived_product).getId();
         String derivedProvidedProductId = export.product(Export.ProductId.derived_provided_prod).getId();
         List<PoolDTO> pools = userClient.pools().listPoolsByProduct(owner.getId(), prod3);
-//        pool = @cp.list_pools(:owner => @import_owner.id,
-//            :product => @cp_export.products[:product3].id)[0]
-//        pool.should_not be_nil
-//        pool["derivedProductId"].should == @cp_export.products[:derived_product].id
-//        pool["derivedProvidedProducts"].length.should == 1
-//        pool["derivedProvidedProducts"][0]["productId"].should == @cp_export.products[:derived_provided_prod].id
         PoolDTO pool = pools.stream().findFirst().orElseThrow();
 
         assertThat(pool.getDerivedProductId()).isEqualTo(derivedProductId);
@@ -269,8 +250,9 @@ public class ImportSuccessSpecTest {
             .containsOnly(export.cdn().label());
     }
 
-    private static OffsetDateTime toDate(int epochSecond) {
-        return OffsetDateTime.ofInstant(Instant.ofEpochSecond(epochSecond), ZoneOffset.UTC);
+    private boolean isVirtOnly(PoolDTO dto) {
+        return dto.getAttributes().stream()
+            .anyMatch(ProductAttributes.VirtOnly::isKeyOf);
     }
 
     private Set<PoolDTO> filterMappedPools(List<PoolDTO> pools) {
@@ -290,31 +272,6 @@ public class ImportSuccessSpecTest {
             .anyMatch(Boolean::parseBoolean);
 
         return !isUnmapped;
-    }
-
-    private static void importNow(String ownerKey, File export) throws ApiException {
-        admin.owners().importManifest(ownerKey, List.of("DISTRIBUTOR_CONFLICT"), export);
-    }
-//    def import_and_wait
-//    lambda { |owner_key, export_file, param_map={}|
-//        headers = { :correlation_id => @cp_correlation_id }
-//        job = @cp.import_async(owner_key, export_file, param_map, headers)
-//        # Wait a little longer here as import can take a bit of time
-//        wait_for_job(job["id"], 10)
-//        status = @cp.get_job(job["id"], true)
-//        if status["state"] == "FAILED"
-//        raise AsyncImportFailure.new(status)
-//            end
-//        status["resultData"]
-//    }
-//    end
-
-    private void importAsync(String ownerKey, File export) throws ApiException {
-//        new Request(admin.getApiClient())
-//            .addHeader("X-Correlation-ID", CORRELATION_ID)
-//            .;
-        AsyncJobStatusDTO importJob = admin.owners().importManifestAsync(ownerKey, null, export);
-        admin.jobs().waitForJob(importJob);
     }
 
     private void assertAnyNonEmpty(List<PoolDTO> pools,
