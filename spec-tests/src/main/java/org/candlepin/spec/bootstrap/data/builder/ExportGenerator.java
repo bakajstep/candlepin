@@ -167,31 +167,37 @@ public class ExportGenerator implements AutoCloseable {
         consumer = consumerApi.createConsumer(Consumers.random(owner, ConsumerTypes.Candlepin),
             user.getUsername(), owner.getKey(), null, true);
 
-        ProductDTO engProduct = ownerProductApi.createProductByOwner(ownerKey, Products.randomEng());
+        ProductDTO engProduct = ownerProductApi
+            .createProductByOwner(ownerKey, Products.randomEng().name("eng_prod"));
         productIdToProduct.put(engProduct.getId(), engProduct);
 
         Set<BrandingDTO> brandings = Set.of(Branding.build("Branded Eng Product", "OS")
             .productId(engProduct.getId()));
 
-        ProductDTO derivedProvidedProduct = ownerProductApi.createProductByOwner(ownerKey, Products.random());
+        ProductDTO derivedProvidedProduct = ownerProductApi
+            .createProductByOwner(ownerKey, Products.random().name("der_prov_prod"));
         productIdToProduct.put(derivedProvidedProduct.getId(), derivedProvidedProduct);
 
         ProductDTO derivedProduct = ownerProductApi.createProductByOwner(ownerKey, Products
             .withAttributes(ProductAttributes.Cores.withValue("2"))
+            .name("der_prod")
             .providedProducts(Set.of(derivedProvidedProduct)));
         productIdToProduct.put(derivedProduct.getId(), derivedProduct);
 
         ProductDTO product1 = ownerProductApi.createProductByOwner(ownerKey, Products.random()
+            .name("prod1")
             .multiplier(2L)
             .branding(brandings)
             .providedProducts(Set.of(engProduct)));
         productIdToProduct.put(product1.getId(), product1);
 
-        ProductDTO product2 = ownerProductApi.createProductByOwner(ownerKey, Products.random());
+        ProductDTO product2 = ownerProductApi
+            .createProductByOwner(ownerKey, Products.random().name("prod2"));
         productIdToProduct.put(product2.getId(), product2);
 
         ProductDTO virtProduct = ownerProductApi.createProductByOwner(ownerKey, Products
-            .withAttributes(ProductAttributes.VirtOnly.withValue("true")));
+            .withAttributes(ProductAttributes.VirtOnly.withValue("true"))
+            .name("virt_prod"));
         productIdToProduct.put(virtProduct.getId(), virtProduct);
 
         ProductDTO product3 = ownerProductApi.createProductByOwner(ownerKey, Products
@@ -199,13 +205,14 @@ public class ExportGenerator implements AutoCloseable {
                 ProductAttributes.Arch.withValue("x86_64"),
                 ProductAttributes.VirtualLimit.withValue("unlimited")
             )
+            .name("prod3")
             .derivedProduct(derivedProduct));
         productIdToProduct.put(product3.getId(), product3);
 
         ProductDTO productDc = client.ownerProducts().createProductByOwner(ownerKey, Products.withAttributes(
             ProductAttributes.Arch.withValue("x86_64"),
             ProductAttributes.StackingId.withValue("stack-dc")
-        ));
+        ).name("dc_prod"));
 
         ProductDTO productVdc = client.ownerProducts().createProductByOwner(ownerKey, Products
             .withAttributes(
@@ -213,13 +220,15 @@ public class ExportGenerator implements AutoCloseable {
                 ProductAttributes.VirtualLimit.withValue("unlimited"),
                 ProductAttributes.StackingId.withValue("stack-vdc")
             )
+            .name("vdc_prod")
             .derivedProduct(productDc));
 
         productIdToProduct.put(productVdc.getId(), productVdc);
         productIdToProduct.put(productDc.getId(), productDc);
 
         // this is for the update process
-        ProductDTO productUp = ownerProductApi.createProductByOwner(ownerKey, Products.random());
+        ProductDTO productUp = ownerProductApi
+            .createProductByOwner(ownerKey, Products.random().name("up_prod"));
         productIdToProduct.put(productUp.getId(), productUp);
 
         products = Map.ofEntries(

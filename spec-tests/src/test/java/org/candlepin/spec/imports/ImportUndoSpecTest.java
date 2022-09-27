@@ -110,9 +110,9 @@ public class ImportUndoSpecTest {
         this.importer.undoImport(owner);
 
         this.importer.doImport(owner.getKey(), export.file());
-        OwnerDTO asd2 = admin.owners().getOwner(owner.getKey());
+        OwnerDTO updatedOwner = admin.owners().getOwner(owner.getKey());
 
-        assertThat(asd2.getUpstreamConsumer())
+        assertThat(updatedOwner.getUpstreamConsumer())
             .hasFieldOrPropertyWithValue("uuid", export.consumer().getUuid());
         this.importer.undoImport(owner);
         assertOnlyCustomPoolPresent(customPool);
