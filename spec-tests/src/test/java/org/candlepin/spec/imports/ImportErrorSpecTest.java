@@ -1,16 +1,16 @@
-/*
- *  Copyright (c) 2009 - ${YEAR} Red Hat, Inc.
+/**
+ * Copyright (c) 2009 - 2022 Red Hat, Inc.
  *
- *  This software is licensed to you under the GNU General Public License,
- *  version 2 (GPLv2). There is NO WARRANTY for this software, express or
- *  implied, including the implied warranties of MERCHANTABILITY or FITNESS
- *  FOR A PARTICULAR PURPOSE. You should have received a copy of GPLv2
- *  along with this software; if not, see
- *  http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
+ * This software is licensed to you under the GNU General Public License,
+ * version 2 (GPLv2). There is NO WARRANTY for this software, express or
+ * implied, including the implied warranties of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. You should have received a copy of GPLv2
+ * along with this software; if not, see
+ * http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
  *
- *  Red Hat trademarks are not licensed under GPLv2. No permission is
- *  granted to use or replicate Red Hat trademarks that are incorporated
- *  in this software or its documentation.
+ * Red Hat trademarks are not licensed under GPLv2. No permission is
+ * granted to use or replicate Red Hat trademarks that are incorporated
+ * in this software or its documentation.
  */
 
 package org.candlepin.spec.imports;
@@ -25,7 +25,6 @@ import org.candlepin.dto.api.client.v1.OwnerDTO;
 import org.candlepin.dto.api.client.v1.PoolDTO;
 import org.candlepin.dto.api.client.v1.UpstreamConsumerDTO;
 import org.candlepin.dto.api.client.v1.UserDTO;
-import org.candlepin.invoker.client.ApiException;
 import org.candlepin.spec.bootstrap.assertions.OnlyInStandalone;
 import org.candlepin.spec.bootstrap.client.ApiClient;
 import org.candlepin.spec.bootstrap.client.ApiClients;
@@ -59,7 +58,7 @@ public class ImportErrorSpecTest {
     private Importer importer;
 
     @BeforeAll
-    public void beforeAll() throws ApiException {
+    public void beforeAll() {
         admin = ApiClients.admin();
         importer = getImporter(admin);
         owner = admin.owners().createOwner(Owners.random());
@@ -106,12 +105,12 @@ public class ImportErrorSpecTest {
         // older. This tests that this restriction no longer applies.
         OwnerDTO otherOwner = admin.owners().createOwner(Owners.random());
 
-        assertThatNoException()
-            .isThrownBy(() -> this.importer.doImport(otherOwner.getKey(), exportOld.file(), "MANIFEST_SAME", "DISTRIBUTOR_CONFLICT"));
+        assertThatNoException().isThrownBy(() -> this.importer
+            .doImport(otherOwner.getKey(), exportOld.file(), "MANIFEST_SAME", "DISTRIBUTOR_CONFLICT"));
     }
 
     @Test
-    void shouldReturnConflictWhenImportingManifestFromDifferentSubscriptionManagementApplication() throws ApiException {
+    void shouldReturnConflictWhenImportingManifestFromDifferentSubscriptionManagementApplication() {
         OwnerDTO updatedOwner = admin.owners().getOwner(owner.getKey());
         String expected = "Owner has already imported from another subscription management application.";
         Export otherExport = this.importer.generateSimpleExport();
@@ -149,7 +148,7 @@ public class ImportErrorSpecTest {
     }
 
     @Test
-    void shouldReturnBadRequestWhenImportingManifestInUseByAnotherOwner() throws ApiException {
+    void shouldReturnBadRequestWhenImportingManifestInUseByAnotherOwner() {
         String msg = "This subscription management application has already been imported by another owner.";
         OwnerDTO otherOwner = admin.owners().createOwner(Owners.random());
 

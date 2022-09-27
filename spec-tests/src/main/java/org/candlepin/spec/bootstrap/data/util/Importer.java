@@ -1,21 +1,19 @@
-/*
- *  Copyright (c) 2009 - ${YEAR} Red Hat, Inc.
+/**
+ * Copyright (c) 2009 - 2022 Red Hat, Inc.
  *
- *  This software is licensed to you under the GNU General Public License,
- *  version 2 (GPLv2). There is NO WARRANTY for this software, express or
- *  implied, including the implied warranties of MERCHANTABILITY or FITNESS
- *  FOR A PARTICULAR PURPOSE. You should have received a copy of GPLv2
- *  along with this software; if not, see
- *  http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
+ * This software is licensed to you under the GNU General Public License,
+ * version 2 (GPLv2). There is NO WARRANTY for this software, express or
+ * implied, including the implied warranties of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. You should have received a copy of GPLv2
+ * along with this software; if not, see
+ * http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
  *
- *  Red Hat trademarks are not licensed under GPLv2. No permission is
- *  granted to use or replicate Red Hat trademarks that are incorporated
- *  in this software or its documentation.
+ * Red Hat trademarks are not licensed under GPLv2. No permission is
+ * granted to use or replicate Red Hat trademarks that are incorporated
+ * in this software or its documentation.
  */
 
 package org.candlepin.spec.bootstrap.data.util;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 import org.candlepin.dto.api.client.v1.AsyncJobStatusDTO;
 import org.candlepin.dto.api.client.v1.OwnerDTO;
@@ -26,6 +24,7 @@ import org.candlepin.spec.bootstrap.data.builder.ExportGenerator;
 
 import java.io.File;
 import java.util.Arrays;
+import java.util.List;
 
 public final class Importer {
 
@@ -38,10 +37,13 @@ public final class Importer {
     }
 
     public void doImport(String ownerKey, File export) {
-        doImport(ownerKey, export, new String[]{});
+        doImport(ownerKey, export, List.of());
     }
 
     public void doImport(String ownerKey, File export, String... force) {
+        doImport(ownerKey, export, Arrays.asList(force));
+    }
+    public void doImport(String ownerKey, File export, List<String> force) {
         if (this.async) {
             importAsync(ownerKey, export, force);
         }
@@ -67,12 +69,12 @@ public final class Importer {
         }
     }
 
-    private void importSync(String ownerKey, File export, String... force) {
-        client.owners().importManifest(ownerKey, Arrays.asList(force), export);
+    private void importSync(String ownerKey, File export, List<String> force) {
+        client.owners().importManifest(ownerKey, force, export);
     }
 
-    private void importAsync(String ownerKey, File export, String... force) throws ApiException {
-        AsyncJobStatusDTO importJob = client.owners().importManifestAsync(ownerKey, Arrays.asList(force), export);
+    private void importAsync(String ownerKey, File export, List<String> force) throws ApiException {
+        AsyncJobStatusDTO importJob = client.owners().importManifestAsync(ownerKey, force, export);
         AsyncJobStatusDTO result = client.jobs().waitForJob(importJob);
         String resultData = result.getResultData().toString();
         if (resultData.contains("already been imported")) {

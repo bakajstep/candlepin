@@ -1,16 +1,16 @@
-/*
- *  Copyright (c) 2009 - ${YEAR} Red Hat, Inc.
+/**
+ * Copyright (c) 2009 - 2022 Red Hat, Inc.
  *
- *  This software is licensed to you under the GNU General Public License,
- *  version 2 (GPLv2). There is NO WARRANTY for this software, express or
- *  implied, including the implied warranties of MERCHANTABILITY or FITNESS
- *  FOR A PARTICULAR PURPOSE. You should have received a copy of GPLv2
- *  along with this software; if not, see
- *  http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
+ * This software is licensed to you under the GNU General Public License,
+ * version 2 (GPLv2). There is NO WARRANTY for this software, express or
+ * implied, including the implied warranties of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. You should have received a copy of GPLv2
+ * along with this software; if not, see
+ * http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
  *
- *  Red Hat trademarks are not licensed under GPLv2. No permission is
- *  granted to use or replicate Red Hat trademarks that are incorporated
- *  in this software or its documentation.
+ * Red Hat trademarks are not licensed under GPLv2. No permission is
+ * granted to use or replicate Red Hat trademarks that are incorporated
+ * in this software or its documentation.
  */
 
 package org.candlepin.spec.imports;
@@ -29,7 +29,6 @@ import org.candlepin.dto.api.client.v1.ProvidedProductDTO;
 import org.candlepin.dto.api.client.v1.SubscriptionDTO;
 import org.candlepin.dto.api.client.v1.UpstreamConsumerDTO;
 import org.candlepin.dto.api.client.v1.UserDTO;
-import org.candlepin.invoker.client.ApiException;
 import org.candlepin.spec.bootstrap.assertions.OnlyInStandalone;
 import org.candlepin.spec.bootstrap.client.ApiClient;
 import org.candlepin.spec.bootstrap.client.ApiClients;
@@ -63,22 +62,20 @@ public class ImportSuccessSpecTest {
 
     private ApiClient admin;
     private OwnerDTO owner;
-    private UserDTO user;
     private ApiClient userClient;
     private ConsumerDTO consumer;
     private Export export;
-    private Importer importer;
 
     @BeforeAll
-    public void beforeAll() throws ApiException {
+    public void beforeAll() {
         admin = ApiClients.admin();
-        importer = getImporter(admin);
-        export = importer.generateFullExport();
         owner = admin.owners().createOwner(Owners.random());
-        user = UserUtil.createUser(admin, owner);
+        UserDTO user = UserUtil.createUser(admin, owner);
         userClient = ApiClients.trustedUser(user.getUsername());
         consumer = userClient.consumers().createConsumer(Consumers.random(owner));
 
+        Importer importer = getImporter(admin);
+        export = importer.generateFullExport();
         importer.doImport(owner.getKey(), export.file());
     }
 
@@ -90,7 +87,7 @@ public class ImportSuccessSpecTest {
     }
 
     @Test
-    void shouldCreatePools() throws ApiException {
+    void shouldCreatePools() {
         List<PoolDTO> pools = userClient.pools().listPoolsByOwner(owner.getId());
         assertThat(pools).hasSize(8);
 
@@ -99,7 +96,7 @@ public class ImportSuccessSpecTest {
     }
 
     @Test
-    void shouldIgnoreMultiplierForPoolQuantity() throws ApiException {
+    void shouldIgnoreMultiplierForPoolQuantity() {
         List<PoolDTO> pools = userClient.pools().listPoolsByOwner(owner.getId());
         assertThat(pools).hasSize(8);
 
@@ -111,7 +108,7 @@ public class ImportSuccessSpecTest {
     }
 
     @Test
-    void shouldModifyTheOwnerToReferenceUpstreamConsumer() throws ApiException {
+    void shouldModifyTheOwnerToReferenceUpstreamConsumer() {
         OwnerDTO updatedOwner = userClient.owners().getOwner(owner.getKey());
         List<PoolDTO> pools = userClient.pools().listPoolsByOwner(owner.getId());
         assertThat(pools).hasSize(8);
@@ -120,7 +117,7 @@ public class ImportSuccessSpecTest {
     }
 
     @Test
-    void shouldPopulateOriginInfoOfTheImportRecord() throws ApiException {
+    void shouldPopulateOriginInfoOfTheImportRecord() {
         List<ImportRecordDTO> imports = userClient.owners().getImports(owner.getKey());
 
         for (ImportRecordDTO anImport : imports) {
@@ -136,7 +133,7 @@ public class ImportSuccessSpecTest {
     }
 
     @Test
-    void shouldCreateSuccessRecordOfTheImport() throws ApiException {
+    void shouldCreateSuccessRecordOfTheImport() {
         List<ImportRecordDTO> imports = userClient.owners().getImports(owner.getKey());
 
         assertThat(imports)
@@ -145,7 +142,7 @@ public class ImportSuccessSpecTest {
     }
 
     @Test
-    void shouldImportArchContentCorrectly() throws ApiException {
+    void shouldImportArchContentCorrectly() {
         List<ContentDTO> ownerContent = userClient.ownerContent().listOwnerContent(owner.getKey());
 
         assertThat(ownerContent)
@@ -183,7 +180,7 @@ public class ImportSuccessSpecTest {
     }
 
     @Test
-    void shouldContainsUpstreamConsumer() throws ApiException {
+    void shouldContainsUpstreamConsumer() {
         OwnerDTO importOwner = admin.owners().getOwner(owner.getKey());
         UpstreamConsumerDTO upstreamConsumer = importOwner.getUpstreamConsumer();
 
@@ -199,7 +196,7 @@ public class ImportSuccessSpecTest {
     }
 
     @Test
-    void shouldContainAllDerivedProductData() throws ApiException {
+    void shouldContainAllDerivedProductData() {
         String prod3 = export.product(Export.ProductId.product3).getId();
         String derivedProductId = export.product(Export.ProductId.derived_product).getId();
         String derivedProvidedProductId = export.product(Export.ProductId.derived_provided_prod).getId();
@@ -214,7 +211,7 @@ public class ImportSuccessSpecTest {
     }
 
     @Test
-    void shouldContainBrandingInfo() throws ApiException {
+    void shouldContainBrandingInfo() {
         String productId = export.product(Export.ProductId.product1).getId();
         String engProductId = export.product(Export.ProductId.eng_product).getId();
         List<PoolDTO> pools = userClient.pools().listPoolsByProduct(owner.getId(), productId);
@@ -230,7 +227,7 @@ public class ImportSuccessSpecTest {
     }
 
     @Test
-    void shouldNotContainBrandingInfo() throws ApiException {
+    void shouldNotContainBrandingInfo() {
         String productId = export.product(Export.ProductId.product2).getId();
         List<PoolDTO> pools = userClient.pools().listPoolsByProduct(owner.getId(), productId);
 
@@ -241,7 +238,7 @@ public class ImportSuccessSpecTest {
 
 
     @Test
-    void shouldPutTheCdnFromTheManifestIntoTheCreatedSubscriptions() throws ApiException {
+    void shouldPutTheCdnFromTheManifestIntoTheCreatedSubscriptions() {
         List<SubscriptionDTO> subscriptions = admin.owners().getOwnerSubscriptions(owner.getKey());
 
         assertThat(subscriptions)

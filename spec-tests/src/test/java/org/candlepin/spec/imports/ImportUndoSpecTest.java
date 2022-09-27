@@ -1,30 +1,28 @@
-/*
- *  Copyright (c) 2009 - ${YEAR} Red Hat, Inc.
+/**
+ * Copyright (c) 2009 - 2022 Red Hat, Inc.
  *
- *  This software is licensed to you under the GNU General Public License,
- *  version 2 (GPLv2). There is NO WARRANTY for this software, express or
- *  implied, including the implied warranties of MERCHANTABILITY or FITNESS
- *  FOR A PARTICULAR PURPOSE. You should have received a copy of GPLv2
- *  along with this software; if not, see
- *  http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
+ * This software is licensed to you under the GNU General Public License,
+ * version 2 (GPLv2). There is NO WARRANTY for this software, express or
+ * implied, including the implied warranties of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. You should have received a copy of GPLv2
+ * along with this software; if not, see
+ * http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
  *
- *  Red Hat trademarks are not licensed under GPLv2. No permission is
- *  granted to use or replicate Red Hat trademarks that are incorporated
- *  in this software or its documentation.
+ * Red Hat trademarks are not licensed under GPLv2. No permission is
+ * granted to use or replicate Red Hat trademarks that are incorporated
+ * in this software or its documentation.
  */
 
 package org.candlepin.spec.imports;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.candlepin.dto.api.client.v1.ImportRecordDTO;
 import org.candlepin.dto.api.client.v1.OwnerDTO;
 import org.candlepin.dto.api.client.v1.PoolDTO;
 import org.candlepin.dto.api.client.v1.ProductDTO;
 import org.candlepin.dto.api.client.v1.UserDTO;
-import org.candlepin.invoker.client.ApiException;
 import org.candlepin.spec.bootstrap.assertions.OnlyInStandalone;
 import org.candlepin.spec.bootstrap.client.ApiClient;
 import org.candlepin.spec.bootstrap.client.ApiClients;
@@ -62,7 +60,7 @@ public class ImportUndoSpecTest {
     private Importer importer;
 
     @BeforeAll
-    public void beforeAll() throws ApiException {
+    public void beforeAll() {
         admin = ApiClients.admin();
         importer = getImporter(admin);
         owner = admin.owners().createOwner(Owners.random());
@@ -82,7 +80,7 @@ public class ImportUndoSpecTest {
     }
 
     @Test
-    void shouldUnlinkUpstreamConsumer() throws ApiException {
+    void shouldUnlinkUpstreamConsumer() {
         this.importer.doImport(owner.getKey(), export.file());
         this.importer.undoImport(owner);
 
@@ -93,7 +91,7 @@ public class ImportUndoSpecTest {
     }
 
     @Test
-    void shouldCreateADeleteRecordOnADeletedImport() throws ApiException {
+    void shouldCreateADeleteRecordOnADeletedImport() {
         this.importer.doImport(owner.getKey(), export.file());
         this.importer.undoImport(owner);
 
@@ -107,7 +105,7 @@ public class ImportUndoSpecTest {
     }
 
     @Test
-    void shouldBeAbleToReimportWithoutError() throws ApiException {
+    void shouldBeAbleToReimportWithoutError() {
         this.importer.doImport(owner.getKey(), export.file());
         this.importer.undoImport(owner);
 
@@ -121,7 +119,7 @@ public class ImportUndoSpecTest {
     }
 
     @Test
-    void shouldAllowAnotherOrgToImportTheSameManifest() throws ApiException {
+    void shouldAllowAnotherOrgToImportTheSameManifest() {
         this.importer.doImport(owner.getKey(), export.file());
         this.importer.undoImport(owner);
         OwnerDTO otherOrg = admin.owners().createOwner(Owners.random());
@@ -132,7 +130,7 @@ public class ImportUndoSpecTest {
         assertOnlyCustomPoolPresent(customPool);
     }
 
-    private void assertOnlyCustomPoolPresent(PoolDTO customPool) throws ApiException {
+    private void assertOnlyCustomPoolPresent(PoolDTO customPool) {
         List<PoolDTO> pools = userClient.pools().listPoolsByOwner(owner.getId());
         assertThat(pools)
             .hasSize(1)

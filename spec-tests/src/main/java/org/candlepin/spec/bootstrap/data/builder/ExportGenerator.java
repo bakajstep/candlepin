@@ -1,24 +1,19 @@
-/*
- *  Copyright (c) 2009 - ${YEAR} Red Hat, Inc.
+/**
+ * Copyright (c) 2009 - 2022 Red Hat, Inc.
  *
- *  This software is licensed to you under the GNU General Public License,
- *  version 2 (GPLv2). There is NO WARRANTY for this software, express or
- *  implied, including the implied warranties of MERCHANTABILITY or FITNESS
- *  FOR A PARTICULAR PURPOSE. You should have received a copy of GPLv2
- *  along with this software; if not, see
- *  http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
+ * This software is licensed to you under the GNU General Public License,
+ * version 2 (GPLv2). There is NO WARRANTY for this software, express or
+ * implied, including the implied warranties of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. You should have received a copy of GPLv2
+ * along with this software; if not, see
+ * http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
  *
- *  Red Hat trademarks are not licensed under GPLv2. No permission is
- *  granted to use or replicate Red Hat trademarks that are incorporated
- *  in this software or its documentation.
+ * Red Hat trademarks are not licensed under GPLv2. No permission is
+ * granted to use or replicate Red Hat trademarks that are incorporated
+ * in this software or its documentation.
  */
-package org.candlepin.spec.bootstrap.data.builder;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+package org.candlepin.spec.bootstrap.data.builder;
 
 import org.candlepin.dto.api.client.v1.BrandingDTO;
 import org.candlepin.dto.api.client.v1.CdnDTO;
@@ -54,17 +49,6 @@ import java.util.stream.Collectors;
 import java.util.zip.ZipFile;
 
 public class ExportGenerator implements AutoCloseable {
-    private static final String RECORD_CLEANER_JOB_KEY = "ImportRecordCleanerJob";
-    private static final String UNDO_IMPORTS_JOB_KEY = "UndoImportsJob";
-    // The following are directory location paths within a manifest
-    private static final String EXPORT_PATH = "export/";
-    private static final String PRODUCTS_PATH = "export/products/";
-    private static final String ENTITILEMENTS_PATH = "export/entitlements/";
-    private static final String ENTITILEMENT_CERTIFICATES_PATH = "export/entitlement_certificates/";
-    private static final String DISTRIBUTOR_VERSION_PATH = "export/distributor_version/";
-    private static final String CONSUMER_TYPE_PATH = "export/consumer_types/";
-    private static final String CDN_PATH = "export/content_delivery_network/";
-    private static final String RULES_PATH = "export/rules2/";
 
     private ApiClient client;
     private OwnerClient ownerApi;
@@ -172,6 +156,7 @@ public class ExportGenerator implements AutoCloseable {
         initialize();
     }
 
+    @SuppressWarnings("indentation")
     private void initialize() {
         owner = ownerApi.createOwner(Owners.random());
         String ownerKey = owner.getKey();
@@ -274,34 +259,14 @@ public class ExportGenerator implements AutoCloseable {
         consumerApi.updateConsumer(consumer.getUuid(), consumer);
         consumer = consumerApi.getConsumer(consumer.getUuid());
 
-        bindPoolsToConsumer(consumerApi, consumer.getUuid(), poolIdToPool.values().stream().map(PoolDTO::getId).collect(Collectors.toSet()));
+        Set<String> poolIds = poolIdToPool.values().stream()
+            .map(PoolDTO::getId)
+            .collect(Collectors.toSet());
+        bindPoolsToConsumer(consumerApi, consumer.getUuid(), poolIds);
 //        consumerApi.bindPool(consumer.getUuid(), poolIdToPool.get(product3.getId()).getId(), 1);
 
         CdnDTO cdn2 = cdnApi.createCdn(Cdns.random());
         cdn = Cdns.toExport(cdn2);
-    }
-
-    public ExportGenerator update() {
-        String ownerKey = owner.getKey();
-        ProductDTO product2 = ownerProductApi.createProductByOwner(ownerKey, Products.random());
-
-        products = Map.ofEntries(
-            Map.entry(Export.ProductId.product1, products.get(Export.ProductId.product1)),
-            Map.entry(Export.ProductId.product2, product2)
-        );
-
-        ContentDTO content1 = ownerContentApi.createContent(ownerKey, Content.random()
-            .metadataExpire(6000L)
-            .requiredTags("TAG1,TAG2"));
-
-        ownerProductApi.addContent(ownerKey, product2.getId(), content1.getId(), true);
-
-        List<ProductDTO> poolProducts = List.of(product2);
-        Map<String, PoolDTO> poolIdToPool = createPoolsForProducts(ownerKey, poolProducts);
-
-        bindPoolsToConsumer(consumerApi, consumer.getUuid(), poolIdToPool.values().stream().map(PoolDTO::getId).collect(Collectors.toSet()));
-
-        return this;
     }
 
     private File createExport(String consumerUuid, ExportCdn cdn) {
