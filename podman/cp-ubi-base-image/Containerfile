@@ -1,0 +1,86 @@
+### Base image information
+# https://catalog.redhat.com/software/containers/ubi8/openjdk-11-runtime/606dcb7d0f75e8ece4deec1f
+
+### OS information
+# NAME="Red Hat Enterprise Linux"
+# VERSION="8.6 (Ootpa)"
+# ID="rhel"
+# ID_LIKE="fedora"
+# VERSION_ID="8.6"
+# PLATFORM_ID="platform:el8"
+# PRETTY_NAME="Red Hat Enterprise Linux 8.6 (Ootpa)"
+
+FROM registry.redhat.io/ubi8/openjdk-11-runtime:1.14-5.1665493375
+
+ENV LANG en_US.UTF-8
+
+USER root
+
+# Update and install dependencies
+RUN microdnf update && \
+    microdnf update ca-certificates && \
+    microdnf module enable pki-core; \
+    microdnf install jss && \
+    microdnf install tomcatjss && \
+    microdnf install wget && \
+    microdnf install initscripts && \
+    microdnf install openssl && \
+    microdnf install tar && \
+    microdnf clean all
+
+# Tomcat Setup
+RUN wget https://dlcdn.apache.org/tomcat/tomcat-8/v8.5.83/bin/apache-tomcat-8.5.83.tar.gz; \
+    tar xzf apache-tomcat-8.5.83.tar.gz; \
+    mkdir /opt/tomcat; \
+    mv apache-tomcat-8.5.83/* /opt/tomcat/; \
+    rm apache-tomcat-8.5.83.tar.gz; \
+    rm -R apache-tomcat-8.5.83; \
+    mkdir -p /etc/candlepin/certs; \
+    chown -R tomcat.tomcat /opt/tomcat; \
+    chown -R tomcat.tomcat /var/log/; \
+    chown -R tomcat.tomcat /var/lib/; \
+    chown -R tomcat.tomcat /etc/candlepin/; \
+    chmod -R 775 /opt/tomcat/webapps; \
+    chmod -R 775 /var/log/;
+
+# Candlepin install
+RUN mkdir /opt/tomcat/webapps/candlepin
+WORKDIR /opt/tomcat/webapps/candlepin
+RUN wget --no-check-certificate https://nexus.corp.redhat.com/repository/teamnado-releases/org/candlepin/candlepin/4.2.10/candlepin-4.2.10.war -P /var/tmp/candlepin; \
+    jar xf $(find /var/tmp/candlepin -name 'candlepin*.war' | head -n 1); \
+    rm -R /var/tmp/candlepin; \
+    mv ./META-INF/context_tomcat8.xml ./META-INF/context.xml; \
+    mkdir -p /etc/candlepin/certs;
+
+# Add the default Candlepin conf file
+COPY candlepin.conf /etc/candlepin
+
+# Generate certificates and keys
+WORKDIR /etc/candlepin/certs
+# TODO: We can just create and populate the req.cnf file from the Containerfile instead of maintaining another file.
+COPY req.cnf .
+RUN openssl rand -out noise.bin 4096; \
+    openssl rand -base64 -out cppw.txt 24; \
+    openssl genpkey -out candlepin-ca.key -pass "file:cppw.txt" -algorithm rsa -pkeyopt rsa_keygen_bits:4096; \
+    openssl pkey -pubout -in candlepin-ca.key -out candlepin-pub.key; \
+    chmod a+r .; \
+    openssl req -new -x509 -days 365 -key candlepin-ca.key -out candlepin-ca.crt -subj "/CN=demo/C=US/L=Raleigh/" -config req.cnf; \
+    update-ca-trust; \
+    chmod -R 775 /etc/candlepin/; \
+    chmod -R 775 /var/lib/
+
+# Add the Tomcat server.xml
+# TODO: We could just create the server.xml file from the Containerfile
+COPY server.xml /opt/tomcat/conf/
+
+WORKDIR /opt/tomcat/bin
+
+USER tomcat
+
+ENV JAVA_HOME=/usr/lib/jvm/jre-11-openjdk
+ENV JRE_HOME=/usr/lib/jvm/jre-11-openjdk
+
+# Expose ports for tomcat, candlepin, postgres and mariadb
+EXPOSE 8080 8443 5432 3306
+
+CMD ["/opt/tomcat/bin/catalina.sh", "run"]

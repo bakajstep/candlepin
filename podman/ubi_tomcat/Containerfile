@@ -1,0 +1,69 @@
+### Base image information
+# https://catalog.redhat.com/software/containers/jboss-webserver-3/webserver31-tomcat8-openshift/595de16e2cec765d97f21470?container-tabs=overview
+
+### OS information
+# NAME="Red Hat Enterprise Linux Server"
+# VERSION="7.9 (Maipo)"
+# ID="rhel"
+# ID_LIKE="fedora"
+# VARIANT="Server"
+# VARIANT_ID="server"
+# VERSION_ID="7.9"
+# PRETTY_NAME="Red Hat Enterprise Linux Server 7.9 (Maipo)"
+# ANSI_COLOR="0;31"
+# CPE_NAME="cpe:/o:redhat:enterprise_linux:7.9:GA:server"
+
+FROM registry.redhat.io/jboss-webserver-3/webserver31-tomcat8-openshift:1.4-44
+
+ENV LANG en_US.UTF-8
+
+USER root
+
+# Cleanup packages that are not needed in base image
+RUN yum remove -y java-1.8.0-openjdk-devel && \
+    yum remove -y java-1.8.0-openjdk-headless; yum clean all
+
+# Install dependencies
+RUN yum -y update && \
+    yum update -y ca-certificates && \
+    yum install -y jss && \
+    yum install -y tomcatjss && \
+    yum install -y wget && \
+    yum install -y java-11-openjdk && \
+    yum install -y initscripts && \
+    yum install -y openssl && \
+    yum install -y javapackages-tools && \
+    yum install -y hostname && \
+    yum install -y postgresql; yum clean all
+
+# Tomcat Setup
+RUN mkdir /var/log/tomcat6; \
+    mkdir /etc/tomcat6; \
+    mkdir /var/lib/tomcat6; \
+    mkdir /var/cache/tomcat6; \
+    rm /opt/webserver/conf/server.xml
+
+COPY server.xml /opt/webserver/conf/
+
+# Candlepin install
+COPY candlepin-4.2.9-1.el8sat.noarch.rpm .
+RUN rpm -i candlepin-4.2.9-1.el8sat.noarch.rpm; \
+    rm ./candlepin-4.2.9-1.el8sat.noarch.rpm; \
+    cp -r /var/lib/tomcat/webapps/candlepin /opt/webserver/webapps
+
+# For demo, update scripts and add new entrypoint script.
+# We should probably update these scripts and they will be installed with the rpm.
+WORKDIR /usr/share/candlepin/
+COPY cpsetup .
+COPY cpdb .
+
+COPY entrypoint.sh .
+RUN chmod +x entrypoint.sh
+
+ENV JAVA_HOME=/usr/lib/jvm/jre-11-openjdk
+ENV JRE_HOME=/usr/lib/jvm/jre-11-openjdk
+
+# Expose ports for tomcat, candlepin, postgres and mariadb
+EXPOSE 8080 8443 5432 3306
+
+CMD ["/usr/share/candlepin/entrypoint.sh"]
