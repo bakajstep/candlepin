@@ -36,6 +36,8 @@ RUN wget https://dlcdn.apache.org/tomcat/tomcat-8/v8.5.83/bin/apache-tomcat-8.5.
     rm apache-tomcat-8.5.83.tar.gz; \
     rm -R apache-tomcat-8.5.83; \
     mkdir -p /etc/candlepin/certs; \
+    usermod -u 10001 tomcat; \
+    groupmod -g 10000 tomcat; \
     chown -R tomcat.tomcat /opt/tomcat; \
     chown -R tomcat.tomcat /var/log/; \
     chown -R tomcat.tomcat /var/lib/; \
