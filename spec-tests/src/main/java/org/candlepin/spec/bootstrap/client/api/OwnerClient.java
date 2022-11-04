@@ -220,4 +220,9 @@ public class OwnerClient extends OwnerApi {
     public AsyncJobStatusDTO importManifestAsync(String ownerKey, File input) throws ApiException {
         return super.importManifestAsync(ownerKey, List.of(), input);
     }
+
+    public AsyncJobStatusDTO refreshPools(String ownerKey) throws ApiException {
+        return super.refreshPools(ownerKey, false);
+    }
+
 }

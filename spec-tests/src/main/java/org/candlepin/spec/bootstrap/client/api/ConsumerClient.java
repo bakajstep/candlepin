@@ -108,4 +108,8 @@ public class ConsumerClient extends ConsumerApi {
         return super.listEntitlements(consumerUuid, null, false, null, null, null, null, null);
     }
 
+    public List<EntitlementDTO> listEntitlements(String consumerUuid, String productId) {
+        return super.listEntitlements(consumerUuid, productId, false, null, null, null, null, null);
+    }
+
 }

@@ -21,6 +21,7 @@ public enum ProductAttributes {
     Addons("addons"),
     Arch("arch"),
     Cores("cores"),
+    GuestLimit("guest_limit"),
     HostLimited("host_limited"),
     InstanceMultiplier("instance_multiplier"),
     ManagementEnabled("management_enabled"),

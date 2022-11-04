@@ -18,6 +18,7 @@ package org.candlepin.spec.bootstrap.data.builder;
 import org.candlepin.dto.api.client.v1.ConsumerDTO;
 import org.candlepin.dto.api.client.v1.NestedOwnerDTO;
 import org.candlepin.dto.api.client.v1.OwnerDTO;
+import org.candlepin.dto.api.client.v1.ReleaseVerDTO;
 import org.candlepin.spec.bootstrap.data.util.StringUtil;
 
 /**
@@ -46,6 +47,7 @@ public final class Consumers {
             .name(StringUtil.random("test_consumer-", 8, StringUtil.CHARSET_NUMERIC_HEX))
             .owner(owner)
             .type(ConsumerTypes.System.value())
+            .releaseVer(new ReleaseVerDTO().releaseVer("1"))
             .putFactsItem("system.certificate_version", "3.3");
     }
 

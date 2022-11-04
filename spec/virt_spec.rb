@@ -217,6 +217,7 @@ describe 'Standalone Virt-Limit Subscriptions', :type => :virt do
     })
 
     # Guest 1 should be able to use the pool:
+    puts @guest_pool
     @guest1_client.consume_pool(@guest_pool['id'], {:quantity => 1})
     @guest1_client.list_entitlements.length.should == 1
 
@@ -493,7 +494,7 @@ describe 'Standalone Virt-Limit Subscriptions', :type => :virt do
   it 'should not autobind virt-limiting products that do not cover guests' do
     @very_virt_limit_product = create_product(nil, nil, {
       :attributes => {
-        :guest_limit => 1
+        :guest_limit => 2
       }
     })
     @virt_limit_sub = @cp.create_pool(@owner['key'], @very_virt_limit_product.id, {:quantity => 10})
