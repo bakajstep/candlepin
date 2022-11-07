@@ -1,7 +1,0 @@
-FROM localhost/candlepin-ubi-base:0.0.1-snapshot
-
-# Add Tomcat server.xml configurations and certificates and keystores.
-COPY /test/server.xml /opt/tomcat/conf/
-COPY /test/candlepin-ca-pub.key /test/candlepin-ca.crt /test/candlepin-ca.key /test/tc_keystore.jks /etc/candlepin/certs/
-
-CMD ["/opt/tomcat/bin/catalina.sh", "run"]

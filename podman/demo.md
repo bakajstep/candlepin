@@ -3,7 +3,6 @@
 ## Directories
 - **cp-ubi-base-image**: a Candlepin image build that uses the UBI 8 OpenJDK JRE base container and Candlepin war file.
 - **ubi_tomcat**: a Candlepin image build that uses the JBoss Web Server 3.1 - Tomcat 8 base image and Candlepin rpm.
-- **production-image**: a Candlepin image to demonstrate how a consumer might use our Candlepin image as their base image and use their own certificate/configurations to run their Candlepin container. 
 
 The following are the steps for building and running a demo Candlepin production image in a pod that includes a database container.
 
