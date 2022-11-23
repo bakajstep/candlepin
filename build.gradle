@@ -477,7 +477,8 @@ publishing {
             pom.withXml {
                 PomToolkit.generatePomDependencies(
                     asNode(),
-                    configurations.annotationProcessor.dependencies,
+//                    configurations.annotationProcessor.dependencies,
+                        null,
                     configurations.compileOnly.dependencies,
                     configurations.implementation.dependencies,
                     configurations.providedCompile.dependencies,
