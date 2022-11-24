@@ -523,6 +523,13 @@
           <debug>true</debug>
           <debuglevel>lines,vars,source</debuglevel>
           <compilerArgument>-proc:none</compilerArgument>
+          <annotationProcessorPaths>
+            <annotationProcessorPath>
+              <groupId>org.hibernate</groupId>
+              <artifactId>hibernate-jpamodelgen</artifactId>
+              <version>5.6.12.Final</version>
+            </annotationProcessorPath>
+          </annotationProcessorPaths>
         </configuration>
       </plugin>
       <plugin>
