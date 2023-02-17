@@ -23,18 +23,76 @@ on:
       - master
 
 jobs:
-  checkstyle:
+  check_bugzilla_reference:
     runs-on: ubuntu-latest
     container:
-      image: fedora:latest
+      image: quay.io/ojanus/candlepin-jvm11
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
-#      - uses: actions/setup-java@v3
-#        with:
-#          distribution: temurin
-#          java-version: 17
-#      - name: Setup Gradle
-#        uses: gradle/gradle-build-action@v2
+      - name: Run build with Gradle Wrapper
+#        run: |
+#          PR_NUMBER=$(echo $GITHUB_REF | awk 'BEGIN { FS = "/" } ; { print $3 }')
+#          python jenkins/check_pr_branch.py $PR_NUMBER
+        run: echo "Running translation validation"
+
+  checkstyle:
+    runs-on: ubuntu-latest
+    container:
+      image: quay.io/ojanus/candlepin-jvm11
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
       - name: Run build with Gradle Wrapper
         run: ./gradlew checkstyle
+
+  validate_translations:
+    runs-on: ubuntu-latest
+    container:
+      image: quay.io/ojanus/candlepin-jvm11
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: Run validate translation task
+        run: ./gradlew validate_translation
+
+  unit_tests:
+    runs-on: ubuntu-latest
+    container:
+      image: quay.io/ojanus/candlepin-jvm11
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: Run unit tests with test coverage
+        run: ./gradlew test coverage
+      - name: Stash test reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-reports
+          # TODO limit to only necessary files
+          path: build/*
+
+  sonar_analysis:
+    needs: unit_tests
+    runs-on: ubuntu-latest
+    container:
+      image: quay.io/ojanus/candlepin-jvm11
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: Unstash test reports
+        uses: actions/download-artifact@v3
+        with:
+          name: test-reports
+      - name: Run build with Gradle Wrapper
+        # TODO actually run sonar
+        run: echo "Running sonar"
+
+  spec-tests-postgresql:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: Run spec test
+        # TODO actually run spec test
+        run: echo "Running spec test"
