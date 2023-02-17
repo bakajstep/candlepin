@@ -118,5 +118,3 @@ jobs:
           echo ---Containers up---
       - name: Run spec test
         run: ./gradlew spec
-REGISTRY=quay:
-  io/candlepin:
