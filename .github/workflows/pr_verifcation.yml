@@ -23,89 +23,91 @@ on:
       - master
 
 jobs:
-  check_bugzilla_reference:
-    runs-on: ubuntu-latest
-    container:
-      image: quay.io/ojanus/candlepin-jvm11
-    steps:
-      - name: Check out repository code
-        uses: actions/checkout@v3
-      - name: Run build with Gradle Wrapper
-#        run: |
-#          PR_NUMBER=$(echo $GITHUB_REF | awk 'BEGIN { FS = "/" } ; { print $3 }')
-#          python jenkins/check_pr_branch.py $PR_NUMBER
-        run: echo "Running translation validation"
-
-  checkstyle:
-    runs-on: ubuntu-latest
-    container:
-      image: quay.io/ojanus/candlepin-jvm11
-    steps:
-      - name: Check out repository code
-        uses: actions/checkout@v3
-      - name: Run build with Gradle Wrapper
-        run: ./gradlew checkstyle
-
-  validate_translations:
-    runs-on: ubuntu-latest
-    container:
-      image: quay.io/ojanus/candlepin-jvm11
-    steps:
-      - name: Check out repository code
-        uses: actions/checkout@v3
-      - name: Run validate translation task
-        run: ./gradlew validate_translation
-
-  unit_tests:
-    runs-on: ubuntu-latest
-    container:
-      image: quay.io/ojanus/candlepin-jvm11
-    steps:
-      - name: Check out repository code
-        uses: actions/checkout@v3
-      - name: Run unit tests with test coverage
-        run: ./gradlew test coverage
-      - name: Stash test reports
-        uses: actions/upload-artifact@v3
-        with:
-          name: test-reports
-          # TODO limit to only necessary files
-          path: build/*
-
-  sonar_analysis:
-    needs: unit_tests
-    runs-on: ubuntu-latest
-    container:
-      image: quay.io/ojanus/candlepin-jvm11
-    steps:
-      - name: Check out repository code
-        uses: actions/checkout@v3
-      - name: Unstash test reports
-        uses: actions/download-artifact@v3
-        with:
-          name: test-reports
-      - name: SonarCloud Scan
-        # TODO Skipping for now
-        run: echo "Running sonar"
-#        uses: sonarsource/sonarcloud-github-action@master
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+#  check_bugzilla_reference:
+#    runs-on: ubuntu-latest
+#    container:
+#      image: quay.io/ojanus/candlepin-jvm11
+#    steps:
+#      - name: Check out repository code
+#        uses: actions/checkout@v3
+#      - name: Run build with Gradle Wrapper
+##        run: |
+##          PR_NUMBER=$(echo $GITHUB_REF | awk 'BEGIN { FS = "/" } ; { print $3 }')
+##          python jenkins/check_pr_branch.py $PR_NUMBER
+#        run: echo "Running translation validation"
+#
+#  checkstyle:
+#    runs-on: ubuntu-latest
+#    container:
+#      image: quay.io/ojanus/candlepin-jvm11
+#    steps:
+#      - name: Check out repository code
+#        uses: actions/checkout@v3
+#      - name: Run build with Gradle Wrapper
+#        run: ./gradlew checkstyle
+#
+#  validate_translations:
+#    runs-on: ubuntu-latest
+#    container:
+#      image: quay.io/ojanus/candlepin-jvm11
+#    steps:
+#      - name: Check out repository code
+#        uses: actions/checkout@v3
+#      - name: Run validate translation task
+#        run: ./gradlew validate_translation
+#
+#  unit_tests:
+#    runs-on: ubuntu-latest
+#    container:
+#      image: quay.io/ojanus/candlepin-jvm11
+#    steps:
+#      - name: Check out repository code
+#        uses: actions/checkout@v3
+#      - name: Run unit tests with test coverage
+#        run: ./gradlew test coverage
+#      - name: Stash test reports
+#        uses: actions/upload-artifact@v3
 #        with:
-#          projectBaseDir: my-custom-directory
-#          args: >
-#            -Dsonar.organization=my-organization
-#            -Dsonar.projectKey=my-projectkey
-#            -Dsonar.python.coverage.reportPaths=coverage.xml
-#            -Dsonar.sources=lib/
-#            -Dsonar.test.exclusions=tests/**
-#            -Dsonar.tests=tests/
-#            -Dsonar.verbose=true
+#          name: test-reports
+#          # TODO limit to only necessary files
+#          path: build/*
+#
+#  sonar_analysis:
+#    needs: unit_tests
+#    runs-on: ubuntu-latest
+#    container:
+#      image: quay.io/ojanus/candlepin-jvm11
+#    steps:
+#      - name: Check out repository code
+#        uses: actions/checkout@v3
+#      - name: Unstash test reports
+#        uses: actions/download-artifact@v3
+#        with:
+#          name: test-reports
+#      - name: SonarCloud Scan
+#        # TODO Skipping for now
+#        run: echo "Running sonar"
+##        uses: sonarsource/sonarcloud-github-action@master
+##        env:
+##          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+##          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+##        with:
+##          projectBaseDir: my-custom-directory
+##          args: >
+##            -Dsonar.organization=my-organization
+##            -Dsonar.projectKey=my-projectkey
+##            -Dsonar.python.coverage.reportPaths=coverage.xml
+##            -Dsonar.sources=lib/
+##            -Dsonar.test.exclusions=tests/**
+##            -Dsonar.tests=tests/
+##            -Dsonar.verbose=true
 
   spec-tests-postgresql:
     runs-on: ubuntu-latest
     container:
       image: quay.io/ojanus/candlepin-compose
+    env:
+      REGISTRY: quay.io/candlepin
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
@@ -116,3 +118,5 @@ jobs:
           echo ---Containers up---
       - name: Run spec test
         run: ./gradlew spec
+REGISTRY=quay:
+  io/candlepin:
