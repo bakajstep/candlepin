@@ -1,0 +1,34 @@
+name: Weblate PR verification workflow
+
+on:
+  pull_request:
+    branch:
+      - master
+    paths:
+      - 'po/**'
+
+jobs:
+  validate_translations:
+    runs-on: ubuntu-latest
+    container:
+      image: quay.io/ojanus/candlepin-jvm11
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: Run validate translation task
+        run: ./gradlew validate_translation
+
+      - name: Approve Pull Request
+        uses: juliangruber/approve-pull-request-action@v2.0.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          number: 1
+          repo: candlepin/candlepin
+
+      - name: Merge Pull Request
+        uses: juliangruber/merge-pull-request-action@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          number: 1
+          method: merge
+          repo: candlepin/candlepin
