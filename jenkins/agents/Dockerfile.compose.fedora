@@ -1,7 +1,7 @@
 FROM fedora:latest
 
 RUN dnf -y update \
-    && dnf -y install docker docker-compose git \
+    && dnf -y install docker docker-compose git jss \
 #    && dnf -y remove java-17-openjdk-headless.x86_64 \
     && dnf clean all
 
