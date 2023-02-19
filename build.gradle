@@ -229,7 +229,8 @@ gradleLint {
     // criticalRules = ["unused-dependency"]
 }
 
-tasks.withType(JavaCompile) {
+compileJava.options.encoding = 'UTF-8'
+tasks.withType(JavaCompile).configureEach {
     options.encoding = "UTF-8"
     // options.compilerArgs << "-Xlint:deprecation"
     // options.compilerArgs.addAll(['--release', '8'])
