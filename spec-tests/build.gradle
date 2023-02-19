@@ -48,6 +48,11 @@ test {
     enabled = false
 }
 
+compileJava.options.encoding = 'UTF-8'
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = "UTF-8"
+}
+
 task spec(type: Test) {
     description = 'Run Java based spec tests'
     group = 'Verification'
