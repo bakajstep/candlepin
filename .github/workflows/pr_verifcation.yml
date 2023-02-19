@@ -113,8 +113,8 @@ jobs:
 
   spec-tests-postgresql:
     runs-on: ubuntu-latest
-#    container:
-#      image: quay.io/ojanus/candlepin-compose
+    container:
+      image: quay.io/ojanus/candlepin-compose
     env:
       REGISTRY: quay.io/candlepin
     steps:
