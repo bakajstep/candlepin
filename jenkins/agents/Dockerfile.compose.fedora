@@ -1,0 +1,26 @@
+FROM fedora:latest
+
+RUN dnf -y update \
+    && dnf -y install docker docker-compose git \
+#    && dnf -y remove java-17-openjdk-headless.x86_64 \
+    && dnf clean all
+
+#RUN \
+#  apt-get update && \
+#  pip install -U pip && pip install pipenv
+#
+## Install docker, from docker website
+#RUN apt-get install  -yqq \
+#    apt-transport-https \
+#    ca-certificates \
+#    curl \
+#    gnupg-agent \
+#    software-properties-common
+#RUN wget -qO- https://download.docker.com/linux/debian/gpg | apt-key add - && \
+#    add-apt-repository  "deb [arch=amd64] https://download.docker.com/linux/debian $(lsb_release -cs) stable"
+#RUN apt update -yqq
+#RUN apt-get install -yqq docker-ce docker-ce-cli containerd.io
+#
+## Install docker-compose
+#RUN curl -L "https://github.com/docker/compose/releases/download/1.26.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+#RUN chmod +x /usr/local/bin/docker-compose
