@@ -1,3 +1,9 @@
+#
+# Runs weekly sonar analysis
+#
+# Every Monday at 1 AM runs unit tests with test coverage and runs sonar analysis over the results
+#
+
 name: Weekly sonar analysis workflow
 
 on:

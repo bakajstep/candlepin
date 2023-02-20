@@ -1,3 +1,9 @@
+#
+# Draft weblate pipeline
+#
+# Verifies translations and if they pass the PR gets approved and merged
+#
+
 name: Weblate PR verification workflow
 
 on:
