@@ -7,7 +7,7 @@ set -ve
 
 source /root/dockerlib.sh
 
-export JAVA_VERSION=17
+export JAVA_VERSION=11
 export JAVA_HOME=/usr/lib/jvm/java-$JAVA_VERSION
 
 # Install & configure dev environment
@@ -20,6 +20,7 @@ PACKAGES=(
     git
     hostname
     java-$JAVA_VERSION-openjdk-devel
+    java-17-openjdk-devel
     jss
     mariadb
     openssl

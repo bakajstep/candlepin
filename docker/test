@@ -41,7 +41,11 @@ while getopts ":c:mn:o:plde" opt; do
        sudo chcon -Rt svirt_sandbox_file_t $DIR/mysql.cnf;
        sudo chown 999:999 $DIR/mysql.cnf;;
     n) PROJ_NAME=$OPTARG;;
-    o) OPERATING_SYSTEM=$OPTARG;;
+    o) OPERATING_SYSTEM=$OPTARG
+      if [ "${OPERATING_SYSTEM}" == 'cs8' ]; then
+        TEST_CMD="${TEST_CMD} -j 17"
+      fi
+      ;;
     p) DB="postgres:12";;
     l) USE_CACHE="1";;
     d) DETACHED="1";;
