@@ -91,6 +91,7 @@ class PomToolkit implements Plugin<Project> {
         createGettextMavenPlugin(pluginsNode)
         createMavenResourcePlugin(pluginsNode)
         createMavenCompilerPlugin(pluginsNode, annotationProcessorDependencies)
+        createMavenWarPlugin(pluginsNode)
         createMavenSurefirePlugin(pluginsNode)
         createMavenAssemblyPlugin(pluginsNode)
         createMavenCleanPlugin(pluginsNode)
@@ -241,7 +242,7 @@ class PomToolkit implements Plugin<Project> {
     private static void createMavenCompilerPlugin(Node parentNode, DefaultDependencySet annotationProcessorDependencies) {
         def plugin = parentNode.appendNode('plugin')
         plugin.appendNode('artifactId', 'maven-compiler-plugin')
-        plugin.appendNode('version', '3.8.0')
+        plugin.appendNode('version', '3.10.1')
         def configurationsNode = plugin.appendNode('configuration')
         configurationsNode.appendNode('source', '17')
         configurationsNode.appendNode('target', '17')
@@ -253,6 +254,13 @@ class PomToolkit implements Plugin<Project> {
         annotationProcessorDependencies.each { dependency ->
             createAnnotationProcessorPath(annotationProcessors, dependency.group, dependency.name, dependency.version)
         }
+    }
+
+    private static void createMavenWarPlugin(Node parentNode) {
+        def plugin = parentNode.appendNode('plugin')
+        plugin.appendNode('groupId', 'org.apache.maven.plugins')
+        plugin.appendNode('artifactId', 'maven-war-plugin')
+        plugin.appendNode('version', '3.3.2')
     }
 
     private static void createAnnotationProcessorPath(Node parent, String groupId, String artifactId, String version) {
