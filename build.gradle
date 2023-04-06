@@ -1,4 +1,5 @@
 import groovy.text.GStringTemplateEngine
+import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
 import org.yaml.snakeyaml.Yaml
 
 plugins {
@@ -12,6 +13,8 @@ plugins {
     id "org.openapi.generator"
     id "java"
     id "war"
+    id "distribution"
+    id "maven-publish"
     id "org.owasp.dependencycheck"
     id "jacoco"
     id "org.sonarqube"
@@ -71,16 +74,6 @@ ext {
     hostedtest = "true".equals(project.findProperty("hostedtest"))
     async_scheduler_enabled = !project.findProperty("async_scheduler_enabled") ||
         "true".equals(project.findProperty("async_scheduler_enabled"))
-
-    generatedMetamodels = "${buildDir}/generated/api/src/gen/java"
-}
-
-ext {
-    // Denotes BOM versions
-    resteasy_version = "4.4.3.Final"
-    jackson_version = "2.13.2"
-    guice_version = "5.1.0"
-    junit_version = "5.8.2"
 }
 
 dependencies {
@@ -208,7 +201,7 @@ compileJava.dependsOn(processResources)
 
 // Add the openapi generated classes to the main java source sets to compile in the generated interfaces
 sourceSets {
-    main.java.srcDir generatedMetamodels
+    main.java.srcDir "${buildDir}/generated/api/src/gen/java"
 }
 
 java {
@@ -259,7 +252,7 @@ openApiValidate {
     inputSpec = api_spec_path
 }
 
-task generateApiDocs(type: org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
+task generateApiDocs(type: GenerateTask) {
     generatorName = "html"
     inputSpec = api_spec_path
     outputDir = "$buildDir/docs"
@@ -270,7 +263,7 @@ task generateApiDocs(type: org.openapitools.generator.gradle.plugin.tasks.Genera
     withXml = false
 }
 
-task generateOpenApiJson(type: org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
+task generateOpenApiJson(type: GenerateTask) {
     generatorName = "openapi"
     inputSpec = api_spec_path
     outputDir = "$buildDir/generated/json"
@@ -435,5 +428,42 @@ war {
     from("$buildDir/generated/json") {
         include "openapi.json"
         into("WEB-INF/classes")
+    }
+}
+
+distributions {
+    main {
+        distributionBaseName = project.name
+        contents {
+            from(".") {
+                dirMode = 0755
+                fileMode = 0644
+            }
+            distTar {
+                archiveClassifier = "complete"
+                archiveExtension = "tar.gz"
+                compression = Compression.GZIP
+                // Todo exclude all unnecessary files
+                exclude("**/build/**")
+                exclude("**/.settings/**")
+            }
+            distZip.enabled = false
+        }
+    }
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            groupId 'org.candlepin'
+            artifactId 'candlepin'
+
+            from components.web
+            artifactId 'candlepin-api'
+            pom {
+                name = 'Candlepin'
+                description = 'Candlepin Library Description'
+            }
+        }
     }
 }
