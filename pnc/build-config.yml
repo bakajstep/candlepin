@@ -1,0 +1,43 @@
+product:
+  name: Candlepin
+  abbreviation: candlepin
+  stage: {{stage}}
+  issueTrackerUrl:
+version: {{productVersion}}
+milestone: {{milestone}}
+group: Candlepin {{productVersion}} all
+defaultBuildParameters:
+  project: Candlepin
+  systemImageId: "builder-rhel-7-j11.0.14-9-mvn3.8.4-gradle7.4.2:1.0.0"
+  buildType: GRADLE
+  buildScript: gradle --info --stacktrace build
+
+builds:
+  #IMPORTANT - the groovy script must be updated if more supported artifacts are built
+  #it forces the jackson.version property to be the ${project.version} this allows it to build with
+  #all the redhat versions of jackson components in it and then be aligned into them when they build
+  - name: candlepin-{{productVersion}}
+    description: {{generalDescription}}
+    project: Candlepin
+#    scmUrl: https://github.com/candlepin/candlepin.git
+#    scmRevision: {{projectVersion}}
+    scmUrl: https://github.com/candlepin/candlepin.git
+    scmRevision: ojanus/pnc
+    brewBuildName: candlepin-{{productVersion}}
+
+outputPrefixes:
+  releaseFile: common
+  releaseDir: common
+
+flow:
+  sourcesGeneration:
+    strategy: IGNORE
+  licensesGeneration:
+    strategy: IGNORE
+  repositoryGeneration:
+    strategy: IGNORE
+  javadocGeneration:
+    strategy: IGNORE
+
+addons:
+  notYetAlignedFromDependencyTree:
