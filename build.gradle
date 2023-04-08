@@ -1,4 +1,5 @@
 import groovy.text.GStringTemplateEngine
+import org.candlepin.gradle.release.CandlepinRelease
 import org.yaml.snakeyaml.Yaml
 
 plugins {
@@ -26,6 +27,7 @@ plugins {
     id "test-logging-conventions"
 }
 
+apply plugin: CandlepinRelease
 apply from: "dependencies.gradle"
 
 group = "org.candlepin"
