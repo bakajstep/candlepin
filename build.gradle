@@ -383,7 +383,7 @@ assemble.dependsOn(generateConfig)
 
 // task to generate candlepin-api jar that Hosted adapters build against
 // invoked as `./gradlew apiJar`
-task apiJar(type: Jar) {
+tasks.register('apiJar', Jar) {
     archiveBaseName = 'candlepin-api'
     from sourceSets.main.output
     includes = [
@@ -454,15 +454,14 @@ distributions {
 
 publishing {
     publications {
-        mavenJava(MavenPublication) {
+        war(MavenPublication) {
             groupId 'org.candlepin'
             artifactId 'candlepin'
 
             from components.web
-            artifactId 'candlepin-api'
             pom {
                 name = 'Candlepin'
-                description = 'Candlepin Library Description'
+                description = 'Candlepin WAR'
             }
         }
     }

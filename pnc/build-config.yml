@@ -8,7 +8,7 @@ milestone: {{milestone}}
 group: Candlepin {{productVersion}} all
 defaultBuildParameters:
   project: Candlepin
-  systemImageId: "builder-rhel-7-j11.0.14-9-mvn3.8.4-gradle7.4.2:1.0.0"
+  systemImageId: "builder-rhel-8-j17-mvn3.8.6-gradle8.0.2-gettext-jss:1.0.0"
   buildType: GRADLE
   buildScript: gradle --info --stacktrace build
 
