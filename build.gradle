@@ -4,12 +4,7 @@ import org.yaml.snakeyaml.Yaml
 
 plugins {
     id "nebula.lint"
-    /*
-    The Versions plugin is used to provide the dependencyUpdates task which is used
-    to look for libraries that have newer versions available.
-     */
     id "com.github.ben-manes.versions"
-    // Openapi version is set in the buildscript block for use in the pom generation as well
     id "org.openapi.generator"
     id "java"
     id "war"
