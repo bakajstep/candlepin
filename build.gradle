@@ -454,6 +454,7 @@ publishing {
             artifactId 'candlepin'
 
             from components.web
+            artifact distTar
             pom {
                 name = 'Candlepin'
                 description = 'Candlepin WAR'
