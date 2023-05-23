@@ -31,7 +31,7 @@ import org.candlepin.auth.Access;
 import org.candlepin.auth.Principal;
 import org.candlepin.auth.SubResource;
 import org.candlepin.auth.Verify;
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 import org.candlepin.controller.ContentAccessManager;
 import org.candlepin.controller.ContentAccessManager.ContentAccessMode;
@@ -1285,7 +1285,7 @@ public class OwnerResource implements OwnerApi {
             }
         }
 
-        if (config.getBoolean(ConfigProperties.STANDALONE)) {
+        if (config.getBoolean(CommonConfigKey.STANDALONE)) {
             log.warn("Ignoring refresh pools request due to standalone config.");
             return null;
         }

@@ -23,7 +23,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.DevConfig;
 import org.candlepin.config.TestConfig;
 import org.candlepin.dto.manifest.v1.ConsumerDTO;
@@ -70,7 +70,7 @@ public class ConsumerImporterTest {
         importer = new ConsumerImporter(curator, idCertCurator, i18n, serialCurator);
 
         DevConfig config = TestConfig.custom(Map.of(
-            ConfigProperties.FAIL_ON_UNKNOWN_IMPORT_PROPERTIES, "false"
+            CommonConfigKey.FAIL_ON_UNKNOWN_IMPORT_PROPERTIES.key(), "false"
         ));
         this.mapper = new SyncUtils(config).getObjectMapper();
     }
@@ -88,7 +88,7 @@ public class ConsumerImporterTest {
     public void importHandlesUnknownPropertiesGracefully() throws Exception {
         // Override default config to error out on unknown properties:
         DevConfig config = TestConfig.custom(Map.of(
-            ConfigProperties.FAIL_ON_UNKNOWN_IMPORT_PROPERTIES, "false"
+            CommonConfigKey.FAIL_ON_UNKNOWN_IMPORT_PROPERTIES.key(), "false"
         ));
         this.mapper = new SyncUtils(config).getObjectMapper();
 
@@ -101,7 +101,7 @@ public class ConsumerImporterTest {
     public void importFailsOnUnknownPropertiesWithNonDefaultConfig() {
         // Override default config to error out on unknown properties:
         DevConfig config = TestConfig.custom(Map.of(
-            ConfigProperties.FAIL_ON_UNKNOWN_IMPORT_PROPERTIES, "true"
+            CommonConfigKey.FAIL_ON_UNKNOWN_IMPORT_PROPERTIES.key(), "true"
         ));
         this.mapper = new SyncUtils(config).getObjectMapper();
 

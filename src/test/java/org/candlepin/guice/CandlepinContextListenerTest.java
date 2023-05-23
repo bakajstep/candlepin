@@ -28,7 +28,7 @@ import static org.mockito.Mockito.when;
 
 import org.candlepin.TestingModules;
 import org.candlepin.audit.ActiveMQContextListener;
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 import org.candlepin.config.DevConfig;
 import org.candlepin.config.TestConfig;
@@ -81,7 +81,7 @@ public class CandlepinContextListenerTest {
         this.config = TestConfig.defaults();
 
         // TODO: This shouldn't be necessary for testing to complete. Fix this eventually.
-        this.config.setProperty(ConfigProperties.ASYNC_JOBS_THREADS, "0");
+        this.config.setProperty(CommonConfigKey.ASYNC_JOBS_THREADS, "0");
 
         hqlistener = mock(ActiveMQContextListener.class);
         executorService = mock(ScheduledExecutorService.class);
@@ -92,7 +92,7 @@ public class CandlepinContextListenerTest {
 
     @Test
     public void contextInitialized() {
-        this.config.setProperty(ConfigProperties.ACTIVEMQ_ENABLED, "true");
+        this.config.setProperty(CommonConfigKey.ACTIVEMQ_ENABLED, "true");
 
         prepareForInitialization();
         listener.contextInitialized(evt);
@@ -109,7 +109,7 @@ public class CandlepinContextListenerTest {
     @Test
     public void hidesHiddenCapabilities() {
         Set<String> hiddenSet = Set.of("cores", "ram");
-        this.config.setProperty(ConfigProperties.HIDDEN_CAPABILITIES, String.join(",", hiddenSet));
+        this.config.setProperty(CommonConfigKey.HIDDEN_CAPABILITIES, String.join(",", hiddenSet));
 
         prepareForInitialization();
         listener.contextInitialized(evt);
@@ -124,7 +124,7 @@ public class CandlepinContextListenerTest {
 
     @Test
     void keycloakCapabilityPresentWhenKeycloakEnabled() {
-        this.config.setProperty(ConfigProperties.KEYCLOAK_AUTHENTICATION, "true");
+        this.config.setProperty(CommonConfigKey.KEYCLOAK_AUTHENTICATION, "true");
 
         prepareForInitialization();
         listener.contextInitialized(evt);
@@ -140,7 +140,7 @@ public class CandlepinContextListenerTest {
 
     @Test
     void keycloakCapabilityAbsentWhenKeycloakDisabled() {
-        this.config.setProperty(ConfigProperties.KEYCLOAK_AUTHENTICATION, "false");
+        this.config.setProperty(CommonConfigKey.KEYCLOAK_AUTHENTICATION, "false");
 
         prepareForInitialization();
         listener.contextInitialized(evt);
@@ -156,7 +156,7 @@ public class CandlepinContextListenerTest {
 
     @Test
     void sslVerifyCapabilityPresentWhenSslVerifyEnabled() {
-        this.config.setProperty(ConfigProperties.SSL_VERIFY, "true");
+        this.config.setProperty(CommonConfigKey.SSL_VERIFY, "true");
 
         prepareForInitialization();
         listener.contextInitialized(evt);
@@ -171,7 +171,7 @@ public class CandlepinContextListenerTest {
 
     @Test
     void sslVerifyCapabilityAbsentWhenSslVerifyDisabled() {
-        this.config.setProperty(ConfigProperties.SSL_VERIFY, "false");
+        this.config.setProperty(CommonConfigKey.SSL_VERIFY, "false");
 
         prepareForInitialization();
         listener.contextInitialized(evt);
@@ -185,7 +185,7 @@ public class CandlepinContextListenerTest {
 
     @Test
     void cloudregCapabilityPresentWhenCloudRegistrationEnabled() {
-        this.config.setProperty(ConfigProperties.CLOUD_AUTHENTICATION, "true");
+        this.config.setProperty(CommonConfigKey.CLOUD_AUTHENTICATION, "true");
 
         prepareForInitialization();
         listener.contextInitialized(evt);
@@ -200,7 +200,7 @@ public class CandlepinContextListenerTest {
 
     @Test
     void cloudregCapabilityAbsentWhenCloudRegistrationDisabled() {
-        this.config.setProperty(ConfigProperties.CLOUD_AUTHENTICATION, "false");
+        this.config.setProperty(CommonConfigKey.CLOUD_AUTHENTICATION, "false");
 
         prepareForInitialization();
         listener.contextInitialized(evt);
@@ -213,7 +213,7 @@ public class CandlepinContextListenerTest {
 
     @Test
     public void activeMQDisabled() {
-        this.config.setProperty(ConfigProperties.ACTIVEMQ_ENABLED, "false");
+        this.config.setProperty(CommonConfigKey.ACTIVEMQ_ENABLED, "false");
 
         prepareForInitialization();
         listener.contextInitialized(evt);
@@ -226,7 +226,7 @@ public class CandlepinContextListenerTest {
         // backup jdbc drivers before calling contextDestroyed method
         Enumeration<Driver> drivers = DriverManager.getDrivers();
 
-        this.config.setProperty(ConfigProperties.ACTIVEMQ_ENABLED, "true");
+        this.config.setProperty(CommonConfigKey.ACTIVEMQ_ENABLED, "true");
         prepareForInitialization();
 
         // we actually have to call contextInitialized before we
@@ -251,7 +251,7 @@ public class CandlepinContextListenerTest {
         // backup jdbc drivers before calling contextDestroyed method
         Enumeration<Driver> drivers = DriverManager.getDrivers();
 
-        this.config.setProperty(ConfigProperties.SUSPEND_MODE_ENABLED, "true");
+        this.config.setProperty(CommonConfigKey.SUSPEND_MODE_ENABLED, "true");
 
         prepareForInitialization();
         // we actually have to call contextInitialized before we
@@ -293,7 +293,7 @@ public class CandlepinContextListenerTest {
         doReturn(database).when(spy).getDatabase();
 
         //  no RuntimeException because the db is up-to-date
-        this.config.setProperty(ConfigProperties.DB_MANAGE_ON_START,
+        this.config.setProperty(CommonConfigKey.DB_MANAGE_ON_START,
             CandlepinContextListener.DBManagementLevel.HALT.getName());
         prepareForInitialization();
         spy.contextInitialized(evt);
@@ -312,7 +312,7 @@ public class CandlepinContextListenerTest {
         doReturn(database).when(spy).getDatabase();
 
         // does not lookup unchanged sets nor call update
-        this.config.setProperty(ConfigProperties.DB_MANAGE_ON_START,
+        this.config.setProperty(CommonConfigKey.DB_MANAGE_ON_START,
             CandlepinContextListener.DBManagementLevel.NONE.getName());
         prepareForInitialization();
         spy.contextInitialized(evt);
@@ -331,7 +331,7 @@ public class CandlepinContextListenerTest {
         doReturn(database).when(spy).getDatabase();
 
         // looks up changesets but does not call update
-        this.config.setProperty(ConfigProperties.DB_MANAGE_ON_START,
+        this.config.setProperty(CommonConfigKey.DB_MANAGE_ON_START,
             CandlepinContextListener.DBManagementLevel.REPORT.getName());
         prepareForInitialization();
         spy.contextInitialized(evt);
@@ -350,7 +350,7 @@ public class CandlepinContextListenerTest {
         doReturn(database).when(spy).getDatabase();
 
         // looks up unchanged sets and throws runtime exception
-        this.config.setProperty(ConfigProperties.DB_MANAGE_ON_START,
+        this.config.setProperty(CommonConfigKey.DB_MANAGE_ON_START,
             CandlepinContextListener.DBManagementLevel.HALT.getName());
         prepareForInitialization();
         RuntimeException re = assertThrows(RuntimeException.class, () -> spy.contextInitialized(evt));
@@ -369,7 +369,7 @@ public class CandlepinContextListenerTest {
         Mockito.doNothing().when(spy).executeUpdate(database);
 
         // looks up unchanged sets and calls update
-        this.config.setProperty(ConfigProperties.DB_MANAGE_ON_START,
+        this.config.setProperty(CommonConfigKey.DB_MANAGE_ON_START,
             CandlepinContextListener.DBManagementLevel.MANAGE.getName());
         prepareForInitialization();
         spy.contextInitialized(evt);

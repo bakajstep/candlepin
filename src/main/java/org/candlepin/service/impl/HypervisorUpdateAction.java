@@ -17,7 +17,7 @@ package org.candlepin.service.impl;
 import org.candlepin.audit.Event;
 import org.candlepin.audit.EventFactory;
 import org.candlepin.audit.EventSink;
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 import org.candlepin.dto.ModelTranslator;
 import org.candlepin.dto.api.server.v1.ConsumerDTO;
@@ -146,7 +146,7 @@ public class HypervisorUpdateAction {
         String hypervisorId = incomingHost.getHypervisorId().getHypervisorId();
         Consumer resultHost = consumerCurator.getExistingConsumerByHypervisorIdOrUuid(owner.getId(),
             hypervisorId,
-            config.getBoolean(ConfigProperties.USE_SYSTEM_UUID_FOR_MATCHING) ? systemUuid : null);
+            config.getBoolean(CommonConfigKey.USE_SYSTEM_UUID_FOR_MATCHING) ? systemUuid : null);
 
         if (jobReporterId == null) {
             log.debug("hypervisor checkin reported asynchronously without reporter id " +

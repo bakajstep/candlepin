@@ -30,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.candlepin.auth.NoAuthPrincipal;
-import org.candlepin.config.DatabaseConfigFactory;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.controller.CandlepinPoolManager;
 import org.candlepin.model.ConsumerType.ConsumerTypeEnum;
 import org.candlepin.model.activationkeys.ActivationKey;
@@ -2050,7 +2050,7 @@ public class PoolCuratorTest extends DatabaseTestFixture {
     @Test
     public void testMarkCertificatesDirtyForPoolsWithNormalProductHavingLargeNumberOfProducts() {
         List<String> productIds = new ArrayList<>();
-        for (int i = 0; i < config.getInt(DatabaseConfigFactory.IN_OPERATOR_BLOCK_SIZE); i++) {
+        for (int i = 0; i < config.getInt(CommonConfigKey.IN_OPERATOR_BLOCK_SIZE); i++) {
             productIds.add("productId" + i);
         }
         productIds.add(product.getId());
@@ -2299,7 +2299,7 @@ public class PoolCuratorTest extends DatabaseTestFixture {
     }
 
     protected Stream<Object[]> getPoolSetSizes() {
-        int inBlockSize = getConfigForParameters().getInt(DatabaseConfigFactory.IN_OPERATOR_BLOCK_SIZE);
+        int inBlockSize = getConfigForParameters().getInt(CommonConfigKey.IN_OPERATOR_BLOCK_SIZE);
         int halfBlockSize = inBlockSize / 2;
 
         return Stream.of(

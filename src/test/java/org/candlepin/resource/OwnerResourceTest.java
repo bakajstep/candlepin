@@ -47,7 +47,7 @@ import org.candlepin.auth.Access;
 import org.candlepin.auth.ConsumerPrincipal;
 import org.candlepin.auth.Principal;
 import org.candlepin.auth.permissions.PermissionFactory.PermissionType;
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.DevConfig;
 import org.candlepin.controller.CandlepinPoolManager;
 import org.candlepin.controller.ContentAccessManager;
@@ -1483,7 +1483,7 @@ public class OwnerResourceTest extends DatabaseTestFixture {
 
     @Test
     public void testUpdateOwner() {
-        config.setProperty(ConfigProperties.STANDALONE, "false");
+        config.setProperty(CommonConfigKey.STANDALONE, "false");
         Owner owner = new Owner("Test Owner", "test");
         ownerCurator.create(owner);
 

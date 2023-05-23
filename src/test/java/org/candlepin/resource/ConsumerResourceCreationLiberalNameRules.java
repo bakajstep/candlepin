@@ -16,7 +16,7 @@ package org.candlepin.resource;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.DevConfig;
 import org.candlepin.config.TestConfig;
 
@@ -34,9 +34,9 @@ public class ConsumerResourceCreationLiberalNameRules extends ConsumerResourceCr
     public DevConfig initConfig() {
         DevConfig config = TestConfig.defaults();
 
-        config.setProperty(ConfigProperties.CONSUMER_SYSTEM_NAME_PATTERN, ".+");
-        config.setProperty(ConfigProperties.CONSUMER_PERSON_NAME_PATTERN, ".+");
-        config.setProperty(ConfigProperties.USE_SYSTEM_UUID_FOR_MATCHING, "true");
+        config.setProperty(CommonConfigKey.CONSUMER_SYSTEM_NAME_PATTERN, ".+");
+        config.setProperty(CommonConfigKey.CONSUMER_PERSON_NAME_PATTERN, ".+");
+        config.setProperty(CommonConfigKey.USE_SYSTEM_UUID_FOR_MATCHING, "true");
 
         return config;
     }

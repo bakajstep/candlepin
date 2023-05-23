@@ -31,14 +31,35 @@ import java.util.Set;
 
 public class RyeConfigTest {
 
+    private enum TestKey implements ConfigKey {
+        STRING("test.string"),
+        STRING_TRIM("test.string.trim"),
+        BOOL("test.bool"),
+        INT("test.int"),
+        LONG("test.long"),
+        LIST("test.list"),
+        SET("test.set");
+
+        private final String key;
+
+        TestKey(String key) {
+            this.key = key;
+        }
+
+        @Override
+        public String key() {
+            return this.key;
+        }
+    }
+
     private static final Map<String, String> DEFAULTS = Map.ofEntries(
-        Map.entry("test.string", "str"),
-        Map.entry("test.string.trim", " a "),
-        Map.entry("test.bool", "true"),
-        Map.entry("test.int", "123"),
-        Map.entry("test.long", Long.toString(Long.MAX_VALUE)),
-        Map.entry("test.list", "a,b, c"),
-        Map.entry("test.set", "a,b, c")
+        Map.entry(TestKey.STRING.key(), "str"),
+        Map.entry(TestKey.STRING_TRIM.key(), " a "),
+        Map.entry(TestKey.BOOL.key(), "true"),
+        Map.entry(TestKey.INT.key(), "123"),
+        Map.entry(TestKey.LONG.key(), Long.toString(Long.MAX_VALUE)),
+        Map.entry(TestKey.LIST.key(), "a,b, c"),
+        Map.entry(TestKey.SET.key(), "a,b, c")
     );
     public static final String PREFIX = "test";
 
@@ -87,7 +108,7 @@ public class RyeConfigTest {
 
         Iterable<String> keys = ryeConfig.getKeys();
 
-        assertThat(keys).contains("test.string");
+        assertThat(keys).contains(TestKey.STRING.key());
     }
 
     @Test
@@ -103,7 +124,7 @@ public class RyeConfigTest {
     public void stringValueFound() {
         RyeConfig ryeConfig = buildConfig(DEFAULTS);
 
-        String value = ryeConfig.getString("test.string");
+        String value = ryeConfig.getString(TestKey.STRING);
 
         assertThat(value)
             .isEqualTo("str");
@@ -113,7 +134,7 @@ public class RyeConfigTest {
     public void stringValueMissing() {
         RyeConfig ryeConfig = buildEmptyConfig();
 
-        String value = ryeConfig.getString("test.string");
+        String value = ryeConfig.getString(TestKey.STRING);
 
         assertThat(value).isNull();
     }
@@ -122,7 +143,7 @@ public class RyeConfigTest {
     public void stringValueTrimmed() {
         RyeConfig ryeConfig = buildConfig(DEFAULTS);
 
-        String value = ryeConfig.getString("test.string.trim");
+        String value = ryeConfig.getString(TestKey.STRING_TRIM);
 
         assertThat(value).isEqualTo("a");
     }
@@ -131,7 +152,7 @@ public class RyeConfigTest {
     public void boolValueFound() {
         RyeConfig ryeConfig = buildConfig(DEFAULTS);
 
-        boolean value = ryeConfig.getBoolean("test.bool");
+        boolean value = ryeConfig.getBoolean(TestKey.BOOL);
 
         assertThat(value).isTrue();
     }
@@ -140,7 +161,7 @@ public class RyeConfigTest {
     public void boolValueMissing() {
         RyeConfig ryeConfig = buildEmptyConfig();
 
-        assertThatThrownBy(() -> ryeConfig.getBoolean("test.bool"))
+        assertThatThrownBy(() -> ryeConfig.getBoolean(TestKey.BOOL))
             .isInstanceOf(NoSuchElementException.class);
     }
 
@@ -148,7 +169,7 @@ public class RyeConfigTest {
     public void intValueFound() {
         RyeConfig ryeConfig = buildConfig(DEFAULTS);
 
-        int value = ryeConfig.getInt("test.int");
+        int value = ryeConfig.getInt(TestKey.INT);
 
         assertThat(value).isEqualTo(123);
     }
@@ -157,7 +178,7 @@ public class RyeConfigTest {
     public void intValueMissing() {
         RyeConfig ryeConfig = buildEmptyConfig();
 
-        assertThatThrownBy(() -> ryeConfig.getBoolean("test.int"))
+        assertThatThrownBy(() -> ryeConfig.getBoolean(TestKey.INT))
             .isInstanceOf(NoSuchElementException.class);
     }
 
@@ -165,7 +186,7 @@ public class RyeConfigTest {
     public void longValueFound() {
         RyeConfig ryeConfig = buildConfig(DEFAULTS);
 
-        long value = ryeConfig.getLong("test.long");
+        long value = ryeConfig.getLong(TestKey.LONG);
 
         assertThat(value).isEqualTo(Long.MAX_VALUE);
     }
@@ -174,7 +195,7 @@ public class RyeConfigTest {
     public void longValueMissing() {
         RyeConfig ryeConfig = buildEmptyConfig();
 
-        assertThatThrownBy(() -> ryeConfig.getLong("test.long"))
+        assertThatThrownBy(() -> ryeConfig.getLong(TestKey.LONG))
             .isInstanceOf(NoSuchElementException.class);
     }
 
@@ -182,7 +203,7 @@ public class RyeConfigTest {
     public void listFound() {
         RyeConfig ryeConfig = buildConfig(DEFAULTS);
 
-        List<String> value = ryeConfig.getList("test.list");
+        List<String> value = ryeConfig.getList(TestKey.LIST);
 
         assertThat(value)
             .containsExactly("a", "b", "c");
@@ -192,7 +213,7 @@ public class RyeConfigTest {
     public void listMissing() {
         RyeConfig ryeConfig = buildEmptyConfig();
 
-        List<String> value = ryeConfig.getList("test.list");
+        List<String> value = ryeConfig.getList(TestKey.LIST);
 
         assertThat(value).isEmpty();
     }
@@ -201,7 +222,7 @@ public class RyeConfigTest {
     public void setFound() {
         RyeConfig ryeConfig = buildConfig(DEFAULTS);
 
-        Set<String> value = ryeConfig.getSet("test.set");
+        Set<String> value = ryeConfig.getSet(TestKey.SET);
 
         assertThat(value)
             .containsExactly("a", "b", "c");
@@ -211,7 +232,7 @@ public class RyeConfigTest {
     public void setMissing() {
         RyeConfig ryeConfig = buildEmptyConfig();
 
-        Set<String> value = ryeConfig.getSet("test.set");
+        Set<String> value = ryeConfig.getSet(TestKey.SET);
 
         assertThat(value).isEmpty();
     }

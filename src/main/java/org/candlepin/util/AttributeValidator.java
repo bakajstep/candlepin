@@ -14,7 +14,7 @@
  */
 package org.candlepin.util;
 
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 
 import org.xnap.commons.i18n.I18n;
@@ -37,29 +37,29 @@ public class AttributeValidator extends PropertyValidator {
     @Inject
     public AttributeValidator(Configuration config, Provider<I18n> i18nProvider) {
         // Add integer attributes...
-        for (String key : config.getSet(ConfigProperties.INTEGER_ATTRIBUTES)) {
+        for (String key : config.getSet(CommonConfigKey.INTEGER_ATTRIBUTES)) {
             this.validators.put(key, new PropertyValidator.IntegerValidator(i18nProvider, "attribute"));
         }
 
         // Add non-negative integer attributes...
-        for (String key : config.getSet(ConfigProperties.NON_NEG_INTEGER_ATTRIBUTES)) {
+        for (String key : config.getSet(CommonConfigKey.NON_NEG_INTEGER_ATTRIBUTES)) {
             this.validators
                 .put(key, new PropertyValidator.NonNegativeIntegerValidator(i18nProvider, "attribute"));
         }
 
         // Add long attributes...
-        for (String key : config.getSet(ConfigProperties.LONG_ATTRIBUTES)) {
+        for (String key : config.getSet(CommonConfigKey.LONG_ATTRIBUTES)) {
             this.validators.put(key, new PropertyValidator.LongValidator(i18nProvider, "attribute"));
         }
 
         // Add non-negative long attributes...
-        for (String key : config.getSet(ConfigProperties.NON_NEG_LONG_ATTRIBUTES)) {
+        for (String key : config.getSet(CommonConfigKey.NON_NEG_LONG_ATTRIBUTES)) {
             this.validators.put(key, new PropertyValidator.NonNegativeLongValidator(i18nProvider,
                 "attribute"));
         }
 
         // Add boolean attributes...
-        for (String key : config.getSet(ConfigProperties.BOOLEAN_ATTRIBUTES)) {
+        for (String key : config.getSet(CommonConfigKey.BOOLEAN_ATTRIBUTES)) {
             this.validators.put(key, new PropertyValidator.BooleanValidator(i18nProvider, "attribute"));
         }
 

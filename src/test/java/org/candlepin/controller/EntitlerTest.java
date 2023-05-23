@@ -32,6 +32,7 @@ import static org.mockito.Mockito.when;
 import org.candlepin.audit.Event;
 import org.candlepin.audit.EventFactory;
 import org.candlepin.audit.EventSink;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.ConfigProperties;
 import org.candlepin.config.Configuration;
 import org.candlepin.controller.refresher.RefreshResult;
@@ -494,7 +495,7 @@ public class EntitlerTest {
         Consumer devSystem = TestUtil.createConsumer(owner);
         devSystem.setFact("dev_sku", p.getId());
 
-        when(config.getBoolean(eq(ConfigProperties.STANDALONE))).thenReturn(false);
+        when(config.getBoolean(CommonConfigKey.STANDALONE)).thenReturn(false);
         when(poolCurator.hasActiveEntitlementPools(eq(owner.getId()), nullable(Date.class))).thenReturn(true);
         doReturn(devProdDTOs).when(productAdapter).getProductsByIds(eq(owner.getKey()), anyList());
 
@@ -519,7 +520,7 @@ public class EntitlerTest {
             .setProductId(p.getId())
             .setProductName(p.getName()));
 
-        when(config.getBoolean(eq(ConfigProperties.STANDALONE))).thenReturn(true);
+        when(config.getBoolean(CommonConfigKey.STANDALONE)).thenReturn(true);
 
         AutobindData ad = new AutobindData(devSystem, owner);
 
@@ -537,7 +538,7 @@ public class EntitlerTest {
             .setProductId(p.getId())
             .setProductName(p.getName()));
 
-        when(config.getBoolean(eq(ConfigProperties.STANDALONE))).thenReturn(false);
+        when(config.getBoolean(CommonConfigKey.STANDALONE)).thenReturn(false);
 
         AutobindData ad = new AutobindData(devSystem, owner);
 
@@ -558,7 +559,7 @@ public class EntitlerTest {
             .setProductId(ip.getId())
             .setProductName(ip.getName()));
 
-        when(config.getBoolean(eq(ConfigProperties.STANDALONE))).thenReturn(false);
+        when(config.getBoolean(CommonConfigKey.STANDALONE)).thenReturn(false);
         when(poolCurator.hasActiveEntitlementPools(eq(owner.getId()), nullable(Date.class))).thenReturn(true);
         doReturn(devProdDTOs).when(productAdapter).getProductsByIds(eq(owner.getKey()), anyList());
 
@@ -593,7 +594,7 @@ public class EntitlerTest {
             .setProductId(ip2.getId())
             .setProductName(ip2.getName()));
 
-        when(config.getBoolean(eq(ConfigProperties.STANDALONE))).thenReturn(false);
+        when(config.getBoolean(CommonConfigKey.STANDALONE)).thenReturn(false);
         when(poolCurator.hasActiveEntitlementPools(eq(owner.getId()), nullable(Date.class))).thenReturn(true);
         doReturn(devProdDTOs).when(productAdapter).getProductsByIds(eq(owner.getKey()), anyList());
 

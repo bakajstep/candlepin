@@ -38,7 +38,7 @@ import org.candlepin.auth.UserPrincipal;
 import org.candlepin.auth.permissions.OwnerPermission;
 import org.candlepin.auth.permissions.Permission;
 import org.candlepin.auth.permissions.PermissionFactory.PermissionType;
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.DevConfig;
 import org.candlepin.config.TestConfig;
 import org.candlepin.controller.ContentAccessManager;
@@ -307,11 +307,11 @@ public class ConsumerResourceCreationTest {
     public DevConfig initConfig() {
         DevConfig config = TestConfig.defaults();
 
-        config.setProperty(ConfigProperties.CONSUMER_SYSTEM_NAME_PATTERN,
+        config.setProperty(CommonConfigKey.CONSUMER_SYSTEM_NAME_PATTERN,
             "[\\#\\?\\'\\`\\!@{}()\\[\\]\\?&\\w-\\.]+");
-        config.setProperty(ConfigProperties.CONSUMER_PERSON_NAME_PATTERN,
+        config.setProperty(CommonConfigKey.CONSUMER_PERSON_NAME_PATTERN,
             "[\\#\\?\\'\\`\\!@{}()\\[\\]\\?&\\w-\\.]+");
-        config.setProperty(ConfigProperties.USE_SYSTEM_UUID_FOR_MATCHING, "true");
+        config.setProperty(CommonConfigKey.USE_SYSTEM_UUID_FOR_MATCHING, "true");
 
         return config;
     }
@@ -595,7 +595,7 @@ public class ConsumerResourceCreationTest {
 
     @Test
     public void registerWithEnvironmentUsingId() {
-        config.setProperty(ConfigProperties.HIDDEN_RESOURCES, "");
+        config.setProperty(CommonConfigKey.HIDDEN_RESOURCES.key(), "");
 
         Principal p = new TrustedUserPrincipal("anyuser");
         when(this.principalProvider.get()).thenReturn(p);
@@ -613,7 +613,7 @@ public class ConsumerResourceCreationTest {
 
     @Test
     public void registerWithEnvironmentUsingName() {
-        config.setProperty(ConfigProperties.HIDDEN_RESOURCES, "");
+        config.setProperty(CommonConfigKey.HIDDEN_RESOURCES.key(), "");
 
         Principal p = new TrustedUserPrincipal("anyuser");
         when(this.principalProvider.get()).thenReturn(p);
@@ -632,7 +632,7 @@ public class ConsumerResourceCreationTest {
 
     @Test
     public void registerWithMultipleEnvironments() {
-        config.setProperty(ConfigProperties.HIDDEN_RESOURCES, "");
+        config.setProperty(CommonConfigKey.HIDDEN_RESOURCES, "");
 
         Principal p = new TrustedUserPrincipal("anyuser");
         when(this.principalProvider.get()).thenReturn(p);

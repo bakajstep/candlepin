@@ -50,7 +50,7 @@ import org.candlepin.bind.BindChainFactory;
 import org.candlepin.bind.BindContextFactory;
 import org.candlepin.bind.PreEntitlementRulesCheckOpFactory;
 import org.candlepin.cache.JCacheManagerProvider;
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 import org.candlepin.config.ConfigurationPrefixes;
 import org.candlepin.controller.CandlepinPoolManager;
@@ -362,7 +362,7 @@ public class CandlepinModule extends AbstractModule {
     }
 
     protected void configureMessaging() {
-        String provider = this.config.getString(ConfigProperties.CPM_PROVIDER);
+        String provider = this.config.getString(CommonConfigKey.CPM_PROVIDER);
 
         // TODO: Change this to a map lookup as we get more providers
 
@@ -421,11 +421,12 @@ public class CandlepinModule extends AbstractModule {
         bind(DynamicJsonFilter.class);
 
         // Only bind the suspend mode filter if configured to do so
-        if (this.config.getBoolean(ConfigProperties.SUSPEND_MODE_ENABLED)) {
+        if (this.config.getBoolean(CommonConfigKey.SUSPEND_MODE_ENABLED)) {
             bind(CandlepinSuspendModeFilter.class);
         }
 
-        bindConstant().annotatedWith(Names.named("PREFIX_APIURL_KEY")).to(ConfigProperties.PREFIX_APIURL);
+        bindConstant().annotatedWith(Names.named("PREFIX_APIURL_KEY"))
+            .to(CommonConfigKey.PREFIX_APIURL.key());
     }
 
     private void configureAsyncJobs() {
@@ -468,7 +469,7 @@ public class CandlepinModule extends AbstractModule {
     }
 
     private void configureActiveMQComponents() {
-        if (config.getBoolean(ConfigProperties.ACTIVEMQ_ENABLED)) {
+        if (config.getBoolean(CommonConfigKey.ACTIVEMQ_ENABLED)) {
             bind(MessageSource.class).to(ArtemisMessageSource.class);
             bind(MessageSourceReceiverFactory.class).to(ArtemisMessageSourceReceiverFactory.class);
             bind(EventSink.class).to(EventSinkImpl.class);

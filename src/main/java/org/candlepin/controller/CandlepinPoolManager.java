@@ -24,7 +24,7 @@ import org.candlepin.audit.EventFactory;
 import org.candlepin.audit.EventSink;
 import org.candlepin.bind.BindChainFactory;
 import org.candlepin.bind.PoolOperationCallback;
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 import org.candlepin.controller.refresher.RefreshResult;
 import org.candlepin.controller.refresher.RefreshResult.EntityState;
@@ -222,7 +222,7 @@ public class CandlepinPoolManager implements PoolManager {
         log.info("Refreshing pools for owner: {}", resolvedOwner);
 
         RefreshWorker refresher = this.refreshWorkerProvider.get()
-            .setOrphanedEntityGracePeriod(this.config.getInt(ConfigProperties.ORPHANED_ENTITY_GRACE_PERIOD));
+            .setOrphanedEntityGracePeriod(this.config.getInt(CommonConfigKey.ORPHANED_ENTITY_GRACE_PERIOD));
 
         log.debug("Fetching subscriptions from adapter...");
         refresher.addSubscriptions(subAdapter.getSubscriptions(resolvedOwner.getKey()));
@@ -2638,7 +2638,7 @@ public class CandlepinPoolManager implements PoolManager {
         return pool != null &&
             pool.getSourceSubscription() != null &&
             !pool.getType().isDerivedType() &&
-            (pool.getUpstreamPoolId() != null || !this.config.getBoolean(ConfigProperties.STANDALONE));
+            (pool.getUpstreamPoolId() != null || !this.config.getBoolean(CommonConfigKey.STANDALONE));
     }
 
 }

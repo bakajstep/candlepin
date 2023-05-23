@@ -16,18 +16,16 @@ package org.candlepin.audit;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import org.candlepin.audit.Event.Target;
 import org.candlepin.audit.Event.Type;
-import org.candlepin.config.ConfigProperties;
-import org.candlepin.config.Configuration;
+import org.candlepin.config.CommonConfigKey;
+import org.candlepin.config.DevConfig;
+import org.candlepin.config.TestConfig;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.Arrays;
+import java.util.Map;
 
 
 public class EventFilterTest {
@@ -36,7 +34,12 @@ public class EventFilterTest {
     public void disabledShouldNotFilter() {
         Event event1 = createEvent(Type.CREATED, Target.ENTITLEMENT);
         Event event2 = createEvent(Type.MODIFIED, Target.CONSUMER);
-        EventFilter filter = new EventFilter(configurationAuditDisabled());
+        DevConfig config = TestConfig.custom(Map.of(
+            CommonConfigKey.AUDIT_FILTER_ENABLED.key(), "false",
+            CommonConfigKey.AUDIT_FILTER_DEFAULT_POLICY.key(), "DO_FILTER"
+        ));
+
+        EventFilter filter = new EventFilter(config);
 
         assertFalse(filter.shouldFilter(event1));
         assertFalse(filter.shouldFilter(event2));
@@ -45,7 +48,18 @@ public class EventFilterTest {
     @Test
     public void filterUnknownEventPolicyDoFilter() {
         Event event = createEvent(Type.MODIFIED, Target.CONSUMER);
-        EventFilter filter = new EventFilter(configurationAuditEnabled());
+        DevConfig config = TestConfig.custom(Map.of(
+            CommonConfigKey.AUDIT_FILTER_ENABLED.key(), "true",
+            CommonConfigKey.AUDIT_FILTER_DO_NOT_FILTER.key(),
+            "CREATED-ENTITLEMENT",
+            "DELETED-ENTITLEMENT",
+            "CREATED-POOL",
+            "DELETED-POOL",
+            "CREATED-COMPLIANCE",
+            CommonConfigKey.AUDIT_FILTER_DEFAULT_POLICY.key(), "DO_FILTER"
+        ));
+
+        EventFilter filter = new EventFilter(config);
 
         assertTrue(filter.shouldFilter(event));
     }
@@ -53,7 +67,18 @@ public class EventFilterTest {
     @Test
     public void notFilterIncludes() {
         Event event = createEvent(Type.CREATED, Target.ENTITLEMENT);
-        EventFilter filter = new EventFilter(configurationAuditEnabled());
+        DevConfig config = TestConfig.custom(Map.of(
+            CommonConfigKey.AUDIT_FILTER_ENABLED.key(), "true",
+            CommonConfigKey.AUDIT_FILTER_DO_NOT_FILTER.key(),
+            "CREATED-ENTITLEMENT",
+            "DELETED-ENTITLEMENT",
+            "CREATED-POOL",
+            "DELETED-POOL",
+            "CREATED-COMPLIANCE",
+            CommonConfigKey.AUDIT_FILTER_DEFAULT_POLICY.key(), "DO_FILTER"
+        ));
+
+        EventFilter filter = new EventFilter(config);
 
         assertFalse(filter.shouldFilter(event));
     }
@@ -62,7 +87,18 @@ public class EventFilterTest {
     public void policyDoNotFilterShouldNotFilter() {
         Event event1 = createEvent(Type.CREATED, Target.ENTITLEMENT);
         Event event2 = createEvent(Type.MODIFIED, Target.CONSUMER);
-        EventFilter filter = new EventFilter(configurationDoNotFilter());
+        DevConfig config = TestConfig.custom(Map.of(
+            CommonConfigKey.AUDIT_FILTER_ENABLED.key(), "true",
+            CommonConfigKey.AUDIT_FILTER_DO_NOT_FILTER.key(),
+            "CREATED-ENTITLEMENT",
+            "DELETED-ENTITLEMENT",
+            "CREATED-POOL",
+            "DELETED-POOL",
+            "CREATED-COMPLIANCE",
+            CommonConfigKey.AUDIT_FILTER_DEFAULT_POLICY.key(), "DO_NOT_FILTER"
+        ));
+
+        EventFilter filter = new EventFilter(config);
 
         assertFalse(filter.shouldFilter(event1));
         assertFalse(filter.shouldFilter(event2));
@@ -71,7 +107,13 @@ public class EventFilterTest {
     @Test
     public void policyDoNotFilterShouldFilterExcludes() {
         Event event = createEvent(Type.MODIFIED, Target.EXPORT);
-        EventFilter filter = new EventFilter(configurationDoNotFilterWithExcludes());
+        DevConfig config = TestConfig.custom(Map.of(
+            CommonConfigKey.AUDIT_FILTER_ENABLED.key(), "true",
+            CommonConfigKey.AUDIT_FILTER_DO_FILTER.key(), "MODIFIED-EXPORT",
+            CommonConfigKey.AUDIT_FILTER_DEFAULT_POLICY.key(), "DO_NOT_FILTER"
+        ));
+
+        EventFilter filter = new EventFilter(config);
 
         assertTrue(filter.shouldFilter(event));
     }
@@ -81,60 +123,6 @@ public class EventFilterTest {
         event.setType(type);
         event.setTarget(target);
         return event;
-    }
-
-    private Configuration configurationAuditDisabled() {
-        Configuration configuration = mock(Configuration.class);
-
-        when(configuration.getBoolean(eq(ConfigProperties.AUDIT_FILTER_ENABLED))).thenReturn(false);
-        when(configuration.getString(eq(ConfigProperties.AUDIT_FILTER_DEFAULT_POLICY)))
-            .thenReturn("DO_FILTER");
-
-        return configuration;
-    }
-
-    private Configuration configurationAuditEnabled() {
-        Configuration configuration = mock(Configuration.class);
-
-        when(configuration.getBoolean(eq(ConfigProperties.AUDIT_FILTER_ENABLED))).thenReturn(true);
-        when(configuration.getList(eq(ConfigProperties.AUDIT_FILTER_DO_NOT_FILTER))).thenReturn(Arrays.asList(
-            "CREATED-ENTITLEMENT",
-            "DELETED-ENTITLEMENT",
-            "CREATED-POOL",
-            "DELETED-POOL",
-            "CREATED-COMPLIANCE"));
-        when(configuration.getString(eq(ConfigProperties.AUDIT_FILTER_DEFAULT_POLICY)))
-            .thenReturn("DO_FILTER");
-
-        return configuration;
-    }
-
-    private Configuration configurationDoNotFilter() {
-        Configuration configuration = mock(Configuration.class);
-
-        when(configuration.getBoolean(eq(ConfigProperties.AUDIT_FILTER_ENABLED))).thenReturn(true);
-        when(configuration.getList(eq(ConfigProperties.AUDIT_FILTER_DO_NOT_FILTER))).thenReturn(Arrays.asList(
-            "CREATED-ENTITLEMENT",
-            "DELETED-ENTITLEMENT",
-            "CREATED-POOL",
-            "DELETED-POOL",
-            "CREATED-COMPLIANCE"));
-        when(configuration.getString(eq(ConfigProperties.AUDIT_FILTER_DEFAULT_POLICY)))
-            .thenReturn("DO_NOT_FILTER");
-
-        return configuration;
-    }
-
-    private Configuration configurationDoNotFilterWithExcludes() {
-        Configuration configuration = mock(Configuration.class);
-
-        when(configuration.getBoolean(eq(ConfigProperties.AUDIT_FILTER_ENABLED))).thenReturn(true);
-        when(configuration.getList(eq(ConfigProperties.AUDIT_FILTER_DO_FILTER)))
-            .thenReturn(Arrays.asList("MODIFIED-EXPORT"));
-        when(configuration.getString(eq(ConfigProperties.AUDIT_FILTER_DEFAULT_POLICY)))
-            .thenReturn("DO_NOT_FILTER");
-
-        return configuration;
     }
 
 }

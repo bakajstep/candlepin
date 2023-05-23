@@ -15,19 +15,37 @@
 package org.candlepin.config;
 
 
-/**
- * Commonly used configuration prefixes
- */
-public class ConfigurationPrefixes {
-    public static final String JPA_CONFIG_PREFIX = "jpa.config.";
-    public static final String LOGGING_CONFIG_PREFIX = "log4j.logger.";
+public enum JobConfigKey implements ConfigKey {
 
     // Used for per-job configuration. The full syntax is "PREFIX.{job_key}.SUFFIX". For instance,
     // to configure the schedule flag for the job TestJob1, the full configuration would be:
     // candlepin.async.jobs.TestJob1.schedule=0 0 0/3 * * ?
-    public static final String JOB_PREFIX = "candlepin.async.jobs.";
+    SCHEDULE("schedule"),
+    THROTTLE("throttle"),
+    KEEP("num_of_records_to_keep"),
+    BATCH_SIZE("batch_size"),
+    LAST_CHECKED_IN_RETENTION("last_checked_in_retention_in_days"),
+    LAST_UPDATED_IN_RETENTION("last_updated_retention_in_days"),
+    MAX_TERMINAL_JOB_AGE("max_terminal_job_age"),
+    MAX_NON_TERMINAL_JOB_AGE("max_nonterminal_job_age"),
+    MAX_RUNNING_JOB_AGE("max_running_job_age"),
+    MAX_MANIFEST_AGE("max_age_in_minutes");
 
-    private ConfigurationPrefixes() {
-        // This class is not meant to be instantiated.
+    public static final String ASYNC_JOBS_PREFIX = "candlepin.async.jobs.";
+
+    private final String key;
+
+    JobConfigKey(String key) {
+        this.key = key;
     }
+
+    @Override
+    public String key() {
+        return key;
+    }
+
+    public ConfigKey keyForJob(String jobKey) {
+        return () -> ASYNC_JOBS_PREFIX + jobKey + "." + this.key;
+    }
+
 }

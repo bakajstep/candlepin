@@ -16,7 +16,7 @@ package org.candlepin.sync;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.DevConfig;
 import org.candlepin.config.TestConfig;
 import org.candlepin.dto.StandardTranslator;
@@ -39,7 +39,7 @@ public class ProductExporterTest {
     @Test
     public void testProductExport() throws IOException {
         DevConfig config = TestConfig.custom(Map.of(
-            ConfigProperties.FAIL_ON_UNKNOWN_IMPORT_PROPERTIES, "false"
+            CommonConfigKey.FAIL_ON_UNKNOWN_IMPORT_PROPERTIES.key(), "false"
         ));
 
         ObjectMapper mapper = new SyncUtils(config).getObjectMapper();

@@ -14,7 +14,7 @@
  */
 package org.candlepin.util;
 
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 import org.candlepin.controller.util.PromotedContent;
 import org.candlepin.model.Branding;
@@ -309,7 +309,7 @@ public class X509V3ExtensionUtil extends X509Util {
         // FIXME: getParsedArches might make more sense to just return a list
         List<String> archList = new ArrayList<>(productArchSet);
         toReturn.setArchitectures(archList);
-        boolean enableEnvironmentFiltering = config.getBoolean(ConfigProperties.ENV_CONTENT_FILTERING);
+        boolean enableEnvironmentFiltering = config.getBoolean(CommonConfigKey.ENV_CONTENT_FILTERING);
         Set<ProductContent> filteredContent = filterProductContent(engProduct, consumer, promotedContent,
             enableEnvironmentFiltering, entitledProductIds, consumer.getOwner().isUsingSimpleContentAccess());
         List<Content> content = createContent(filteredContent, sku, promotedContent,
@@ -354,7 +354,7 @@ public class X509V3ExtensionUtil extends X509Util {
 
         List<Content> toReturn = new ArrayList<>();
 
-        boolean enableEnvironmentFiltering = config.getBoolean(ConfigProperties.ENV_CONTENT_FILTERING);
+        boolean enableEnvironmentFiltering = config.getBoolean(CommonConfigKey.ENV_CONTENT_FILTERING);
 
         // Return only the contents that are arch appropriate
         Set<ProductContent> archAppropriateProductContent = filterContentByContentArch(

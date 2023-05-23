@@ -65,7 +65,7 @@ import org.candlepin.bind.PoolOperationCallback;
 import org.candlepin.bind.PostBindBonusPoolsOp;
 import org.candlepin.bind.PreEntitlementRulesCheckOp;
 import org.candlepin.bind.PreEntitlementRulesCheckOpFactory;
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 import org.candlepin.controller.refresher.RefreshResult;
 import org.candlepin.controller.refresher.RefreshResult.EntityState;
@@ -224,7 +224,7 @@ public class PoolManagerTest {
 
         when(mockOwnerCurator.getByKey(eq(owner.getKey()))).thenReturn(owner);
 
-        when(mockConfig.getInt(eq(ConfigProperties.PRODUCT_CACHE_MAX))).thenReturn(100);
+        when(mockConfig.getInt(CommonConfigKey.PRODUCT_CACHE_MAX)).thenReturn(100);
         when(eventFactory.getEventBuilder(any(Target.class), any(Type.class))).thenReturn(eventBuilder);
 
         when(eventBuilder.setEventData(any(Eventful.class))).thenReturn(eventBuilder);
@@ -1073,7 +1073,7 @@ public class PoolManagerTest {
         PreUnbindHelper preHelper = mock(PreUnbindHelper.class);
         ValidationResult result = new ValidationResult();
         when(preHelper.getResult()).thenReturn(result);
-        when(mockConfig.getBoolean(ConfigProperties.STANDALONE)).thenReturn(true);
+        when(mockConfig.getBoolean(CommonConfigKey.STANDALONE)).thenReturn(true);
 
         when(mockPoolCurator.lockAndLoad(any(Pool.class))).thenReturn(pool);
 
@@ -1104,7 +1104,7 @@ public class PoolManagerTest {
         ValidationResult result = new ValidationResult();
         when(preHelper.getResult()).thenReturn(result);
 
-        when(mockConfig.getBoolean(ConfigProperties.STANDALONE)).thenReturn(true);
+        when(mockConfig.getBoolean(CommonConfigKey.STANDALONE)).thenReturn(true);
 
         when(mockPoolCurator.lockAndLoad(eq(pool))).thenReturn(pool);
         when(mockPoolCurator.lockAndLoad(eq(pool2))).thenReturn(pool2);
@@ -1578,7 +1578,7 @@ public class PoolManagerTest {
 
         this.mockProducts(owner, prod);
         this.mockSubscriptions(owner, subscriptions);
-        when(mockConfig.getBoolean(ConfigProperties.STANDALONE)).thenReturn(false);
+        when(mockConfig.getBoolean(CommonConfigKey.STANDALONE)).thenReturn(false);
 
         List<Pool> existingPools = new LinkedList<>();
         List<Pool> newPools = pRules.createAndEnrichPools(subscription, existingPools);
@@ -1630,7 +1630,7 @@ public class PoolManagerTest {
 
         this.mockProducts(owner, prod);
         this.mockSubscriptions(owner, subscriptions);
-        when(mockConfig.getBoolean(ConfigProperties.STANDALONE)).thenReturn(false);
+        when(mockConfig.getBoolean(CommonConfigKey.STANDALONE)).thenReturn(false);
 
         List<Pool> existingPools = new LinkedList<>();
         Pool p = TestUtil.createPool(prod);
@@ -1675,7 +1675,7 @@ public class PoolManagerTest {
         this.mockProducts(owner, prod);
         this.mockSubscriptions(owner, subscriptions);
 
-        when(mockConfig.getBoolean(ConfigProperties.STANDALONE)).thenReturn(false);
+        when(mockConfig.getBoolean(CommonConfigKey.STANDALONE)).thenReturn(false);
 
         List<Pool> existingPools = new LinkedList<>();
         Pool p = TestUtil.createPool(prod);
@@ -2021,7 +2021,7 @@ public class PoolManagerTest {
         boolean expected) {
 
         Pool pool = TestUtil.createPool(owner, product);
-        when(mockConfig.getBoolean(ConfigProperties.STANDALONE)).thenReturn(!hosted);
+        when(mockConfig.getBoolean(CommonConfigKey.STANDALONE)).thenReturn(!hosted);
 
         pool.setSourceSubscription(srcSub);
         pool.setUpstreamPoolId(upstreamPoolId);

@@ -14,9 +14,8 @@
  */
 package org.candlepin.messaging.impl.artemis;
 
-import static org.candlepin.config.ConfigProperties.ASYNC_JOBS_THREAD_SHUTDOWN_TIMEOUT;
 
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 import org.candlepin.messaging.CPMContextListener;
 import org.candlepin.messaging.CPMException;
@@ -57,7 +56,7 @@ public class ArtemisContextListener implements CPMContextListener {
         // Create the server if we're configured to do so.
         // TODO: Change this to use ACTIVEMQ_EMBEDDED_BROKER once configuration upgrades are in
         // place
-        boolean embedded = this.config.getBoolean(ConfigProperties.ACTIVEMQ_EMBEDDED);
+        boolean embedded = this.config.getBoolean(CommonConfigKey.ACTIVEMQ_EMBEDDED);
 
         if (embedded) {
             log.info("Initializing embedded Artemis server...");
@@ -68,7 +67,7 @@ public class ArtemisContextListener implements CPMContextListener {
                 // If the Artemis config file is specified in the config use it. Otherwise
                 // the broker.xml file distributed via the WAR file will be used.
                 String artemisConfigFilePath = this.config
-                    .getString(ConfigProperties.ACTIVEMQ_SERVER_CONFIG_PATH);
+                    .getString(CommonConfigKey.ACTIVEMQ_SERVER_CONFIG_PATH);
 
                 if (artemisConfigFilePath != null && !artemisConfigFilePath.isEmpty()) {
                     log.info("Loading Artemis config file: {}", artemisConfigFilePath);
@@ -77,10 +76,10 @@ public class ArtemisContextListener implements CPMContextListener {
                 }
 
                 String invmLoginEntryName = this.config
-                    .getString(ConfigProperties.ACTIVEMQ_JAAS_INVM_LOGIN_NAME);
+                    .getString(CommonConfigKey.ACTIVEMQ_JAAS_INVM_LOGIN_NAME);
 
                 String certLoginEntryName = this.config
-                    .getString(ConfigProperties.ACTIVEMQ_JAAS_CERTIFICATE_LOGIN_NAME);
+                    .getString(CommonConfigKey.ACTIVEMQ_JAAS_CERTIFICATE_LOGIN_NAME);
 
                 ActiveMQJAASSecurityManager securityManager =
                     new ActiveMQJAASSecurityManager(invmLoginEntryName, certLoginEntryName);
@@ -111,7 +110,7 @@ public class ArtemisContextListener implements CPMContextListener {
     @Override
     public void shutdown() throws CPMException {
         TimeUnit unit = TimeUnit.SECONDS;
-        long time = this.config.getInt(ASYNC_JOBS_THREAD_SHUTDOWN_TIMEOUT);
+        long time = this.config.getInt(CommonConfigKey.ASYNC_JOBS_THREAD_SHUTDOWN_TIMEOUT);
 
         ActiveMQClient.getGlobalThreadPool().shutdown();
         try {

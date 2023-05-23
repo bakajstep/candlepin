@@ -22,7 +22,7 @@ import static org.mockito.Mockito.verify;
 
 import org.candlepin.async.JobExecutionContext;
 import org.candlepin.async.JobExecutionException;
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.JobConfigKey;
 import org.candlepin.model.ImportRecord;
 import org.candlepin.model.Owner;
 import org.candlepin.test.DatabaseTestFixture;
@@ -162,9 +162,7 @@ public class ImportRecordCleanerJobTest extends DatabaseTestFixture {
     }
 
     private void setNumOfRecordsToKeep(int numOfRecordsToKeep) {
-        String cfg = ConfigProperties.jobConfig(ImportRecordCleanerJob.JOB_KEY,
-            ImportRecordCleanerJob.CFG_KEEP);
-
+        String cfg = JobConfigKey.KEEP.keyForJob(ImportRecordCleanerJob.JOB_KEY);
         this.config.setProperty(cfg, String.valueOf(numOfRecordsToKeep));
     }
 

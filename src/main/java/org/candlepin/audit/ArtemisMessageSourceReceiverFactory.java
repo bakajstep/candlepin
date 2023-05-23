@@ -15,6 +15,7 @@
 package org.candlepin.audit;
 
 import org.candlepin.async.impl.ActiveMQSessionFactory;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -54,7 +55,8 @@ public class ArtemisMessageSourceReceiverFactory implements MessageSourceReceive
         List<MessageReceiver> messageReceivers = new LinkedList<>();
 
         // Build up the collection of Event message receivers.
-        ActiveMQContextListener.getActiveMQListeners(this.config).forEach(listenerClass -> {
+        List<String> strings = this.config.getList(CommonConfigKey.AUDIT_LISTENERS);
+        strings.forEach(listenerClass -> {
             try {
                 Class<?> clazz = this.getClass().getClassLoader().loadClass(listenerClass);
                 messageReceivers.add(buildEventMessageReceiver(sessionFactory,

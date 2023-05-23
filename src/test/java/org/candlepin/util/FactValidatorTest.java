@@ -17,7 +17,7 @@ package org.candlepin.util;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.DevConfig;
 import org.candlepin.config.TestConfig;
 
@@ -120,8 +120,8 @@ public class FactValidatorTest {
         "nnintfact, 3.14, false",
         "nnintfact, -2.72, false"})
     public void testFactValidation(String key, String value, boolean shouldValidate) {
-        this.config.setProperty(ConfigProperties.INTEGER_FACTS, "fact1,intfact,fact2");
-        this.config.setProperty(ConfigProperties.NON_NEG_INTEGER_FACTS, "nnintfact");
+        this.config.setProperty(CommonConfigKey.INTEGER_FACTS, "fact1,intfact,fact2");
+        this.config.setProperty(CommonConfigKey.NON_NEG_INTEGER_FACTS, "nnintfact");
 
         FactValidator validator = new FactValidator(this.config, I18N_PROVIDER);
 

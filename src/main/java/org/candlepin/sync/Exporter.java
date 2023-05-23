@@ -14,7 +14,7 @@
  */
 package org.candlepin.sync;
 
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 import org.candlepin.controller.ContentAccessManager;
 import org.candlepin.dto.ModelTranslator;
@@ -342,7 +342,7 @@ public class Exporter {
     }
 
     private String getPrefixWebUrl(String override) {
-        String prefixWebUrl = config.getString(ConfigProperties.PREFIX_WEBURL);
+        String prefixWebUrl = config.getString(CommonConfigKey.PREFIX_WEBURL);
         if (!StringUtils.isBlank(override)) {
             return override;
         }
@@ -355,7 +355,7 @@ public class Exporter {
     }
 
     private String getPrefixApiUrl(String override) {
-        String prefixApiUrl = config.getString(ConfigProperties.PREFIX_APIURL);
+        String prefixApiUrl = config.getString(CommonConfigKey.PREFIX_APIURL);
         if (!StringUtils.isBlank(override)) {
             return override;
         }

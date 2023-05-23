@@ -14,20 +14,8 @@
  */
 package org.candlepin.config;
 
+public interface ConfigKey {
 
-/**
- * Commonly used configuration prefixes
- */
-public class ConfigurationPrefixes {
-    public static final String JPA_CONFIG_PREFIX = "jpa.config.";
-    public static final String LOGGING_CONFIG_PREFIX = "log4j.logger.";
+    String key();
 
-    // Used for per-job configuration. The full syntax is "PREFIX.{job_key}.SUFFIX". For instance,
-    // to configure the schedule flag for the job TestJob1, the full configuration would be:
-    // candlepin.async.jobs.TestJob1.schedule=0 0 0/3 * * ?
-    public static final String JOB_PREFIX = "candlepin.async.jobs.";
-
-    private ConfigurationPrefixes() {
-        // This class is not meant to be instantiated.
-    }
 }

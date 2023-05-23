@@ -34,7 +34,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import org.candlepin.audit.EventSink;
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.DevConfig;
 import org.candlepin.config.TestConfig;
 import org.candlepin.controller.ContentAccessManager.ContentAccessMode;
@@ -604,7 +604,7 @@ public class ContentAccessManagerTest {
 
     @Test
     public void testContainerContentPathShouldUseOwnerKeyInHosted() throws Exception {
-        this.config.setProperty(ConfigProperties.STANDALONE, "false");
+        this.config.setProperty(CommonConfigKey.STANDALONE, "false");
 
         Owner owner = this.mockOwner();
         Consumer consumer = this.mockConsumer(owner);
@@ -624,7 +624,7 @@ public class ContentAccessManagerTest {
 
     @Test
     public void testContainerContentPathShouldBeContentPrefixInStandalone() throws Exception {
-        this.config.setProperty(ConfigProperties.STANDALONE, "true");
+        this.config.setProperty(CommonConfigKey.STANDALONE, "true");
 
         Owner owner = this.mockOwner();
         Consumer consumer = this.mockConsumer(owner);
@@ -644,7 +644,7 @@ public class ContentAccessManagerTest {
 
     @Test
     public void testContentPrefixIncludesEnvironmentWhenPresent() throws Exception {
-        this.config.setProperty(ConfigProperties.STANDALONE, "true");
+        this.config.setProperty(CommonConfigKey.STANDALONE, "true");
 
         Owner owner = this.mockOwner();
         Consumer consumer = this.mockConsumer(owner);

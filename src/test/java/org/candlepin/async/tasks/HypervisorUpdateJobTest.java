@@ -39,7 +39,7 @@ import org.candlepin.async.JobExecutionException;
 import org.candlepin.audit.EventFactory;
 import org.candlepin.audit.EventSink;
 import org.candlepin.auth.Principal;
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 import org.candlepin.dto.ModelTranslator;
 import org.candlepin.dto.StandardTranslator;
@@ -276,7 +276,7 @@ public class HypervisorUpdateJobTest {
         hypervisor.setHypervisorId(new HypervisorId().setHypervisorId(hypervisorId));
         when(consumerCurator.getExistingConsumerByHypervisorIdOrUuid(any(String.class), any(String.class),
             any(String.class))).thenReturn(hypervisor);
-        when(config.getBoolean(eq(ConfigProperties.USE_SYSTEM_UUID_FOR_MATCHING))).thenReturn(true);
+        when(config.getBoolean(CommonConfigKey.USE_SYSTEM_UUID_FOR_MATCHING)).thenReturn(true);
 
         hypervisorJson =
             "{\"hypervisors\":" +
@@ -318,7 +318,7 @@ public class HypervisorUpdateJobTest {
         // if it uses the uuid then it will return the hypervisor and update it. That will fail the test.
         when(consumerCurator.getExistingConsumerByHypervisorIdOrUuid(any(String.class), any(String.class),
             any(String.class))).thenReturn(hypervisor);
-        when(config.getBoolean(eq(ConfigProperties.USE_SYSTEM_UUID_FOR_MATCHING))).thenReturn(false);
+        when(config.getBoolean(CommonConfigKey.USE_SYSTEM_UUID_FOR_MATCHING)).thenReturn(false);
 
         hypervisorJson =
             "{\"hypervisors\":" +
@@ -431,7 +431,7 @@ public class HypervisorUpdateJobTest {
         hypervisor.setHypervisorId(new HypervisorId().setHypervisorId(hypervisorId));
         when(consumerCurator.getExistingConsumerByHypervisorIdOrUuid(any(String.class), any(String.class),
             any(String.class))).thenReturn(hypervisor);
-        when(config.getBoolean(eq(ConfigProperties.USE_SYSTEM_UUID_FOR_MATCHING))).thenReturn(true);
+        when(config.getBoolean(CommonConfigKey.USE_SYSTEM_UUID_FOR_MATCHING)).thenReturn(true);
 
         hypervisorJson =
             "{\"hypervisors\":" +

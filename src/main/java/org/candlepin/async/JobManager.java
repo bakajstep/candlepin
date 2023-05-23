@@ -18,8 +18,10 @@ import org.candlepin.audit.EventSink;
 import org.candlepin.auth.JobPrincipal;
 import org.candlepin.auth.Principal;
 import org.candlepin.auth.SystemPrincipal;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.ConfigProperties;
 import org.candlepin.config.Configuration;
+import org.candlepin.config.ConfigurationPrefixes;
 import org.candlepin.controller.mode.CandlepinModeManager;
 import org.candlepin.controller.mode.CandlepinModeManager.Mode;
 import org.candlepin.controller.mode.ModeChangeListener;
@@ -388,7 +390,7 @@ public class JobManager implements ModeChangeListener {
      *  the name of this Candlepin node
      */
     private String getNodeName() {
-        String name = this.configuration.getString(ConfigProperties.ASYNC_JOBS_NODE_NAME);
+        String name = this.configuration.getString(CommonConfigKey.ASYNC_JOBS_NODE_NAME);
         return name != null ? name : Util.getHostname();
     }
 
@@ -746,7 +748,7 @@ public class JobManager implements ModeChangeListener {
      *  true if the scheduler is enabled; false otherwise
      */
     public boolean isSchedulerEnabled() {
-        return this.configuration.getBoolean(ConfigProperties.ASYNC_JOBS_SCHEDULER_ENABLED);
+        return this.configuration.getBoolean(CommonConfigKey.ASYNC_JOBS_SCHEDULER_ENABLED);
     }
 
     /**
@@ -896,7 +898,7 @@ public class JobManager implements ModeChangeListener {
     }
 
     private Map<String, String> findJobSchedules() {
-        Map<String, String> config = this.configuration.getValuesByPrefix(ConfigProperties.ASYNC_JOBS_PREFIX);
+        Map<String, String> config = this.configuration.getValuesByPrefix(ConfigurationPrefixes.JOB_PREFIX);
         return config.entrySet().stream()
             .filter(entry -> entry.getKey().endsWith(".schedule"))
             .collect(Collectors.toMap(
@@ -907,7 +909,7 @@ public class JobManager implements ModeChangeListener {
     }
 
     private String getJobKey(Map.Entry<String, String> entry) {
-        String[] split = Util.stripPrefix(entry.getKey(), ConfigProperties.ASYNC_JOBS_PREFIX)
+        String[] split = Util.stripPrefix(entry.getKey(), ConfigurationPrefixes.JOB_PREFIX)
             .split("\\.");
         return split[0];
     }
@@ -1039,7 +1041,7 @@ public class JobManager implements ModeChangeListener {
             // Check if we're paused. If so, and if the "queue while paused" config is not set,
             // throw our usual ISE
             if (state != ManagerState.SUSPENDED ||
-                !this.configuration.getBoolean(ConfigProperties.ASYNC_JOBS_QUEUE_WHILE_SUSPENDED)) {
+                !this.configuration.getBoolean(CommonConfigKey.ASYNC_JOBS_QUEUE_WHILE_SUSPENDED)) {
 
                 String msg = String.format("Jobs cannot be queued while the manager is in the %s state",
                     state);

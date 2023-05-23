@@ -29,7 +29,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import org.candlepin.bind.PoolOperationCallback;
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.controller.PoolManager;
 import org.candlepin.model.ConsumerType;
 import org.candlepin.model.ConsumerType.ConsumerTypeEnum;
@@ -69,7 +69,7 @@ public class HostedVirtLimitEntitlementRulesTest extends EntitlementRulesTestFix
         poolQuantityMap.put(pool.getId(), new PoolQuantity(pool, 1));
 
         PoolManager poolManager = mock(PoolManager.class);
-        when(config.getBoolean(ConfigProperties.STANDALONE)).thenReturn(false);
+        when(config.getBoolean(CommonConfigKey.STANDALONE)).thenReturn(false);
         enforcer.postEntitlement(poolManager, consumer, owner, entitlements, null, false, poolQuantityMap);
 
         verify(poolManager, never()).createPools(anyList());
@@ -78,7 +78,7 @@ public class HostedVirtLimitEntitlementRulesTest extends EntitlementRulesTestFix
     @Test
     @SuppressWarnings("unchecked")
     public void hostedVirtLimitAltersBonusPoolQuantity() {
-        when(config.getBoolean(ConfigProperties.STANDALONE)).thenReturn(false);
+        when(config.getBoolean(CommonConfigKey.STANDALONE)).thenReturn(false);
         Subscription s = createVirtLimitSub("virtLimitProduct", 10, "10");
         ConsumerType ctype = this.mockConsumerType(new ConsumerType(ConsumerTypeEnum.CANDLEPIN));
         consumer.setType(ctype);
@@ -136,7 +136,7 @@ public class HostedVirtLimitEntitlementRulesTest extends EntitlementRulesTestFix
 
     @Test
     public void batchHostedVirtLimitAltersBonusPoolQuantity() {
-        when(config.getBoolean(ConfigProperties.STANDALONE)).thenReturn(false);
+        when(config.getBoolean(CommonConfigKey.STANDALONE)).thenReturn(false);
 
         ConsumerType ctype = this.mockConsumerType(new ConsumerType(ConsumerTypeEnum.CANDLEPIN));
         consumer.setType(ctype);
@@ -228,7 +228,7 @@ public class HostedVirtLimitEntitlementRulesTest extends EntitlementRulesTestFix
      */
     @Test
     public void hostedVirtLimitWithHostLimitedCreatesBonusPoolsOnBind() {
-        when(config.getBoolean(ConfigProperties.STANDALONE)).thenReturn(false);
+        when(config.getBoolean(CommonConfigKey.STANDALONE)).thenReturn(false);
         Subscription s = createVirtLimitSub("virtLimitProduct", 10, "unlimited");
         s.getProduct().setAttribute(Product.Attributes.HOST_LIMITED, "true");
         Pool p = TestUtil.copyFromSub(s);
@@ -254,7 +254,7 @@ public class HostedVirtLimitEntitlementRulesTest extends EntitlementRulesTestFix
 
     @Test
     public void hostedVirtLimitUnlimitedBonusPoolQuantity() {
-        when(config.getBoolean(ConfigProperties.STANDALONE)).thenReturn(false);
+        when(config.getBoolean(CommonConfigKey.STANDALONE)).thenReturn(false);
         Subscription s = createVirtLimitSub("virtLimitProduct", 10, "unlimited");
         Pool p = TestUtil.copyFromSub(s);
         when(poolManagerMock.isManaged(eq(p))).thenReturn(true);
@@ -300,7 +300,7 @@ public class HostedVirtLimitEntitlementRulesTest extends EntitlementRulesTestFix
      */
     @Test
     public void noBonusPoolsForHostedNonDistributorBinds() {
-        when(config.getBoolean(ConfigProperties.STANDALONE)).thenReturn(false);
+        when(config.getBoolean(CommonConfigKey.STANDALONE)).thenReturn(false);
         Subscription s = createVirtLimitSub("virtLimitProduct", 10, "unlimited");
         Pool p = TestUtil.copyFromSub(s);
         when(poolManagerMock.isManaged(eq(p))).thenReturn(true);
@@ -339,7 +339,7 @@ public class HostedVirtLimitEntitlementRulesTest extends EntitlementRulesTestFix
 
     @Test
     public void exportAllPhysicalZeroBonusPoolQuantity() {
-        when(config.getBoolean(ConfigProperties.STANDALONE)).thenReturn(false);
+        when(config.getBoolean(CommonConfigKey.STANDALONE)).thenReturn(false);
         ConsumerType ctype = this.mockConsumerType(new ConsumerType(ConsumerTypeEnum.CANDLEPIN));
         consumer.setType(ctype);
         Subscription s = createVirtLimitSub("virtLimitProduct", 10, "unlimited");
@@ -398,7 +398,7 @@ public class HostedVirtLimitEntitlementRulesTest extends EntitlementRulesTestFix
 
     @Test
     public void hostedVirtLimitDoesNotAlterQuantitiesForHostLimited() {
-        when(config.getBoolean(ConfigProperties.STANDALONE)).thenReturn(false);
+        when(config.getBoolean(CommonConfigKey.STANDALONE)).thenReturn(false);
         ConsumerType ctype = this.mockConsumerType(new ConsumerType(ConsumerTypeEnum.CANDLEPIN));
         consumer.setType(ctype);
 

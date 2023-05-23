@@ -17,7 +17,7 @@ package org.candlepin.policy.js.pool;
 import static org.candlepin.model.SourceSubscription.DERIVED_POOL_SUB_KEY;
 import static org.candlepin.model.SourceSubscription.PRIMARY_POOL_SUB_KEY;
 
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 import org.candlepin.controller.PoolManager;
 import org.candlepin.model.Consumer;
@@ -203,7 +203,7 @@ public class PoolRules {
             virtAttributes.put(Pool.Attributes.VIRT_ONLY, "true");
             virtAttributes.put(Pool.Attributes.DERIVED_POOL, "true");
             virtAttributes.put(Pool.Attributes.PHYSICAL_ONLY, "false");
-            if (hostLimited || config.getBoolean(ConfigProperties.STANDALONE)) {
+            if (hostLimited || config.getBoolean(CommonConfigKey.STANDALONE)) {
                 virtAttributes.put(Pool.Attributes.UNMAPPED_GUESTS_ONLY, "true");
             }
 
@@ -703,7 +703,7 @@ public class PoolRules {
                 else {
                     try {
                         int virtLimit = Integer.parseInt(virtLimitStr);
-                        if (config.getBoolean(ConfigProperties.STANDALONE) && !"true".equals(
+                        if (config.getBoolean(CommonConfigKey.STANDALONE) && !"true".equals(
                             existingPool.getAttributeValue(Pool.Attributes.UNMAPPED_GUESTS_ONLY))) {
 
                             // this is how we determined the quantity

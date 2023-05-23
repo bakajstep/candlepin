@@ -19,7 +19,7 @@ import org.candlepin.async.JobException;
 import org.candlepin.async.JobManager;
 import org.candlepin.async.StateManagementException;
 import org.candlepin.auth.Verify;
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 import org.candlepin.dto.ModelTranslator;
 import org.candlepin.dto.api.server.v1.AsyncJobStatusDTO;
@@ -378,7 +378,7 @@ public class JobResource implements JobsApi {
         if (this.triggerableJobKeys == null) {
             this.triggerableJobKeys = new HashSet<>();
 
-            String jobList = this.config.getString(ConfigProperties.ASYNC_JOBS_TRIGGERABLE_JOBS);
+            String jobList = this.config.getString(CommonConfigKey.ASYNC_JOBS_TRIGGERABLE_JOBS);
             if (jobList != null) {
                 for (String job : Util.toList(jobList)) {
                     if (job.length() > 0) {

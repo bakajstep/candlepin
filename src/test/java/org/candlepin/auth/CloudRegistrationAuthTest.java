@@ -29,7 +29,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.DevConfig;
 import org.candlepin.config.TestConfig;
 import org.candlepin.model.Owner;
@@ -107,7 +107,7 @@ public class CloudRegistrationAuthTest {
             .resolveCloudRegistrationData(any(CloudRegistrationInfo.class));
 
         // Default the cloud auth feature to true for most tests
-        this.config.setProperty(ConfigProperties.CLOUD_AUTHENTICATION, "true");
+        this.config.setProperty(CommonConfigKey.CLOUD_AUTHENTICATION, "true");
     }
 
     private CertificateReader setupCertificateReader() {
@@ -116,9 +116,9 @@ public class CloudRegistrationAuthTest {
             String caCert = loader.getResource("test-ca.crt").toURI().getPath();
             String caKey = loader.getResource("test-ca.key").toURI().getPath();
 
-            this.config.setProperty(ConfigProperties.CA_CERT, caCert);
-            this.config.setProperty(ConfigProperties.CA_KEY, caKey);
-            this.config.setProperty(ConfigProperties.CA_KEY_PASSWORD, "password");
+            this.config.setProperty(CommonConfigKey.CA_CERT, caCert);
+            this.config.setProperty(CommonConfigKey.CA_KEY, caKey);
+            this.config.setProperty(CommonConfigKey.CA_KEY_PASSWORD, "password");
 
             return new CertificateReader(config, new JSSPrivateKeyReader());
         }
@@ -207,13 +207,13 @@ public class CloudRegistrationAuthTest {
     @Test
     public void testGenerateRegistrationTokenFailsWhenDisabled() {
         // Should pass when enabled and throw an exception when disabled
-        this.config.setProperty(ConfigProperties.CLOUD_AUTHENTICATION, "true");
+        this.config.setProperty(CommonConfigKey.CLOUD_AUTHENTICATION, "true");
 
         CloudRegistrationInfo cloudRegInfo = this.buildCloudRegistrationInfo("test_type", "metadata", "sig");
         CloudRegistrationAuth provider = this.buildAuthProvider();
         String token = provider.generateRegistrationToken(mock(Principal.class), cloudRegInfo);
 
-        this.config.setProperty(ConfigProperties.CLOUD_AUTHENTICATION, "false");
+        this.config.setProperty(CommonConfigKey.CLOUD_AUTHENTICATION, "false");
         CloudRegistrationAuth disabledProvider = this.buildAuthProvider();
 
         assertThrows(UnsupportedOperationException.class, () ->
@@ -286,14 +286,14 @@ public class CloudRegistrationAuthTest {
     public void testGetPrincipalAbortsWhenDisabled() {
         // Enable cloud registration to get a valid token, so we can ensure the reason it aborts is due to
         // cloud registration being disabled
-        this.config.setProperty(ConfigProperties.CLOUD_AUTHENTICATION, "true");
+        this.config.setProperty(CommonConfigKey.CLOUD_AUTHENTICATION, "true");
 
         CloudRegistrationInfo cloudRegInfo = this.buildCloudRegistrationInfo("test_type", "metadata", "sig");
         CloudRegistrationAuth provider = this.buildAuthProvider();
         String token = provider.generateRegistrationToken(mock(Principal.class), cloudRegInfo);
 
         // Disable it again
-        this.config.setProperty(ConfigProperties.CLOUD_AUTHENTICATION, "false");
+        this.config.setProperty(CommonConfigKey.CLOUD_AUTHENTICATION, "false");
         provider = this.buildAuthProvider();
 
         MockHttpRequest request = this.buildHttpRequest();

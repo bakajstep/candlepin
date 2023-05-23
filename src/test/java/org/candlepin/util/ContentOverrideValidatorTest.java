@@ -17,7 +17,7 @@ package org.candlepin.util;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.DevConfig;
 import org.candlepin.config.TestConfig;
 import org.candlepin.dto.api.server.v1.ContentOverrideDTO;
@@ -251,7 +251,7 @@ public class ContentOverrideValidatorTest {
     @MethodSource("invalidHostedProperties")
     public void testValidateWithInvalidPropertyNameHosted(String property) {
         // Set our config mock to look like it's in standalone mode
-        this.config.setProperty(ConfigProperties.STANDALONE, "false");
+        this.config.setProperty(CommonConfigKey.STANDALONE, "false");
 
         ContentOverrideValidator validator = new ContentOverrideValidator(this.config, this.i18n);
 

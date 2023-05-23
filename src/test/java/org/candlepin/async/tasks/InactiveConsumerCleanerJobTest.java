@@ -22,7 +22,7 @@ import static org.mockito.Mockito.mock;
 
 import org.candlepin.async.JobExecutionContext;
 import org.candlepin.async.JobExecutionException;
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.JobConfigKey;
 import org.candlepin.model.Consumer;
 import org.candlepin.model.ConsumerType;
 import org.candlepin.model.DeletedConsumer;
@@ -89,10 +89,8 @@ public class InactiveConsumerCleanerJobTest extends DatabaseTestFixture {
 
     @ParameterizedTest(name = "{displayName} {index}: {0}")
     @ValueSource(strings = { "0", "-50" })
-    public void testExecutionWithInvalidCheckedInRetentionConfig(int rententionDays)
-        throws JobExecutionException {
-        setRetentionDaysConfiguration(InactiveConsumerCleanerJob.CFG_LAST_CHECKED_IN_RETENTION_IN_DAYS,
-            rententionDays);
+    public void testExecutionWithInvalidCheckedInRetentionConfig(int rententionDays) {
+        setRetentionDaysConfiguration(JobConfigKey.LAST_CHECKED_IN_RETENTION, rententionDays);
 
         JobExecutionContext context = mock(JobExecutionContext.class);
         assertThrows(JobExecutionException.class, () -> inactiveConsumerCleanerJob.execute(context));
@@ -100,10 +98,8 @@ public class InactiveConsumerCleanerJobTest extends DatabaseTestFixture {
 
     @ParameterizedTest(name = "{displayName} {index}: {0}")
     @ValueSource(strings = { "0", "-50" })
-    public void testExecutionWithInvalidLastUpdatedRetentionConfig(int rententionDays)
-        throws JobExecutionException {
-        setRetentionDaysConfiguration(InactiveConsumerCleanerJob.CFG_LAST_UPDATED_IN_RETENTION_IN_DAYS,
-            rententionDays);
+    public void testExecutionWithInvalidLastUpdatedRetentionConfig(int rententionDays) {
+        setRetentionDaysConfiguration(JobConfigKey.LAST_UPDATED_IN_RETENTION, rententionDays);
 
         JobExecutionContext context = mock(JobExecutionContext.class);
         assertThrows(JobExecutionException.class, () -> inactiveConsumerCleanerJob.execute(context));
@@ -122,10 +118,8 @@ public class InactiveConsumerCleanerJobTest extends DatabaseTestFixture {
         return this.consumerCurator.create(newConsumer);
     }
 
-    private void setRetentionDaysConfiguration(String configurationName, int retentionDays) {
-        String configuration = ConfigProperties.jobConfig(
-            InactiveConsumerCleanerJob.JOB_KEY,
-            configurationName);
+    private void setRetentionDaysConfiguration(JobConfigKey configKey, int retentionDays) {
+        String configuration = configKey.keyForJob(InactiveConsumerCleanerJob.JOB_KEY);
         this.config.setProperty(configuration, String.valueOf(retentionDays));
     }
 }

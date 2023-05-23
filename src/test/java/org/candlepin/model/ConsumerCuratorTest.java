@@ -26,7 +26,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import org.candlepin.async.tasks.InactiveConsumerCleanerJob;
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.DevConfig;
 import org.candlepin.exceptions.NotFoundException;
 import org.candlepin.model.ConsumerType.ConsumerTypeEnum;
@@ -79,8 +79,8 @@ public class ConsumerCuratorTest extends DatabaseTestFixture {
         ct = new ConsumerType(ConsumerTypeEnum.SYSTEM);
         ct = consumerTypeCurator.create(ct);
 
-        config.setProperty(ConfigProperties.INTEGER_FACTS, "system.count, system.multiplier");
-        config.setProperty(ConfigProperties.NON_NEG_INTEGER_FACTS, "system.count");
+        config.setProperty(CommonConfigKey.INTEGER_FACTS, "system.count, system.multiplier");
+        config.setProperty(CommonConfigKey.NON_NEG_INTEGER_FACTS, "system.count");
 
         // Inject this factValidator into the curator
         Field field = ConsumerCurator.class.getDeclaredField("factValidator");

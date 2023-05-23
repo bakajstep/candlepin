@@ -27,7 +27,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.ConfigurationException;
 import org.candlepin.config.DevConfig;
 import org.candlepin.config.TestConfig;
@@ -74,7 +74,7 @@ public class JobMessageReceiverTest {
 
         // Set the number of threads/consumers to 1 so we don't have to worry about
         // clobbering any collected state during consumer creation
-        this.config.setProperty(ConfigProperties.ASYNC_JOBS_THREADS, "1");
+        this.config.setProperty(CommonConfigKey.ASYNC_JOBS_THREADS, "1");
 
         // Reset collected state between tests
         this.listenerContainer = new ThreadLocal<>();
@@ -151,7 +151,7 @@ public class JobMessageReceiverTest {
 
     @Test
     public void testReceiveAddressCannotBeNull() {
-        this.config.clearProperty(ConfigProperties.ASYNC_JOBS_RECEIVE_ADDRESS);
+        this.config.clearProperty(CommonConfigKey.ASYNC_JOBS_RECEIVE_ADDRESS);
 
         assertThrows(ConfigurationException.class, () -> new JobMessageReceiver(
             this.config, this.cpmSessionFactory, this.mapper, this.unitOfWork));
@@ -159,7 +159,7 @@ public class JobMessageReceiverTest {
 
     @Test
     public void testReceiveAddressCannotBeEmpty() {
-        this.config.setProperty(ConfigProperties.ASYNC_JOBS_RECEIVE_ADDRESS, "");
+        this.config.setProperty(CommonConfigKey.ASYNC_JOBS_RECEIVE_ADDRESS, "");
 
         assertThrows(ConfigurationException.class, this::buildJobMessageReceiver);
     }
@@ -167,7 +167,7 @@ public class JobMessageReceiverTest {
     @Test
     public void testCreatesConsumersListeningOnConfiguredQueue() throws Exception {
         String queue = TestUtil.randomString("test_queue");
-        this.config.setProperty(ConfigProperties.ASYNC_JOBS_RECEIVE_ADDRESS, queue);
+        this.config.setProperty(CommonConfigKey.ASYNC_JOBS_RECEIVE_ADDRESS, queue);
 
         ArgumentCaptor<CPMConsumerConfig> captor = ArgumentCaptor.forClass(CPMConsumerConfig.class);
 
@@ -183,7 +183,7 @@ public class JobMessageReceiverTest {
     @Test
     public void testCreatesConsumersUsingConfiguredFilter() throws Exception {
         String filter = TestUtil.randomString("test_filter");
-        this.config.setProperty(ConfigProperties.ASYNC_JOBS_RECEIVE_FILTER, filter);
+        this.config.setProperty(CommonConfigKey.ASYNC_JOBS_RECEIVE_FILTER, filter);
 
         ArgumentCaptor<CPMConsumerConfig> captor = ArgumentCaptor.forClass(CPMConsumerConfig.class);
 

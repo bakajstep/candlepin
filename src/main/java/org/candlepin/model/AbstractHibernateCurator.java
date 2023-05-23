@@ -16,8 +16,8 @@ package org.candlepin.model;
 
 import org.candlepin.auth.Principal;
 import org.candlepin.auth.permissions.Permission;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
-import org.candlepin.config.DatabaseConfigFactory;
 import org.candlepin.exceptions.ConcurrentModificationException;
 import org.candlepin.guice.PrincipalProvider;
 import org.candlepin.paging.Page;
@@ -106,19 +106,19 @@ public abstract class AbstractHibernateCurator<E extends Persisted> {
     }
 
     public int getInBlockSize() {
-        return config.getInt(DatabaseConfigFactory.IN_OPERATOR_BLOCK_SIZE);
+        return config.getInt(CommonConfigKey.IN_OPERATOR_BLOCK_SIZE);
     }
 
     public int getCaseBlockSize() {
-        return config.getInt(DatabaseConfigFactory.CASE_OPERATOR_BLOCK_SIZE);
+        return config.getInt(CommonConfigKey.CASE_OPERATOR_BLOCK_SIZE);
     }
 
     public int getBatchBlockSize() {
-        return config.getInt(DatabaseConfigFactory.BATCH_BLOCK_SIZE);
+        return config.getInt(CommonConfigKey.BATCH_BLOCK_SIZE);
     }
 
     public int getQueryParameterLimit() {
-        return config.getInt(DatabaseConfigFactory.QUERY_PARAMETER_LIMIT);
+        return config.getInt(CommonConfigKey.QUERY_PARAMETER_LIMIT);
     }
 
     public String getDatabaseDialect() {

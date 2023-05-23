@@ -15,7 +15,7 @@
 package org.candlepin.audit;
 
 import org.candlepin.auth.PrincipalData;
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 
 import org.jboss.resteasy.plugins.providers.atom.Content;
@@ -51,7 +51,7 @@ public class EventAdapterImpl implements EventAdapter {
 
     @Override
     public Feed toFeed(List<Event> events, String path) {
-        String url =  config.getString(ConfigProperties.CANDLEPIN_URL) + path + "/";
+        String url =  config.getString(CommonConfigKey.CANDLEPIN_URL) + path + "/";
         Feed feed = new Feed();
         feed.setUpdated(new Date());
         feed.getAuthors().add(new Person("Red Hat, Inc."));

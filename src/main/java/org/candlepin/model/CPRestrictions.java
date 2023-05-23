@@ -14,8 +14,8 @@
  */
 package org.candlepin.model;
 
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
-import org.candlepin.config.DatabaseConfigFactory;
 
 import com.google.common.collect.Iterables;
 
@@ -70,7 +70,7 @@ public class CPRestrictions {
         }
 
         Iterator<List<T>> blocks = Iterables.partition(
-            values, configProvider.get().getInt(DatabaseConfigFactory.IN_OPERATOR_BLOCK_SIZE)
+            values, configProvider.get().getInt(CommonConfigKey.IN_OPERATOR_BLOCK_SIZE)
         ).iterator();
 
         Criterion criterion = Restrictions.in(expression, blocks.next());

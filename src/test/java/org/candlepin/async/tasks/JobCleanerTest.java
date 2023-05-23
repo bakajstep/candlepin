@@ -27,8 +27,8 @@ import static org.mockito.Mockito.verify;
 import org.candlepin.async.JobExecutionContext;
 import org.candlepin.async.JobExecutionException;
 import org.candlepin.async.JobManager;
-import org.candlepin.config.ConfigProperties;
 import org.candlepin.config.DevConfig;
+import org.candlepin.config.JobConfigKey;
 import org.candlepin.config.TestConfig;
 import org.candlepin.model.AsyncJobStatus.JobState;
 import org.candlepin.model.AsyncJobStatusCurator.AsyncJobStatusQueryArguments;
@@ -66,8 +66,8 @@ public class JobCleanerTest {
         return new JobCleaner(this.config, this.jobManager);
     }
 
-    private void setMaxAgeConfig(String cfgName, int maxAgeInMinutes) {
-        String cfg = ConfigProperties.jobConfig(JobCleaner.JOB_KEY, cfgName);
+    private void setMaxAgeConfig(JobConfigKey cfgName, int maxAgeInMinutes) {
+        String cfg = cfgName.keyForJob(JobCleaner.JOB_KEY);
         this.config.setProperty(cfg, String.valueOf(maxAgeInMinutes));
     }
 
@@ -105,9 +105,9 @@ public class JobCleanerTest {
     @ParameterizedTest(name = "{displayName} {index}: {0}")
     @MethodSource("maxAgeProvider")
     public void testStandardExecution(int maxAge) throws JobExecutionException {
-        this.setMaxAgeConfig(JobCleaner.CFG_MAX_TERMINAL_JOB_AGE, maxAge);
-        this.setMaxAgeConfig(JobCleaner.CFG_MAX_NONTERMINAL_JOB_AGE, maxAge);
-        this.setMaxAgeConfig(JobCleaner.CFG_MAX_RUNNING_JOB_AGE, maxAge);
+        this.setMaxAgeConfig(JobConfigKey.MAX_TERMINAL_JOB_AGE, maxAge);
+        this.setMaxAgeConfig(JobConfigKey.MAX_NON_TERMINAL_JOB_AGE, maxAge);
+        this.setMaxAgeConfig(JobConfigKey.MAX_RUNNING_JOB_AGE, maxAge);
 
         ArgumentCaptor<AsyncJobStatusQueryArguments> termCaptor =
             ArgumentCaptor.forClass(AsyncJobStatusQueryArguments.class);
@@ -182,9 +182,9 @@ public class JobCleanerTest {
     @ParameterizedTest(name = "{displayName} {index}: {0}")
     @ValueSource(strings = { "0", "-50" })
     public void testBadTerminalJobAgeConfig(int maxAge) {
-        this.setMaxAgeConfig(JobCleaner.CFG_MAX_TERMINAL_JOB_AGE, maxAge);
-        this.setMaxAgeConfig(JobCleaner.CFG_MAX_NONTERMINAL_JOB_AGE, 60);
-        this.setMaxAgeConfig(JobCleaner.CFG_MAX_RUNNING_JOB_AGE, 60);
+        this.setMaxAgeConfig(JobConfigKey.MAX_TERMINAL_JOB_AGE, maxAge);
+        this.setMaxAgeConfig(JobConfigKey.MAX_NON_TERMINAL_JOB_AGE, 60);
+        this.setMaxAgeConfig(JobConfigKey.MAX_RUNNING_JOB_AGE, 60);
 
         JobExecutionContext context = mock(JobExecutionContext.class);
         JobCleaner job = this.createJobInstance();
@@ -194,9 +194,9 @@ public class JobCleanerTest {
     @ParameterizedTest(name = "{displayName} {index}: {0}")
     @ValueSource(strings = { "0", "-50" })
     public void testDisabledNonTerminalJobAgeConfig(int maxAge) throws Exception {
-        this.setMaxAgeConfig(JobCleaner.CFG_MAX_TERMINAL_JOB_AGE, 60);
-        this.setMaxAgeConfig(JobCleaner.CFG_MAX_NONTERMINAL_JOB_AGE, maxAge);
-        this.setMaxAgeConfig(JobCleaner.CFG_MAX_RUNNING_JOB_AGE, maxAge);
+        this.setMaxAgeConfig(JobConfigKey.MAX_TERMINAL_JOB_AGE, 60);
+        this.setMaxAgeConfig(JobConfigKey.MAX_NON_TERMINAL_JOB_AGE, maxAge);
+        this.setMaxAgeConfig(JobConfigKey.MAX_RUNNING_JOB_AGE, maxAge);
 
         JobExecutionContext context = mock(JobExecutionContext.class);
         JobCleaner job = this.createJobInstance();

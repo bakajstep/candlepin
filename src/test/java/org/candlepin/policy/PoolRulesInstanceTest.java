@@ -17,10 +17,9 @@ package org.candlepin.policy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.when;
 
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 import org.candlepin.controller.PoolManager;
 import org.candlepin.model.EntitlementCurator;
@@ -78,7 +77,7 @@ public class PoolRulesInstanceTest {
         when(rulesCuratorMock.getUpdated()).thenReturn(new Date());
         when(rulesCuratorMock.getRules()).thenReturn(rules);
 
-        when(configMock.getInt(eq(ConfigProperties.PRODUCT_CACHE_MAX))).thenReturn(100);
+        when(configMock.getInt(CommonConfigKey.PRODUCT_CACHE_MAX)).thenReturn(100);
 
         poolRules = new PoolRules(poolManagerMock, configMock, entCurMock, ownerProdCuratorMock,
             productCurator);

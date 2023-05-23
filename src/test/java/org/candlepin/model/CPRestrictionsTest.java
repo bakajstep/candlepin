@@ -17,8 +17,8 @@ package org.candlepin.model;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.candlepin.TestingModules;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
-import org.candlepin.config.DatabaseConfigFactory;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -53,7 +53,7 @@ public class CPRestrictionsTest {
         List<String> items = new LinkedList<>();
         StringBuilder expected = new StringBuilder("taylor in (");
 
-        int inBlockSize = config.getInt(DatabaseConfigFactory.IN_OPERATOR_BLOCK_SIZE);
+        int inBlockSize = config.getInt(CommonConfigKey.IN_OPERATOR_BLOCK_SIZE);
         for (int i = 0; i < inBlockSize * 3; ++i) {
             items.add(String.valueOf(i));
 
@@ -78,7 +78,7 @@ public class CPRestrictionsTest {
         String expected = "swift in (";
         int i = 0;
 
-        int inBlockSize = config.getInt(DatabaseConfigFactory.IN_OPERATOR_BLOCK_SIZE);
+        int inBlockSize = config.getInt(CommonConfigKey.IN_OPERATOR_BLOCK_SIZE);
         for (; i < inBlockSize - 1; i++) {
             expected += i + ", ";
             items.add("" + i);
@@ -96,7 +96,7 @@ public class CPRestrictionsTest {
         List<String> items = new LinkedList<>();
         StringBuilder expected = new StringBuilder("taylor in (");
 
-        int inBlockSize = config.getInt(DatabaseConfigFactory.IN_OPERATOR_BLOCK_SIZE);
+        int inBlockSize = config.getInt(CommonConfigKey.IN_OPERATOR_BLOCK_SIZE);
         for (int i = 0; i < inBlockSize * 3; ++i) {
             items.add(String.valueOf(i));
 
@@ -121,7 +121,7 @@ public class CPRestrictionsTest {
         String expected = "swift in (";
         int i = 0;
 
-        int inBlockSize = config.getInt(DatabaseConfigFactory.IN_OPERATOR_BLOCK_SIZE);
+        int inBlockSize = config.getInt(CommonConfigKey.IN_OPERATOR_BLOCK_SIZE);
         for (; i < inBlockSize - 1; i++) {
             expected += i + ", ";
             items.add("" + i);

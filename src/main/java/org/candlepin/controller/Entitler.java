@@ -17,6 +17,7 @@ package org.candlepin.controller;
 import org.candlepin.audit.Event;
 import org.candlepin.audit.EventFactory;
 import org.candlepin.audit.EventSink;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.ConfigProperties;
 import org.candlepin.config.Configuration;
 import org.candlepin.controller.refresher.RefreshResult;
@@ -296,7 +297,7 @@ public class Entitler {
         }
 
         if (consumer.isDev()) {
-            if (config.getBoolean(ConfigProperties.STANDALONE) ||
+            if (config.getBoolean(CommonConfigKey.STANDALONE) ||
                 !poolCurator.hasActiveEntitlementPools(consumer.getOwnerId(), null)) {
 
                 throw new ForbiddenException(i18n.tr(
@@ -498,7 +499,7 @@ public class Entitler {
         List<PoolQuantity> result = new ArrayList<>();
         try {
             if (consumer.isDev()) {
-                if (config.getBoolean(ConfigProperties.STANDALONE) ||
+                if (config.getBoolean(CommonConfigKey.STANDALONE) ||
                     !poolCurator.hasActiveEntitlementPools(consumer.getOwnerId(), null)) {
                     throw new ForbiddenException(i18n.tr(
                         "Development units may only be used on hosted servers" +
@@ -567,7 +568,7 @@ public class Entitler {
     }
 
     private Iterable<List<Entitlement>> partition(List<Entitlement> entsToDelete) {
-        return Iterables.partition(entsToDelete, config.getInt(ConfigProperties.ENTITLER_BULK_SIZE));
+        return Iterables.partition(entsToDelete, config.getInt(CommonConfigKey.ENTITLER_BULK_SIZE));
     }
 
     public int revokeUnmappedGuestEntitlements() {

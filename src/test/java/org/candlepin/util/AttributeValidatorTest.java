@@ -17,7 +17,7 @@ package org.candlepin.util;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.DevConfig;
 import org.candlepin.config.TestConfig;
 
@@ -174,11 +174,11 @@ public class AttributeValidatorTest {
         "boolattrib, 3.14, false",
         "boolattrib, -2.72, false"})
     public void testFactValidation(String key, String value, boolean shouldValidate) {
-        this.config.setProperty(ConfigProperties.INTEGER_ATTRIBUTES, "intattrib");
-        this.config.setProperty(ConfigProperties.NON_NEG_INTEGER_ATTRIBUTES, "nnintattrib");
-        this.config.setProperty(ConfigProperties.LONG_ATTRIBUTES, "longattrib");
-        this.config.setProperty(ConfigProperties.NON_NEG_LONG_ATTRIBUTES, "nnlongattrib");
-        this.config.setProperty(ConfigProperties.BOOLEAN_ATTRIBUTES, "boolattrib");
+        this.config.setProperty(CommonConfigKey.INTEGER_ATTRIBUTES, "intattrib");
+        this.config.setProperty(CommonConfigKey.NON_NEG_INTEGER_ATTRIBUTES, "nnintattrib");
+        this.config.setProperty(CommonConfigKey.LONG_ATTRIBUTES, "longattrib");
+        this.config.setProperty(CommonConfigKey.NON_NEG_LONG_ATTRIBUTES, "nnlongattrib");
+        this.config.setProperty(CommonConfigKey.BOOLEAN_ATTRIBUTES, "boolattrib");
 
         AttributeValidator validator = new AttributeValidator(this.config, I18N_PROVIDER);
 

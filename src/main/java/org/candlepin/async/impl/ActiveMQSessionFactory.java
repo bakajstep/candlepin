@@ -14,7 +14,7 @@
  */
 package org.candlepin.async.impl;
 
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 
 import org.apache.activemq.artemis.api.core.ActiveMQException;
@@ -147,12 +147,12 @@ public class ActiveMQSessionFactory {
             // workaround we need on the receiving side of things. If it looks like the
             // egress configuration, something is probably broken.
 
-            String brokerUrl = this.config.getString(ConfigProperties.ACTIVEMQ_BROKER_URL);
+            String brokerUrl = this.config.getString(CommonConfigKey.ACTIVEMQ_BROKER_URL);
             ServerLocator locator = ActiveMQClient.createServerLocator(brokerUrl);
 
             // TODO: Maybe make this a bit more defensive and skip setting the property if it's
             // not present in the configuration rather than crashing out?
-            locator.setMinLargeMessageSize(this.config.getInt(ConfigProperties.ACTIVEMQ_LARGE_MSG_SIZE));
+            locator.setMinLargeMessageSize(this.config.getInt(CommonConfigKey.ACTIVEMQ_LARGE_MSG_SIZE));
 
             this.ingressSessionManager = new SessionManager(locator);
         }
@@ -168,12 +168,12 @@ public class ActiveMQSessionFactory {
      */
     protected synchronized SessionManager getEgressSessionManager() throws Exception {
         if (this.egressSessionManager == null) {
-            String brokerUrl = this.config.getString(ConfigProperties.ACTIVEMQ_BROKER_URL);
+            String brokerUrl = this.config.getString(CommonConfigKey.ACTIVEMQ_BROKER_URL);
             ServerLocator locator = ActiveMQClient.createServerLocator(brokerUrl);
 
             // TODO: Maybe make this a bit more defensive and skip setting the property if it's
             // not present in the configuration rather than crashing out?
-            locator.setMinLargeMessageSize(this.config.getInt(ConfigProperties.ACTIVEMQ_LARGE_MSG_SIZE));
+            locator.setMinLargeMessageSize(this.config.getInt(CommonConfigKey.ACTIVEMQ_LARGE_MSG_SIZE));
 
             // Continuously attempt reconnects to the broker if the connection is lost. This
             // is to ensure that message sends can survive while a broker is restarted so long as

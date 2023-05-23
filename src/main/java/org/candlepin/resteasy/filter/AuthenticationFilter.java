@@ -26,7 +26,7 @@ import org.candlepin.auth.SSLAuth;
 import org.candlepin.auth.SecurityHole;
 import org.candlepin.auth.TrustedConsumerAuth;
 import org.candlepin.auth.TrustedUserAuth;
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 import org.candlepin.exceptions.BadRequestException;
 import org.candlepin.exceptions.NotAuthorizedException;
@@ -96,38 +96,38 @@ public class AuthenticationFilter implements ContainerRequestFilter {
 
     public void setupAuthStrategies() {
         // use keycloak authentication
-        if (config.getBoolean(ConfigProperties.KEYCLOAK_AUTHENTICATION)) {
+        if (config.getBoolean(CommonConfigKey.KEYCLOAK_AUTHENTICATION)) {
             providers.add(injector.getInstance(KeycloakAuth.class));
         }
 
         // Check if the cloud provider/jwt auth should be enabled
-        if (config.getBoolean(ConfigProperties.CLOUD_AUTHENTICATION)) {
+        if (config.getBoolean(CommonConfigKey.CLOUD_AUTHENTICATION)) {
             providers.add(injector.getInstance(CloudRegistrationAuth.class));
         }
 
         // use oauth
-        if (config.getBoolean(ConfigProperties.OAUTH_AUTHENTICATION)) {
+        if (config.getBoolean(CommonConfigKey.OAUTH_AUTHENTICATION)) {
             providers.add(injector.getInstance(OAuth.class));
         }
 
         // http basic auth access
-        if (config.getBoolean(ConfigProperties.BASIC_AUTHENTICATION)) {
+        if (config.getBoolean(CommonConfigKey.BASIC_AUTHENTICATION)) {
             providers.add(injector.getInstance(BasicAuth.class));
         }
 
         // consumer certificates
-        if (config.getBoolean(ConfigProperties.SSL_AUTHENTICATION)) {
+        if (config.getBoolean(CommonConfigKey.SSL_AUTHENTICATION)) {
             providers.add(injector.getInstance(SSLAuth.class));
         }
 
         // trusted headers
-        if (config.getBoolean(ConfigProperties.TRUSTED_AUTHENTICATION)) {
+        if (config.getBoolean(CommonConfigKey.TRUSTED_AUTHENTICATION)) {
             providers.add(injector.getInstance(TrustedConsumerAuth.class));
             providers.add(injector.getInstance(TrustedUserAuth.class));
         }
 
         // activation key
-        if (config.getBoolean(ConfigProperties.ACTIVATION_KEY_AUTHENTICATION)) {
+        if (config.getBoolean(CommonConfigKey.ACTIVATION_KEY_AUTHENTICATION)) {
             providers.add(injector.getInstance(ActivationKeyAuth.class));
         }
     }
@@ -166,7 +166,7 @@ public class AuthenticationFilter implements ContainerRequestFilter {
                 log.debug("No auth allowed for resource; setting NoAuth principal");
                 principal = new NoAuthPrincipal();
             }
-            else if (!config.getBoolean(ConfigProperties.AUTH_OVER_HTTP) && !request.isSecure()) {
+            else if (!config.getBoolean(CommonConfigKey.AUTH_OVER_HTTP) && !request.isSecure()) {
                 throw new BadRequestException(i18n.tr("Please use SSL when accessing protected resources"));
             }
             else {

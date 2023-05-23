@@ -14,7 +14,7 @@
  */
 package org.candlepin.messaging.impl.artemis;
 
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 import org.candlepin.messaging.CPMException;
 import org.candlepin.messaging.CPMSessionConfig;
@@ -166,7 +166,7 @@ public class ArtemisSessionFactory implements CPMSessionFactory {
 
         try {
             // Create server locator
-            String brokerUrl = this.config.getString(ConfigProperties.ACTIVEMQ_BROKER_URL);
+            String brokerUrl = this.config.getString(CommonConfigKey.ACTIVEMQ_BROKER_URL);
             log.info("Connecting to Artemis server at {}", brokerUrl);
 
             this.locator = ActiveMQClient.createServerLocator(brokerUrl);

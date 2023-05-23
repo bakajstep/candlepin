@@ -14,7 +14,7 @@
  */
 package org.candlepin.pki;
 
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 import org.candlepin.config.TestConfig;
 import org.candlepin.pki.impl.JSSPrivateKeyReader;
@@ -34,10 +34,10 @@ public class CertificateReaderTest {
         final String caCertUpstream = loader.getResource("certs/upstream").toURI().getPath();
         final String caKey = loader.getResource("keys/pkcs1-des-encrypted.pem").toURI().getPath();
         final Configuration config = TestConfig.custom(Map.of(
-            ConfigProperties.CA_CERT, caCert,
-            ConfigProperties.CA_CERT_UPSTREAM, caCertUpstream,
-            ConfigProperties.CA_KEY, caKey,
-            ConfigProperties.CA_KEY_PASSWORD, "password"
+            CommonConfigKey.CA_CERT.key(), caCert,
+            CommonConfigKey.CA_CERT_UPSTREAM.key(), caCertUpstream,
+            CommonConfigKey.CA_KEY.key(), caKey,
+            CommonConfigKey.CA_KEY_PASSWORD.key(), "password"
         ));
 
         Assertions.assertDoesNotThrow(() -> new CertificateReader(config, new JSSPrivateKeyReader()));

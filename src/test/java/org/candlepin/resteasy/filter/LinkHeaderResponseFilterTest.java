@@ -21,6 +21,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 import org.candlepin.config.DevConfig;
 import org.candlepin.config.TestConfig;
@@ -64,11 +65,9 @@ public class LinkHeaderResponseFilterTest {
     private ServletContext mockServletContext;
 
     private MockHttpRequest mockReq;
-    private String apiUrlPrefixKey;
 
     @BeforeEach
     public void setUp() throws Exception {
-        this.apiUrlPrefixKey = "test_prefix_key";
         ResteasyContext.pushContext(ServletContext.class, mockServletContext);
     }
 
@@ -79,11 +78,11 @@ public class LinkHeaderResponseFilterTest {
 
     @Test
     public void testBuildBaseUrlWithConfigPropertyEmpty() throws Exception {
-        when(config.getString(this.apiUrlPrefixKey)).thenReturn("");
+        when(config.getString(CommonConfigKey.PREFIX_APIURL)).thenReturn("");
 
         mockReq = MockHttpRequest.get("https://example.com/candlepin");
         when(mockRequestContext.getUriInfo()).thenReturn(mockReq.getUri());
-        LinkHeaderResponseFilter interceptor = new LinkHeaderResponseFilter(config, apiUrlPrefixKey);
+        LinkHeaderResponseFilter interceptor = new LinkHeaderResponseFilter(config);
 
         UriBuilder builder = interceptor.buildBaseUrl(mockRequestContext);
         assertEquals("https://example.com/candlepin", builder.build().toString());
@@ -94,7 +93,7 @@ public class LinkHeaderResponseFilterTest {
     public void testBuildBaseUrlWithNoConfigProperty() throws Exception {
         mockReq = MockHttpRequest.get("https://example.com/candlepin");
         when(mockRequestContext.getUriInfo()).thenReturn(mockReq.getUri());
-        LinkHeaderResponseFilter interceptor = new LinkHeaderResponseFilter(config, apiUrlPrefixKey);
+        LinkHeaderResponseFilter interceptor = new LinkHeaderResponseFilter(config);
 
         UriBuilder builder = interceptor.buildBaseUrl(mockRequestContext);
         assertEquals("https://example.com/candlepin", builder.build().toString());
@@ -110,7 +109,7 @@ public class LinkHeaderResponseFilterTest {
         ));
 
         LinkHeaderResponseFilter interceptorWithDefault =
-            new LinkHeaderResponseFilter(config, this.apiUrlPrefixKey);
+            new LinkHeaderResponseFilter(config);
 
         UriBuilder builder = interceptorWithDefault.buildBaseUrl(mockRequestContext);
         assertEquals("https://localhost:8443/candlepin/resource", builder.build().toString());
@@ -119,12 +118,12 @@ public class LinkHeaderResponseFilterTest {
     @Test
     public void testBuildBaseUrlWithNoSchemeProvided() throws Exception {
         when(mockServletContext.getContextPath()).thenReturn("/candlepin");
-        when(config.getString(this.apiUrlPrefixKey)).thenReturn(
+        when(config.getString(CommonConfigKey.PREFIX_APIURL)).thenReturn(
             "localhost:8443/candlepin");
 
         mockReq = MockHttpRequest.get("https://example.com/candlepin/resource?baz=qu%3Dux");
         when(mockRequestContext.getUriInfo()).thenReturn(mockReq.getUri());
-        LinkHeaderResponseFilter interceptor = new LinkHeaderResponseFilter(config, apiUrlPrefixKey);
+        LinkHeaderResponseFilter interceptor = new LinkHeaderResponseFilter(config);
 
         UriBuilder builder = interceptor.buildBaseUrl(mockRequestContext);
         assertEquals("https://localhost:8443/candlepin/resource", builder.build().toString());
@@ -132,15 +131,15 @@ public class LinkHeaderResponseFilterTest {
 
     @Test
     public void testBuildBaseUrlWithBadConfigReturnsNull() throws Exception {
-        when(config.getString(this.apiUrlPrefixKey)).thenReturn("localhost:8443/subscriptions");
+        when(config.getString(CommonConfigKey.PREFIX_APIURL)).thenReturn("localhost:8443/subscriptions");
 
         mockReq = MockHttpRequest.get("https://example.com/candlepin");
         when(mockRequestContext.getUriInfo()).thenReturn(mockReq.getUri());
 
         when(mockServletContext.getContextPath()).thenReturn("/subscriptions");
-        LinkHeaderResponseFilter interceptor = new LinkHeaderResponseFilter(config, apiUrlPrefixKey);
+        LinkHeaderResponseFilter interceptor = new LinkHeaderResponseFilter(config);
 
-        interceptor = new LinkHeaderResponseFilter(config, apiUrlPrefixKey);
+        interceptor = new LinkHeaderResponseFilter(config);
 
         UriBuilder builder = interceptor.buildBaseUrl(mockRequestContext);
         assertNull(builder);
@@ -151,7 +150,7 @@ public class LinkHeaderResponseFilterTest {
         MultivaluedMap<String, String> map = new MultivaluedMapImpl<>();
         map.add("baz", "qu=ux");
         UriBuilder bu = UriBuilder.fromUri("https://localhost:8443/candlepin/resource");
-        LinkHeaderResponseFilter interceptor = new LinkHeaderResponseFilter(config, apiUrlPrefixKey);
+        LinkHeaderResponseFilter interceptor = new LinkHeaderResponseFilter(config);
 
         URI returned = interceptor.addUnchangingQueryParams(bu, map).build();
         assertEquals(URI.create("https://localhost:8443/candlepin/resource?baz=qu%3Dux"), returned);
@@ -162,7 +161,7 @@ public class LinkHeaderResponseFilterTest {
         MultivaluedMap<String, String> map = new MultivaluedMapImpl<>();
         map.add("page", "10");
         UriBuilder bu = UriBuilder.fromUri("https://localhost:8443/candlepin/resource");
-        LinkHeaderResponseFilter interceptor = new LinkHeaderResponseFilter(config, apiUrlPrefixKey);
+        LinkHeaderResponseFilter interceptor = new LinkHeaderResponseFilter(config);
 
         URI returned = interceptor.addUnchangingQueryParams(bu, map).build();
         assertEquals(URI.create("https://localhost:8443/candlepin/resource"), returned);
@@ -171,7 +170,7 @@ public class LinkHeaderResponseFilterTest {
     @Test
     public void testDoesNotAddAnythingWhenNoQueryParameters() {
         UriBuilder bu = UriBuilder.fromUri("https://localhost:8443/candlepin/resource");
-        LinkHeaderResponseFilter interceptor = new LinkHeaderResponseFilter(config, apiUrlPrefixKey);
+        LinkHeaderResponseFilter interceptor = new LinkHeaderResponseFilter(config);
 
         URI returned = interceptor.addUnchangingQueryParams(bu, null).build();
         assertEquals(URI.create("https://localhost:8443/candlepin/resource"), returned);
@@ -180,7 +179,7 @@ public class LinkHeaderResponseFilterTest {
     @Test
     public void testBuildPageLink() {
         UriBuilder bu = UriBuilder.fromUri("https://localhost:8443/candlepin/resource");
-        LinkHeaderResponseFilter interceptor = new LinkHeaderResponseFilter(config, apiUrlPrefixKey);
+        LinkHeaderResponseFilter interceptor = new LinkHeaderResponseFilter(config);
 
         assertEquals("https://localhost:8443/candlepin/resource?page=5",
             interceptor.buildPageLink(bu, 5));
@@ -196,7 +195,7 @@ public class LinkHeaderResponseFilterTest {
 
         pr.setPerPage(10);
         pr.setPage(3);
-        LinkHeaderResponseFilter interceptor = new LinkHeaderResponseFilter(config, apiUrlPrefixKey);
+        LinkHeaderResponseFilter interceptor = new LinkHeaderResponseFilter(config);
 
         assertEquals(Integer.valueOf(2), interceptor.getPrevPage(p));
     }
@@ -211,7 +210,7 @@ public class LinkHeaderResponseFilterTest {
 
         pr.setPerPage(10);
         pr.setPage(1);
-        LinkHeaderResponseFilter interceptor = new LinkHeaderResponseFilter(config, apiUrlPrefixKey);
+        LinkHeaderResponseFilter interceptor = new LinkHeaderResponseFilter(config);
 
         assertNull(interceptor.getPrevPage(p));
     }
@@ -226,7 +225,7 @@ public class LinkHeaderResponseFilterTest {
 
         pr.setPerPage(10);
         pr.setPage(3);
-        LinkHeaderResponseFilter interceptor = new LinkHeaderResponseFilter(config, apiUrlPrefixKey);
+        LinkHeaderResponseFilter interceptor = new LinkHeaderResponseFilter(config);
 
         assertEquals(Integer.valueOf(4), interceptor.getNextPage(p));
     }
@@ -241,7 +240,7 @@ public class LinkHeaderResponseFilterTest {
 
         pr.setPerPage(10);
         pr.setPage(6);
-        LinkHeaderResponseFilter interceptor = new LinkHeaderResponseFilter(config, apiUrlPrefixKey);
+        LinkHeaderResponseFilter interceptor = new LinkHeaderResponseFilter(config);
 
         assertNull(interceptor.getNextPage(p));
     }
@@ -256,7 +255,7 @@ public class LinkHeaderResponseFilterTest {
 
         pr.setPerPage(10);
         pr.setPage(1);
-        LinkHeaderResponseFilter interceptor = new LinkHeaderResponseFilter(config, apiUrlPrefixKey);
+        LinkHeaderResponseFilter interceptor = new LinkHeaderResponseFilter(config);
 
         assertEquals(Integer.valueOf(6), interceptor.getLastPage(p));
     }
@@ -271,7 +270,7 @@ public class LinkHeaderResponseFilterTest {
 
         pr.setPerPage(10);
         pr.setPage(1);
-        LinkHeaderResponseFilter interceptor = new LinkHeaderResponseFilter(config, apiUrlPrefixKey);
+        LinkHeaderResponseFilter interceptor = new LinkHeaderResponseFilter(config);
 
         assertEquals(Integer.valueOf(1), interceptor.getLastPage(p));
     }
@@ -286,7 +285,7 @@ public class LinkHeaderResponseFilterTest {
 
         pr.setPerPage(10);
         pr.setPage(1);
-        LinkHeaderResponseFilter interceptor = new LinkHeaderResponseFilter(config, apiUrlPrefixKey);
+        LinkHeaderResponseFilter interceptor = new LinkHeaderResponseFilter(config);
 
         assertEquals(Integer.valueOf(1), interceptor.getLastPage(p));
     }
@@ -301,7 +300,7 @@ public class LinkHeaderResponseFilterTest {
 
         pr.setPerPage(10);
         pr.setPage(2);
-        LinkHeaderResponseFilter interceptor = new LinkHeaderResponseFilter(config, apiUrlPrefixKey);
+        LinkHeaderResponseFilter interceptor = new LinkHeaderResponseFilter(config);
 
         assertNull(interceptor.getPrevPage(p));
         assertNull(interceptor.getNextPage(p));
@@ -310,7 +309,7 @@ public class LinkHeaderResponseFilterTest {
 
     @Test
     public void testPostProcessWithNullPage() {
-        LinkHeaderResponseFilter interceptor = new LinkHeaderResponseFilter(config, apiUrlPrefixKey);
+        LinkHeaderResponseFilter interceptor = new LinkHeaderResponseFilter(config);
         // Should just not throw an exception
         interceptor.filter(mockRequestContext, mockResponseContext);
     }
@@ -319,7 +318,7 @@ public class LinkHeaderResponseFilterTest {
     public void testPostProcessWithNullPageRequest() {
         ResteasyContext.pushContext(Page.class, page);
         when(page.getPageRequest()).thenReturn(null);
-        LinkHeaderResponseFilter interceptor = new LinkHeaderResponseFilter(config, apiUrlPrefixKey);
+        LinkHeaderResponseFilter interceptor = new LinkHeaderResponseFilter(config);
 
         interceptor.filter(mockRequestContext, mockResponseContext);
 
@@ -331,7 +330,7 @@ public class LinkHeaderResponseFilterTest {
         when(page.getPageRequest()).thenReturn(pageRequest);
         when(pageRequest.isPaging()).thenReturn(false);
         ResteasyContext.pushContext(Page.class, page);
-        LinkHeaderResponseFilter interceptor = new LinkHeaderResponseFilter(config, apiUrlPrefixKey);
+        LinkHeaderResponseFilter interceptor = new LinkHeaderResponseFilter(config);
 
         interceptor.filter(mockRequestContext, mockResponseContext);
 
@@ -357,7 +356,7 @@ public class LinkHeaderResponseFilterTest {
         when(mockRequestContext.getUriInfo()).thenReturn(mockReq.getUri());
 
         when(mockResponseContext.getHeaders()).thenReturn(map);
-        LinkHeaderResponseFilter interceptor = new LinkHeaderResponseFilter(config, apiUrlPrefixKey);
+        LinkHeaderResponseFilter interceptor = new LinkHeaderResponseFilter(config);
 
         interceptor.filter(mockRequestContext, mockResponseContext);
         String header = (String) map.getFirst(LinkHeaderResponseFilter.LINK_HEADER);
@@ -382,7 +381,7 @@ public class LinkHeaderResponseFilterTest {
         when(pageRequest.getPerPage()).thenReturn(5);
 
         // We're going to take the path of building the URI ourselves.
-        when(config.getString(this.apiUrlPrefixKey)).thenReturn("localhost:8443/candlepin");
+        when(config.getString(CommonConfigKey.PREFIX_APIURL)).thenReturn("localhost:8443/candlepin");
         when(mockServletContext.getContextPath()).thenReturn("/candlepin");
 
         MultivaluedMap<String, Object> map = new MultivaluedMapImpl<>();
@@ -395,7 +394,7 @@ public class LinkHeaderResponseFilterTest {
         when(mockRequestContext.getUriInfo()).thenReturn(mockReq.getUri());
 
         when(mockResponseContext.getHeaders()).thenReturn(map);
-        LinkHeaderResponseFilter interceptor = new LinkHeaderResponseFilter(config, apiUrlPrefixKey);
+        LinkHeaderResponseFilter interceptor = new LinkHeaderResponseFilter(config);
 
         interceptor.filter(mockRequestContext, mockResponseContext);
         String header = (String) map.getFirst(LinkHeaderResponseFilter.LINK_HEADER);

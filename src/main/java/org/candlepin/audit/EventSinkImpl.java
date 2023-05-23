@@ -15,6 +15,7 @@
 package org.candlepin.audit;
 
 import org.candlepin.async.impl.ActiveMQSessionFactory;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 import org.candlepin.controller.mode.CandlepinModeManager;
 import org.candlepin.controller.mode.CandlepinModeManager.Mode;
@@ -57,19 +58,18 @@ public class EventSinkImpl implements EventSink {
     public static final String EVENT_TYPE_KEY = "EVENT_TYPE";
     public static final String EVENT_TARGET_KEY = "EVENT_TARGET";
 
-    private EventFactory eventFactory;
-    private ObjectMapper mapper;
-    private EventFilter eventFilter;
-    private CandlepinModeManager modeManager;
-    private Configuration config;
-
-    private ActiveMQSessionFactory sessionFactory;
+    private final EventFactory eventFactory;
+    private final ObjectMapper mapper;
+    private final EventFilter eventFilter;
+    private final CandlepinModeManager modeManager;
+    private final Configuration config;
+    private final ActiveMQSessionFactory sessionFactory;
     private EventMessageSender messageSender;
 
     @Inject
     public EventSinkImpl(EventFilter eventFilter, EventFactory eventFactory,
         ObjectMapper mapper, Configuration config, ActiveMQSessionFactory sessionFactory,
-        CandlepinModeManager modeManager) throws ActiveMQException {
+        CandlepinModeManager modeManager) {
 
         this.eventFactory = eventFactory;
         this.mapper = mapper;
@@ -85,9 +85,11 @@ public class EventSinkImpl implements EventSink {
     public List<QueueStatus> getQueueInfo() {
         List<QueueStatus> results = new LinkedList<>();
 
+        List<String> listeners = this.config.getList(CommonConfigKey.AUDIT_LISTENERS);
+
         try (ClientSession session = this.sessionFactory.getEgressSession(false)) {
             session.start();
-            for (String listenerClassName : ActiveMQContextListener.getActiveMQListeners(config)) {
+            for (String listenerClassName : listeners) {
                 String queueName = "event." + listenerClassName;
                 long msgCount = session.queueQuery(SimpleString.toSimpleString(queueName)).getMessageCount();
                 results.add(new QueueStatus()

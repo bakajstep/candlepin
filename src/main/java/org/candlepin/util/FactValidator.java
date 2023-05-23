@@ -14,7 +14,7 @@
  */
 package org.candlepin.util;
 
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 
 import org.xnap.commons.i18n.I18n;
@@ -36,12 +36,12 @@ public class FactValidator extends PropertyValidator {
     @Inject
     public FactValidator(Configuration config, Provider<I18n> i18nProvider) {
         // Add integer attributes...
-        for (String key : config.getSet(ConfigProperties.INTEGER_FACTS)) {
+        for (String key : config.getSet(CommonConfigKey.INTEGER_FACTS)) {
             this.validators.put(key, new PropertyValidator.IntegerValidator(i18nProvider, "fact"));
         }
 
         // Add non-negative integer attributes...
-        for (String key : config.getSet(ConfigProperties.NON_NEG_INTEGER_FACTS)) {
+        for (String key : config.getSet(CommonConfigKey.NON_NEG_INTEGER_FACTS)) {
             this.validators.put(key, new PropertyValidator.NonNegativeIntegerValidator(i18nProvider,
                 "fact"));
         }

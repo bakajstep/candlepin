@@ -16,7 +16,7 @@ package org.candlepin.auth;
 
 import org.candlepin.auth.permissions.OwnerPermission;
 import org.candlepin.auth.permissions.Permission;
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 import org.candlepin.config.ConversionException;
 import org.candlepin.model.Owner;
@@ -102,10 +102,10 @@ public class CloudRegistrationAuth implements AuthProvider {
 
         // Pre-parse config values we'll be using a bunch
         try {
-            this.enabled = this.config.getBoolean(ConfigProperties.CLOUD_AUTHENTICATION);
+            this.enabled = this.config.getBoolean(CommonConfigKey.CLOUD_AUTHENTICATION);
 
-            this.jwtIssuer = this.config.getString(ConfigProperties.JWT_ISSUER);
-            this.jwtTokenTTL = this.config.getInt(ConfigProperties.JWT_TOKEN_TTL);
+            this.jwtIssuer = this.config.getString(CommonConfigKey.JWT_ISSUER);
+            this.jwtTokenTTL = this.config.getInt(CommonConfigKey.JWT_TOKEN_TTL);
         }
         catch (ConversionException e) {
             // Try to pretty up the exception for easy debugging

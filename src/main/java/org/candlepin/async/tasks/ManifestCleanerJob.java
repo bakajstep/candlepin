@@ -17,8 +17,9 @@ package org.candlepin.async.tasks;
 import org.candlepin.async.AsyncJob;
 import org.candlepin.async.JobExecutionContext;
 import org.candlepin.async.JobExecutionException;
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
+import org.candlepin.config.JobConfigKey;
 import org.candlepin.controller.ManifestManager;
 import org.candlepin.model.ManifestFileRecord;
 import org.candlepin.sync.file.ManifestFileService;
@@ -57,10 +58,9 @@ public class ManifestCleanerJob implements AsyncJob {
     public static final String JOB_KEY = "ManifestCleanerJob";
     public static final String JOB_NAME = "Manifest Cleaner";
 
-    public static final String CFG_MAX_AGE_IN_MINUTES = "max_age_in_minutes";
-    public static final int DEFAULT_MAX_AGE_IN_MINUTES = 1440;
     // Every noon
     public static final String DEFAULT_SCHEDULE = "0 0 12 * * ?";
+    public static final int DEFAULT_MAX_AGE_IN_MINUTES = 1440;
 
     private final Configuration config;
     private final ManifestManager manifestManager;
@@ -76,8 +76,8 @@ public class ManifestCleanerJob implements AsyncJob {
      */
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {
-        File baseDir = new File(config.getString(ConfigProperties.SYNC_WORK_DIR));
-        int maxAgeInMinutes = config.getInt(ConfigProperties.jobConfig(JOB_KEY, CFG_MAX_AGE_IN_MINUTES));
+        File baseDir = new File(config.getString(CommonConfigKey.SYNC_WORK_DIR));
+        int maxAgeInMinutes = config.getInt(JobConfigKey.MAX_MANIFEST_AGE.keyForJob(JOB_KEY));
 
         if (maxAgeInMinutes < 1) {
             String errmsg = String.format("Invalid value for max age, must be a positive integer: %s",

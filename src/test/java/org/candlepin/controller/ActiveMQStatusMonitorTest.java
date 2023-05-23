@@ -16,31 +16,30 @@ package org.candlepin.controller;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.when;
 
 import org.candlepin.audit.ActiveMQStatus;
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
+import org.candlepin.config.TestConfig;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
-@ExtendWith(MockitoExtension.class)
+
 public class ActiveMQStatusMonitorTest {
 
-    @Mock
     private Configuration config;
 
     @BeforeEach
     public void setup() {
-        when(config.getLong(ConfigProperties.ACTIVEMQ_CONNECTION_MONITOR_INTERVAL)).thenReturn(500L);
+        this.config = TestConfig.custom(Map.of(
+            CommonConfigKey.ACTIVEMQ_CONNECTION_MONITOR_INTERVAL.key(), "500"
+        ));
     }
 
     @Test

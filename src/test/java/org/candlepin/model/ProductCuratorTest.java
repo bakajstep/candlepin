@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.DevConfig;
 import org.candlepin.test.DatabaseTestFixture;
 import org.candlepin.test.TestUtil;
@@ -72,11 +72,11 @@ public class ProductCuratorTest extends DatabaseTestFixture {
 
     @BeforeEach
     public void setUp() throws Exception {
-        config.setProperty(ConfigProperties.INTEGER_ATTRIBUTES, "product.count, product.multiplier");
-        config.setProperty(ConfigProperties.NON_NEG_INTEGER_ATTRIBUTES, "product.pos_count");
-        config.setProperty(ConfigProperties.LONG_ATTRIBUTES, "product.long_count, product.long_multiplier");
-        config.setProperty(ConfigProperties.NON_NEG_LONG_ATTRIBUTES, "product.long_pos_count");
-        config.setProperty(ConfigProperties.BOOLEAN_ATTRIBUTES, "product.bool_val_str, product.bool_val_num");
+        config.setProperty(CommonConfigKey.INTEGER_ATTRIBUTES, "product.count, product.multiplier");
+        config.setProperty(CommonConfigKey.NON_NEG_INTEGER_ATTRIBUTES, "product.pos_count");
+        config.setProperty(CommonConfigKey.LONG_ATTRIBUTES, "product.long_count, product.long_multiplier");
+        config.setProperty(CommonConfigKey.NON_NEG_LONG_ATTRIBUTES, "product.long_pos_count");
+        config.setProperty(CommonConfigKey.BOOLEAN_ATTRIBUTES, "product.bool_val_str, product.bool_val_num");
 
         // Inject this attributeValidator into the curator
         Field field = ProductCurator.class.getDeclaredField("attributeValidator");

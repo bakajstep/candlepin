@@ -19,7 +19,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -28,7 +27,7 @@ import static org.mockito.Mockito.when;
 import org.candlepin.auth.KeycloakConfiguration;
 import org.candlepin.cache.CandlepinCache;
 import org.candlepin.cache.StatusCache;
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 import org.candlepin.controller.mode.CandlepinModeManager;
 import org.candlepin.controller.mode.CandlepinModeManager.Mode;
@@ -175,7 +174,7 @@ public class StatusResourceTest {
 
     @Test
     public void keycloakParamsPresentWhenKeycloakActive() {
-        when(config.getBoolean(eq(ConfigProperties.KEYCLOAK_AUTHENTICATION))).thenReturn(true);
+        when(config.getBoolean(CommonConfigKey.KEYCLOAK_AUTHENTICATION)).thenReturn(true);
 
         AdapterConfig config = this.mockKeycloakAdapterConfig;
 
@@ -194,7 +193,7 @@ public class StatusResourceTest {
 
     @Test
     public void keycloakParamsMissingWhenKeycloakInactive() {
-        when(config.getBoolean(eq(ConfigProperties.KEYCLOAK_AUTHENTICATION))).thenReturn(false);
+        when(config.getBoolean(CommonConfigKey.KEYCLOAK_AUTHENTICATION)).thenReturn(false);
 
         StatusResource sr = this.createResource();
 

@@ -17,8 +17,9 @@ package org.candlepin.async.tasks;
 import org.candlepin.async.AsyncJob;
 import org.candlepin.async.JobExecutionContext;
 import org.candlepin.async.JobExecutionException;
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.ConfigKey;
 import org.candlepin.config.Configuration;
+import org.candlepin.config.JobConfigKey;
 import org.candlepin.model.CertificateSerialCurator;
 import org.candlepin.model.ConsumerCurator;
 import org.candlepin.model.ContentAccessCertificateCurator;
@@ -53,12 +54,8 @@ public class InactiveConsumerCleanerJob implements AsyncJob {
     public static final String JOB_KEY = "InactiveConsumerCleanerJob";
     public static final String JOB_NAME = "Inactive Consumer Cleaner";
 
-    public static final String CFG_LAST_CHECKED_IN_RETENTION_IN_DAYS = "last_checked_in_retention_in_days";
     public static final int DEFAULT_LAST_CHECKED_IN_RETENTION_IN_DAYS = 397;
-
-    public static final String CFG_LAST_UPDATED_IN_RETENTION_IN_DAYS = "last_updated_retention_in_days";
     public static final int DEFAULT_LAST_UPDATED_IN_RETENTION_IN_DAYS = 30;
-    public static final String CFG_BATCH_SIZE = "batch_size";
     public static final String DEFAULT_BATCH_SIZE = "1000";
 
     private final Configuration config;
@@ -120,10 +117,8 @@ public class InactiveConsumerCleanerJob implements AsyncJob {
 
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {
-        Instant lastCheckedInRetention = getRetentionDate(CFG_LAST_CHECKED_IN_RETENTION_IN_DAYS
-        );
-        Instant nonCheckedInRetention = getRetentionDate(CFG_LAST_UPDATED_IN_RETENTION_IN_DAYS
-        );
+        Instant lastCheckedInRetention = getRetentionDate(JobConfigKey.LAST_CHECKED_IN_RETENTION);
+        Instant nonCheckedInRetention = getRetentionDate(JobConfigKey.LAST_UPDATED_IN_RETENTION);
 
         List<String> inactiveConsumerIds = consumerCurator
             .getInactiveConsumerIds(lastCheckedInRetention, nonCheckedInRetention);
@@ -142,12 +137,12 @@ public class InactiveConsumerCleanerJob implements AsyncJob {
     /**
      * Retrieves the retention instant based on the provided configuration name and default value.
      *
-     * @param configurationName - name of the configuration to retrieve.
+     * @param configKey - The configuration to retrieve.
      * @return the retention instant based on the provided configuration name and default value.
      * @throws JobExecutionException when there is an invalid retention configuration.
      */
-    private Instant getRetentionDate(String configurationName) throws JobExecutionException {
-        String configuration = ConfigProperties.jobConfig(JOB_KEY, configurationName);
+    private Instant getRetentionDate(JobConfigKey configKey) throws JobExecutionException {
+        ConfigKey configuration = configKey.keyForJob(JOB_KEY);
         int retentionDays = this.config.getInt(configuration);
         if (retentionDays > 0) {
             return Instant.now().minus(retentionDays, ChronoUnit.DAYS);
@@ -169,7 +164,7 @@ public class InactiveConsumerCleanerJob implements AsyncJob {
      * @throws JobExecutionException when there is an invalid batch size configuration.
      */
     private int getBatchSize() throws JobExecutionException {
-        String configuration = ConfigProperties.jobConfig(JOB_KEY, CFG_BATCH_SIZE);
+        ConfigKey configuration = JobConfigKey.BATCH_SIZE.keyForJob(JOB_KEY);
         int batchSize = this.config.getInt(configuration);
         if (batchSize <= 0) {
             String errorMessage = String.format(

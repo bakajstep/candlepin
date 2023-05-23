@@ -14,7 +14,7 @@
  */
 package org.candlepin.pki;
 
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 
 import java.io.File;
@@ -58,10 +58,10 @@ public class CertificateReader {
     }
 
     protected void readConfig(Configuration config) {
-        this.caCertPath = config.getString(ConfigProperties.CA_CERT);
-        this.upstreamCaCertPath = config.getString(ConfigProperties.CA_CERT_UPSTREAM);
-        this.caKeyPath = config.getString(ConfigProperties.CA_KEY);
-        this.caKeyPassword = config.getString(ConfigProperties.CA_KEY_PASSWORD);
+        this.caCertPath = config.getString(CommonConfigKey.CA_CERT);
+        this.upstreamCaCertPath = config.getString(CommonConfigKey.CA_CERT_UPSTREAM);
+        this.caKeyPath = config.getString(CommonConfigKey.CA_KEY);
+        this.caKeyPassword = config.getString(CommonConfigKey.CA_KEY_PASSWORD);
     }
 
     protected void validateArguments() {

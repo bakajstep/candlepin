@@ -14,7 +14,7 @@
  */
 package org.candlepin.guice;
 
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 import org.candlepin.servlet.filter.CandlepinContentTypeFilter;
 import org.candlepin.servlet.filter.CandlepinPersistFilter;
@@ -50,16 +50,16 @@ public class CandlepinFilterModule extends ServletModule {
          * A negative lookeahead regex that makes sure that we can serve
          * static content at docs/ and/or token/
          */
-        if (config.getBoolean(ConfigProperties.TOKENPAGE_ENABLED) &&
-            config.getBoolean(ConfigProperties.SWAGGER_ENABLED)) {
+        if (config.getBoolean(CommonConfigKey.TOKENPAGE_ENABLED) &&
+            config.getBoolean(CommonConfigKey.SWAGGER_ENABLED)) {
             // don't filter docs or token
             regex = "^(?!/docs|/token).*";
         }
-        else if (config.getBoolean(ConfigProperties.SWAGGER_ENABLED)) {
+        else if (config.getBoolean(CommonConfigKey.SWAGGER_ENABLED)) {
             // don't filter docs
             regex = "^(?!/docs).*";
         }
-        else if (config.getBoolean(ConfigProperties.TOKENPAGE_ENABLED)) {
+        else if (config.getBoolean(CommonConfigKey.TOKENPAGE_ENABLED)) {
             // don't filter token
             regex = "^(?!/token).*";
         }

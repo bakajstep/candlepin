@@ -15,7 +15,7 @@
 package org.candlepin.auth;
 
 
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 
 import org.jboss.resteasy.spi.HttpRequest;
@@ -49,8 +49,8 @@ public class KeycloakConfiguration {
 
     @Inject
     public KeycloakConfiguration(Configuration configuration) throws Exception {
-        if (configuration.getBoolean(ConfigProperties.KEYCLOAK_AUTHENTICATION)) {
-            String configFile = configuration.getString(ConfigProperties.KEYCLOAK_FILEPATH);
+        if (configuration.getBoolean(CommonConfigKey.KEYCLOAK_AUTHENTICATION)) {
+            String configFile = configuration.getString(CommonConfigKey.KEYCLOAK_FILEPATH);
             try (InputStream cfgStream = new FileInputStream(configFile)) {
                 adapterConfig = KeycloakDeploymentBuilder.loadAdapterConfig(cfgStream);
                 this.keycloakDeployment = KeycloakDeploymentBuilder.build(adapterConfig);

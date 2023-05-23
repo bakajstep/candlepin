@@ -15,7 +15,7 @@
 package org.candlepin.controller;
 
 import org.candlepin.audit.EventSink;
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 import org.candlepin.controller.util.ContentPrefix;
 import org.candlepin.controller.util.PromotedContent;
@@ -235,7 +235,7 @@ public class ContentAccessManager {
         this.environmentCurator = Objects.requireNonNull(environmentCurator);
         this.contentAccessCertCurator = Objects.requireNonNull(contentAccessCertCurator);
         this.eventSink = Objects.requireNonNull(eventSink);
-        this.standalone = this.config.getBoolean(ConfigProperties.STANDALONE);
+        this.standalone = this.config.getBoolean(CommonConfigKey.STANDALONE);
     }
 
     /**

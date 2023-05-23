@@ -26,7 +26,7 @@ import static org.mockito.Mockito.when;
 
 import org.candlepin.auth.UserPrincipal;
 import org.candlepin.bind.PoolOperationCallback;
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 import org.candlepin.controller.PoolManager;
 import org.candlepin.model.Consumer;
@@ -128,7 +128,7 @@ public class PoolRulesStackDerivedTest {
         when(rulesCuratorMock.getUpdated()).thenReturn(new Date());
         when(rulesCuratorMock.getRules()).thenReturn(rules);
 
-        when(configMock.getInt(eq(ConfigProperties.PRODUCT_CACHE_MAX))).thenReturn(100);
+        when(configMock.getInt(CommonConfigKey.PRODUCT_CACHE_MAX)).thenReturn(100);
 
         poolRules = new PoolRules(poolManagerMock, configMock, entCurMock, ownerProductCuratorMock,
             productCurator);

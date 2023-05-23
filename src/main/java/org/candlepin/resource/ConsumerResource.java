@@ -33,8 +33,10 @@ import org.candlepin.auth.SubResource;
 import org.candlepin.auth.UpdateConsumerCheckIn;
 import org.candlepin.auth.UserPrincipal;
 import org.candlepin.auth.Verify;
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
+import org.candlepin.config.ConfigKey;
 import org.candlepin.config.Configuration;
+import org.candlepin.config.JobConfigKey;
 import org.candlepin.controller.AutobindDisabledForOwnerException;
 import org.candlepin.controller.AutobindHypervisorDisabledException;
 import org.candlepin.controller.ContentAccessManager;
@@ -315,9 +317,9 @@ public class ConsumerResource implements ConsumerApi {
         this.entitlementEnvironmentFilter = new EntitlementEnvironmentFilter(
             entitlementCurator, environmentContentCurator);
         this.consumerPersonNamePattern = Pattern.compile(config.getString(
-            ConfigProperties.CONSUMER_PERSON_NAME_PATTERN));
+            CommonConfigKey.CONSUMER_PERSON_NAME_PATTERN));
         this.consumerSystemNamePattern = Pattern.compile(config.getString(
-            ConfigProperties.CONSUMER_SYSTEM_NAME_PATTERN));
+            CommonConfigKey.CONSUMER_SYSTEM_NAME_PATTERN));
     }
 
     /**
@@ -498,7 +500,7 @@ public class ConsumerResource implements ConsumerApi {
         Map<String, String> sanitized = new HashMap<>();
         Set<String> lowerCaseKeys = new HashSet<>();
 
-        String factPattern = config.getString(ConfigProperties.CONSUMER_FACTS_MATCHER);
+        String factPattern = config.getString(CommonConfigKey.CONSUMER_FACTS_MATCHER);
         Pattern pattern = Pattern.compile(factPattern);
 
         for (Map.Entry<String, String> fact : facts.entrySet()) {
@@ -664,7 +666,7 @@ public class ConsumerResource implements ConsumerApi {
 
             if (idcert != null) {
                 Date expire = idcert.getSerial().getExpiration();
-                int days = config.getInt(ConfigProperties.IDENTITY_CERT_EXPIRY_THRESHOLD);
+                int days = config.getInt(CommonConfigKey.IDENTITY_CERT_EXPIRY_THRESHOLD);
                 Date futureExpire = Util.addDaysToDt(days);
                 // if expiration is within 90 days, regenerate it
                 log.debug("Threshold [{}] expires on [{}] futureExpire [{}]", days, expire, futureExpire);
@@ -903,7 +905,7 @@ public class ConsumerResource implements ConsumerApi {
 
         // fix for duplicate hypervisor/consumer problem
         Consumer consumer = null;
-        if (config.getBoolean(ConfigProperties.USE_SYSTEM_UUID_FOR_MATCHING) &&
+        if (config.getBoolean(CommonConfigKey.USE_SYSTEM_UUID_FOR_MATCHING) &&
             getFactValue(dto.getFacts(), Consumer.Facts.DMI_SYSTEM_UUID) != null &&
             !"true".equalsIgnoreCase(getFactValue(dto.getFacts(), Consumer.Facts.VIRT_IS_GUEST))) {
 
@@ -2334,7 +2336,7 @@ public class ConsumerResource implements ConsumerApi {
             JobConfig jobConfig;
 
             if (poolIdString != null) {
-                String cfg = ConfigProperties.jobConfig(EntitlerJob.JOB_KEY, EntitlerJob.CFG_JOB_THROTTLE);
+                ConfigKey cfg = JobConfigKey.THROTTLE.keyForJob(EntitlerJob.JOB_KEY);
                 int throttle = config.getInt(cfg);
 
                 jobConfig = EntitlerJob.createConfig(throttle)

@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.when;
 
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.DevConfig;
 import org.candlepin.config.TestConfig;
 import org.candlepin.dto.ModelTranslator;
@@ -55,7 +55,7 @@ public class ConsumerExporterTest {
     @Test
     public void testConsumerExport() throws IOException {
         DevConfig config = TestConfig.custom(Map.of(
-            ConfigProperties.FAIL_ON_UNKNOWN_IMPORT_PROPERTIES, "false"
+            CommonConfigKey.FAIL_ON_UNKNOWN_IMPORT_PROPERTIES.key(), "false"
         ));
         ObjectMapper mapper = new SyncUtils(config).getObjectMapper();
 

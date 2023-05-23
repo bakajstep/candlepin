@@ -24,8 +24,9 @@ import static org.mockito.Mockito.verify;
 
 import org.candlepin.async.JobExecutionContext;
 import org.candlepin.async.JobExecutionException;
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.DevConfig;
+import org.candlepin.config.JobConfigKey;
 import org.candlepin.config.TestConfig;
 import org.candlepin.controller.ManifestManager;
 
@@ -54,7 +55,7 @@ public class ManifestCleanerJobTest {
         this.manifestManager = mock(ManifestManager.class);
 
         this.config = TestConfig.defaults();
-        this.config.setProperty(ConfigProperties.SYNC_WORK_DIR, manifestDir.toString());
+        this.config.setProperty(CommonConfigKey.SYNC_WORK_DIR, manifestDir.toString());
     }
 
     private ManifestCleanerJob createJobInstance() {
@@ -72,9 +73,7 @@ public class ManifestCleanerJobTest {
     }
 
     private void setMaxAgeConfig(int maxAgeInMinutes) {
-        String cfg = ConfigProperties.jobConfig(ManifestCleanerJob.JOB_KEY,
-            ManifestCleanerJob.CFG_MAX_AGE_IN_MINUTES);
-
+        String cfg = JobConfigKey.MAX_MANIFEST_AGE.keyForJob(ManifestCleanerJob.JOB_KEY);
         this.config.setProperty(cfg, String.valueOf(maxAgeInMinutes));
     }
 

@@ -14,12 +14,11 @@
  */
 package org.candlepin.guice;
 
-import static org.candlepin.config.ConfigProperties.ACTIVEMQ_ENABLED;
-import static org.candlepin.config.ConfigProperties.DB_MANAGE_ON_START;
 import static org.candlepin.config.ConfigProperties.ENCRYPTED_PROPERTIES;
 
 import org.candlepin.async.JobManager;
 import org.candlepin.audit.ActiveMQContextListener;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.ConfigProperties;
 import org.candlepin.config.Configuration;
 import org.candlepin.config.LegacyEncryptedInterceptor;
@@ -198,13 +197,13 @@ public class CandlepinContextListener extends GuiceResteasyBootstrapServletConte
         this.cpmContextListener = injector.getInstance(CPMContextListener.class);
         this.cpmContextListener.initialize(injector);
 
-        if (config.getBoolean(ACTIVEMQ_ENABLED)) {
+        if (config.getBoolean(CommonConfigKey.ACTIVEMQ_ENABLED)) {
             // If Artemis can not be started candlepin will not start.
             activeMQContextListener = injector.getInstance(ActiveMQContextListener.class);
             activeMQContextListener.contextInitialized(injector);
         }
 
-        if (config.getBoolean(ConfigProperties.CACHE_JMX_STATS)) {
+        if (config.getBoolean(CommonConfigKey.CACHE_JMX_STATS)) {
             CacheManager cacheManager = injector.getInstance(CacheManager.class);
             cacheManager.getCacheNames().forEach(cacheName -> {
                 log.info("Enabling management and statistics for {} cache", cacheName);
@@ -264,7 +263,7 @@ public class CandlepinContextListener extends GuiceResteasyBootstrapServletConte
             }
         }
 
-        if (config.getBoolean(ACTIVEMQ_ENABLED)) {
+        if (config.getBoolean(CommonConfigKey.ACTIVEMQ_ENABLED)) {
             activeMQContextListener.contextDestroyed(injector);
         }
 
@@ -279,21 +278,21 @@ public class CandlepinContextListener extends GuiceResteasyBootstrapServletConte
         CandlepinCapabilities capabilities = new CandlepinCapabilities();
 
         // Update our capabilities with configurable features
-        if (config.getBoolean(ConfigProperties.KEYCLOAK_AUTHENTICATION)) {
+        if (config.getBoolean(CommonConfigKey.KEYCLOAK_AUTHENTICATION)) {
             capabilities.add(CandlepinCapabilities.KEYCLOAK_AUTH_CAPABILITY);
             capabilities.add(CandlepinCapabilities.DEVICE_AUTH_CAPABILITY);
         }
 
-        if (config.getBoolean(ConfigProperties.CLOUD_AUTHENTICATION)) {
+        if (config.getBoolean(CommonConfigKey.CLOUD_AUTHENTICATION)) {
             capabilities.add(CandlepinCapabilities.CLOUD_REGISTRATION_CAPABILITY);
         }
 
-        if (config.getBoolean(ConfigProperties.SSL_VERIFY)) {
+        if (config.getBoolean(CommonConfigKey.SSL_VERIFY)) {
             capabilities.add(CandlepinCapabilities.SSL_VERIFY_CAPABILITY);
         }
 
         // Remove hidden capabilities
-        Set<String> hidden = config.getSet(ConfigProperties.HIDDEN_CAPABILITIES);
+        Set<String> hidden = config.getSet(CommonConfigKey.HIDDEN_CAPABILITIES);
         capabilities.removeAll(hidden);
 
         log.info("Candlepin will show support for the following capabilities: {}", capabilities);
@@ -374,23 +373,6 @@ public class CandlepinContextListener extends GuiceResteasyBootstrapServletConte
         registry.getEventListenerGroup(EventType.PRE_DELETE).appendListener(listenerProvider.get());
     }
 
-    public enum DBManagementLevel {
-        NONE("NONE"),
-        REPORT("REPORT"),
-        HALT("HALT"),
-        MANAGE("MANAGE");
-
-        private String name;
-
-        DBManagementLevel(String name) {
-            this.name = name;
-        }
-
-        public String getName() {
-            return this.name;
-        }
-    }
-
     /**
      * Check the state of the database in regards to the application of changesets via Liquibase.
      *
@@ -399,15 +381,18 @@ public class CandlepinContextListener extends GuiceResteasyBootstrapServletConte
      * @throws RuntimeException if there are missing changesets or a LiqubaseException
      */
     protected void checkDbChangelog() {
-        String configStart = config.getString(DB_MANAGE_ON_START);
+        if (!config.getBoolean(CommonConfigKey.HALT_ON_LIQUIBASE_DESYNC)) {
+            return;
+        }
+        String configStart = config.getString(CommonConfigKey.DB_MANAGE_ON_START);
         log.info("Liquibase startup management set to {}", configStart);
         DBManagementLevel dbmLevel = null;
         try {
             dbmLevel = DBManagementLevel.valueOf(configStart.toUpperCase());
         }
-        catch (IllegalArgumentException iae) {
-            log.error("The value of parameter '{}' is not allowed", configStart, DB_MANAGE_ON_START);
-            throw new RuntimeException(iae.getMessage());
+        catch (IllegalArgumentException e) {
+            throw new RuntimeException("The value of parameter '%s' is not allowed"
+                .formatted(configStart), e);
         }
 
         if (DBManagementLevel.NONE.equals(dbmLevel)) {
@@ -495,12 +480,12 @@ public class CandlepinContextListener extends GuiceResteasyBootstrapServletConte
     protected Database getDatabase() throws LiquibaseException {
         Database database = null;
         try {
-            Class.forName(config.getString(ConfigProperties.DB_DRIVER_CLASS))
+            Class.forName(config.getString(CommonConfigKey.DB_DRIVER_CLASS))
                 .getDeclaredConstructor().newInstance();
             Connection connection = DriverManager.getConnection(
-                config.getString(ConfigProperties.DB_URL),
-                config.getString(ConfigProperties.DB_USERNAME),
-                config.getString(ConfigProperties.DB_PASSWORD));
+                config.getString(CommonConfigKey.DB_URL),
+                config.getString(CommonConfigKey.DB_USERNAME),
+                config.getString(CommonConfigKey.DB_PASSWORD));
             JdbcConnection jdbcConnection = new JdbcConnection(connection);
             database =
                 DatabaseFactory.getInstance().findCorrectDatabaseImplementation(jdbcConnection);

@@ -31,7 +31,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 import org.candlepin.model.CandlepinQuery;
 import org.candlepin.model.ContentCurator;
@@ -78,7 +78,7 @@ public class DefaultProductServiceAdapterTest {
         extUtil = new X509ExtensionUtil(config);
         cc = mock(ContentCurator.class);
         pcc = spy(new ProductCertificateCurator(pki, extUtil));
-        when(config.getBoolean(ConfigProperties.ENV_CONTENT_FILTERING)).thenReturn(false);
+        when(config.getBoolean(CommonConfigKey.ENV_CONTENT_FILTERING)).thenReturn(false);
         dpsa = new DefaultProductServiceAdapter(opc, pcc, cc, idgen);
     }
 

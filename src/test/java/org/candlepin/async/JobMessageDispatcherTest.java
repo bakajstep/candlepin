@@ -25,7 +25,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.ConfigurationException;
 import org.candlepin.config.DevConfig;
 import org.candlepin.config.TestConfig;
@@ -177,14 +177,14 @@ public class JobMessageDispatcherTest {
 
     @Test
     public void testDispatchAddressCannotBeNull() {
-        this.config.clearProperty(ConfigProperties.ASYNC_JOBS_DISPATCH_ADDRESS);
+        this.config.clearProperty(CommonConfigKey.ASYNC_JOBS_DISPATCH_ADDRESS);
 
         assertThrows(ConfigurationException.class, this::buildJobMessageDispatcher);
     }
 
     @Test
     public void testDispatchAddressCannotBeEmpty() {
-        this.config.setProperty(ConfigProperties.ASYNC_JOBS_DISPATCH_ADDRESS, "");
+        this.config.setProperty(CommonConfigKey.ASYNC_JOBS_DISPATCH_ADDRESS, "");
 
         assertThrows(ConfigurationException.class, this::buildJobMessageDispatcher);
     }
@@ -192,7 +192,7 @@ public class JobMessageDispatcherTest {
     @Test
     public void testDispatchesMessagesToConfiguredAddress() throws Exception {
         String address = TestUtil.randomString("test_address");
-        this.config.setProperty(ConfigProperties.ASYNC_JOBS_DISPATCH_ADDRESS, address);
+        this.config.setProperty(CommonConfigKey.ASYNC_JOBS_DISPATCH_ADDRESS, address);
 
         JobMessageDispatcher dispatcher = this.buildJobMessageDispatcher();
 

@@ -14,8 +14,7 @@
  */
 package org.candlepin.cache;
 
-import static org.candlepin.config.ConfigProperties.CACHE_CONFIG_FILE_URI;
-
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 
 import com.google.inject.Provider;
@@ -52,7 +51,7 @@ public class JCacheManagerProvider implements Provider<CacheManager> {
         CacheManager cacheManager = null;
 
         CachingProvider cachingProvider = Caching.getCachingProvider();
-        String cacheManagerUri = config.getString(CACHE_CONFIG_FILE_URI);
+        String cacheManagerUri = config.getString(CommonConfigKey.CACHE_CONFIG_FILE_URI);
 
         try {
             ClassLoader defaultClassLoader = cachingProvider.getDefaultClassLoader();

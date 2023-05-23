@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.model.Consumer;
 import org.candlepin.model.ConsumerType;
 import org.candlepin.model.ConsumerType.ConsumerTypeEnum;
@@ -583,7 +583,7 @@ public class PreEntitlementRulesTest extends EntitlementRulesTestFixture {
     public void virtOnlyPoolGuestHostDoesNotMatch() {
         ConsumerType ctype = this.mockConsumerType(new ConsumerType(ConsumerTypeEnum.SYSTEM));
 
-        when(config.getBoolean(ConfigProperties.STANDALONE)).thenReturn(true);
+        when(config.getBoolean(CommonConfigKey.STANDALONE)).thenReturn(true);
         // Parent consumer of our guest:
         Consumer parent = new Consumer()
             .setUuid(Util.generateUUID())
@@ -619,7 +619,7 @@ public class PreEntitlementRulesTest extends EntitlementRulesTestFixture {
     public void virtOnlyPoolGuestNoHost() {
         ConsumerType ctype = this.mockConsumerType(new ConsumerType(ConsumerTypeEnum.SYSTEM));
 
-        when(config.getBoolean(ConfigProperties.STANDALONE)).thenReturn(true);
+        when(config.getBoolean(CommonConfigKey.STANDALONE)).thenReturn(true);
 
         // Another parent we'll make a virt only pool for:
         Consumer otherParent = new Consumer()

@@ -14,7 +14,7 @@
  */
 package org.candlepin.async;
 
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 import org.candlepin.config.ConfigurationException;
 import org.candlepin.messaging.CPMConsumer;
@@ -104,12 +104,12 @@ public class JobMessageReceiver {
      *  if the necessary configuration cannot be read or is invalid
      */
     private void configure(Configuration config) throws ConfigurationException {
-        this.receiveAddress = config.getString(ConfigProperties.ASYNC_JOBS_RECEIVE_ADDRESS);
+        this.receiveAddress = config.getString(CommonConfigKey.ASYNC_JOBS_RECEIVE_ADDRESS);
         if (this.receiveAddress == null || this.receiveAddress.isEmpty()) {
             throw new ConfigurationException("Invalid job receive address: address cannot be null or empty");
         }
 
-        this.receiveFilter = config.getString(ConfigProperties.ASYNC_JOBS_RECEIVE_FILTER);
+        this.receiveFilter = config.getString(CommonConfigKey.ASYNC_JOBS_RECEIVE_FILTER);
     }
 
     /**
@@ -202,7 +202,7 @@ public class JobMessageReceiver {
 
         try {
             this.listener = new MessageListener(manager, this.mapper, this.unitOfWork);
-            int listenerThreads = this.config.getInt(ConfigProperties.ASYNC_JOBS_THREADS);
+            int listenerThreads = this.config.getInt(CommonConfigKey.ASYNC_JOBS_THREADS);
 
             log.info("Creating {} threads receiving job messages from address: \"{}\", with filter: \"{}\"",
                 listenerThreads, this.receiveAddress, this.receiveFilter);

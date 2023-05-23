@@ -57,9 +57,11 @@ import org.candlepin.auth.SystemPrincipal;
 import org.candlepin.auth.UserPrincipal;
 import org.candlepin.auth.permissions.OwnerPermission;
 import org.candlepin.auth.permissions.Permission;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.ConfigProperties;
 import org.candlepin.config.Configuration;
 import org.candlepin.config.DevConfig;
+import org.candlepin.config.JobConfigKey;
 import org.candlepin.config.TestConfig;
 import org.candlepin.controller.mode.CandlepinModeManager;
 import org.candlepin.controller.mode.CandlepinModeManager.Mode;
@@ -546,7 +548,7 @@ public class JobManagerTest {
     @Test
     public void testJobManagerUsesConfiguredNameAsNodeNameWhenPresent() throws JobException {
         String nodeName = "custom node name";
-        this.config.setProperty(ConfigProperties.ASYNC_JOBS_NODE_NAME, nodeName);
+        this.config.setProperty(CommonConfigKey.ASYNC_JOBS_NODE_NAME, nodeName);
 
         JobManager manager = this.createJobManager();
         manager.initialize();
@@ -1167,9 +1169,7 @@ public class JobManagerTest {
         int jobs = 3;
 
         for (int i = 0; i < jobs; ++i) {
-            String cfgName = ConfigProperties.jobConfig(TestJob.JOB_KEY + '-' + i,
-                ConfigProperties.ASYNC_JOBS_JOB_SCHEDULE);
-
+            String cfgName = JobConfigKey.SCHEDULE.keyForJob(TestJob.JOB_KEY + '-' + i);
             this.config.setProperty(cfgName, String.format(schedule, i));
         }
 
@@ -1184,7 +1184,7 @@ public class JobManagerTest {
     @Test
     public void testJobSchedulingDoesNotScheduleManualJobs() {
         this.config.setProperty(
-            ConfigProperties.jobConfig(TestJob.JOB_KEY, ConfigProperties.ASYNC_JOBS_JOB_SCHEDULE),
+            JobConfigKey.SCHEDULE.keyForJob(TestJob.JOB_KEY),
             ConfigProperties.ASYNC_JOBS_MANUAL_SCHEDULE);
 
         JobManager manager = this.createJobManager();
@@ -1759,7 +1759,7 @@ public class JobManagerTest {
 
     @Test
     public void testSchedulerCanBeDisabled() {
-        this.config.setProperty(ConfigProperties.ASYNC_JOBS_SCHEDULER_ENABLED, "false");
+        this.config.setProperty(CommonConfigKey.ASYNC_JOBS_SCHEDULER_ENABLED, "false");
 
         JobManager manager = this.createJobManager();
 

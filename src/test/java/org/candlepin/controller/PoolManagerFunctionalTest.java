@@ -28,7 +28,7 @@ import static org.mockito.Mockito.reset;
 
 import org.candlepin.audit.Event;
 import org.candlepin.audit.EventSink;
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.dto.manifest.v1.BrandingDTO;
 import org.candlepin.dto.manifest.v1.OwnerDTO;
 import org.candlepin.dto.manifest.v1.ProductDTO;
@@ -1309,7 +1309,7 @@ public class PoolManagerFunctionalTest extends DatabaseTestFixture {
 
         prod.setAttribute(Product.Attributes.VIRT_LIMIT, "4");
         createProduct(prod, owner);
-        config.setProperty(ConfigProperties.STANDALONE, "false");
+        config.setProperty(CommonConfigKey.STANDALONE, "false");
 
         List<SubscriptionDTO> subscriptions = new LinkedList<>();
         org.candlepin.dto.manifest.v1.OwnerDTO ownerDto =
@@ -1373,7 +1373,7 @@ public class PoolManagerFunctionalTest extends DatabaseTestFixture {
 
         prod.setAttribute(Product.Attributes.VIRT_LIMIT, "4");
         createProduct(prod, owner);
-        config.setProperty(ConfigProperties.STANDALONE, "false");
+        config.setProperty(CommonConfigKey.STANDALONE, "false");
 
         List<SubscriptionDTO> subscriptions = new LinkedList<>();
         org.candlepin.dto.manifest.v1.OwnerDTO ownerDto =

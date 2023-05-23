@@ -57,8 +57,8 @@ public class RyeConfig implements Configuration {
     }
 
     @Override
-    public String getString(String key) {
-        String rawValue = this.config.getRawValue(key);
+    public String getString(ConfigKey key) {
+        String rawValue = config.getRawValue(key.key());
         if (rawValue != null) {
             return rawValue.trim();
         }
@@ -66,32 +66,32 @@ public class RyeConfig implements Configuration {
     }
 
     @Override
-    public boolean getBoolean(String key) {
-        return this.config.getValue(key, Boolean.class);
+    public boolean getBoolean(ConfigKey key) {
+        return config.getValue(key.key(), Boolean.class);
     }
 
     @Override
-    public int getInt(String key) {
-        return this.config.getValue(key, Integer.class);
+    public int getInt(ConfigKey key) {
+        return config.getValue(key.key(), Integer.class);
     }
 
     @Override
-    public long getLong(String key) {
-        return this.config.getValue(key, Long.class);
+    public long getLong(ConfigKey key) {
+        return config.getValue(key.key(), Long.class);
     }
 
     @Override
-    public List<String> getList(String key) {
-        if (StringUtils.isEmpty(this.config.getRawValue(key))) {
+    public List<String> getList(ConfigKey key) {
+        if (StringUtils.isEmpty(config.getRawValue(key.key()))) {
             return new ArrayList<>();
         }
-        return this.config.getValues(key, String.class).stream()
+        return config.getValues(key.key(), String.class).stream()
             .map(String::trim)
             .toList();
     }
 
     @Override
-    public Set<String> getSet(String key) {
+    public Set<String> getSet(ConfigKey key) {
         return new HashSet<>(getList(key));
     }
 

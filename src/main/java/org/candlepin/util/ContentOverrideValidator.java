@@ -14,7 +14,7 @@
  */
 package org.candlepin.util;
 
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 import org.candlepin.dto.api.server.v1.ContentOverrideDTO;
 import org.candlepin.exceptions.BadRequestException;
@@ -51,7 +51,7 @@ public class ContentOverrideValidator {
         this.config = config;
         this.i18n = i18n;
 
-        if (config.getBoolean(ConfigProperties.STANDALONE)) {
+        if (config.getBoolean(CommonConfigKey.STANDALONE)) {
             this.blocklist = DEFAULT_BLOCKLIST;
         }
         else {

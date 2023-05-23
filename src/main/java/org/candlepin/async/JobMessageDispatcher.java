@@ -14,7 +14,7 @@
  */
 package org.candlepin.async;
 
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 import org.candlepin.config.ConfigurationException;
 import org.candlepin.messaging.CPMException;
@@ -243,7 +243,7 @@ public class JobMessageDispatcher {
      *  if the necessary configuration cannot be read or is invalid
      */
     private void configure(Configuration config) throws ConfigurationException {
-        this.dispatchAddress = config.getString(ConfigProperties.ASYNC_JOBS_DISPATCH_ADDRESS);
+        this.dispatchAddress = config.getString(CommonConfigKey.ASYNC_JOBS_DISPATCH_ADDRESS);
         if (this.dispatchAddress == null || this.dispatchAddress.isEmpty()) {
             throw new ConfigurationException("Invalid job dispatch address: address cannot be null or empty");
         }

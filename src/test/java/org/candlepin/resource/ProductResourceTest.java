@@ -29,7 +29,7 @@ import org.candlepin.async.JobConfigValidationException;
 import org.candlepin.async.JobException;
 import org.candlepin.async.JobManager;
 import org.candlepin.async.tasks.RefreshPoolsJob;
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.DevConfig;
 import org.candlepin.dto.api.server.v1.AsyncJobStatusDTO;
 import org.candlepin.dto.api.server.v1.OwnerDTO;
@@ -206,7 +206,7 @@ public class ProductResourceTest extends DatabaseTestFixture {
 
     @Test
     public void testRefreshPoolsByProduct() {
-        config.setProperty(ConfigProperties.STANDALONE, "false");
+        config.setProperty(CommonConfigKey.STANDALONE, "false");
 
         ProductResource productResource = new ProductResource(this.productCurator, this.ownerCurator,
             this.productCertificateCurator, config, this.i18n, this.modelTranslator, this.jobManager);
@@ -223,7 +223,7 @@ public class ProductResourceTest extends DatabaseTestFixture {
 
     @Test
     public void testRefreshPoolsByProductForMultipleProducts() {
-        config.setProperty(ConfigProperties.STANDALONE, "false");
+        config.setProperty(CommonConfigKey.STANDALONE, "false");
 
         ProductResource productResource = new ProductResource(this.productCurator, this.ownerCurator,
             this.productCertificateCurator, config, this.i18n, this.modelTranslator, this.jobManager);
@@ -240,7 +240,7 @@ public class ProductResourceTest extends DatabaseTestFixture {
 
     @Test
     public void testRefreshPoolsByProductWithoutLazyOffload() {
-        config.setProperty(ConfigProperties.STANDALONE, "false");
+        config.setProperty(CommonConfigKey.STANDALONE, "false");
 
         ProductResource productResource = new ProductResource(this.productCurator, this.ownerCurator,
             this.productCertificateCurator, config, this.i18n, this.modelTranslator, this.jobManager);
@@ -257,7 +257,7 @@ public class ProductResourceTest extends DatabaseTestFixture {
 
     @Test
     public void testRefreshPoolsByProductWithBadProductId() {
-        config.setProperty(ConfigProperties.STANDALONE, "false");
+        config.setProperty(CommonConfigKey.STANDALONE, "false");
 
         ProductResource productResource = new ProductResource(this.productCurator, this.ownerCurator,
             this.productCertificateCurator, config, this.i18n, this.modelTranslator, this.jobManager);
@@ -280,7 +280,7 @@ public class ProductResourceTest extends DatabaseTestFixture {
 
     @Test
     public void testRefreshPoolsByProductJobQueueingErrorsShouldBeHandled() throws JobException {
-        config.setProperty(ConfigProperties.STANDALONE, "false");
+        config.setProperty(CommonConfigKey.STANDALONE, "false");
 
         // We want to simulate the first queueJob call succeeds, and the second throws a validation exception
         JobManager jobManager = mock(JobManager.class);

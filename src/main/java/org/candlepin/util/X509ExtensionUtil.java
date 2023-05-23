@@ -14,7 +14,7 @@
  */
 package org.candlepin.util;
 
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 import org.candlepin.controller.util.PromotedContent;
 import org.candlepin.model.Consumer;
@@ -200,7 +200,7 @@ public class X509ExtensionUtil  extends X509Util{
         Set<ProductContent> productContent = new HashSet<>(productContentList);
         Set<X509ExtensionWrapper> toReturn = new LinkedHashSet<>();
 
-        boolean enableEnvironmentFiltering = config.getBoolean(ConfigProperties.ENV_CONTENT_FILTERING);
+        boolean enableEnvironmentFiltering = config.getBoolean(CommonConfigKey.ENV_CONTENT_FILTERING);
 
         List<String> skuDisabled = skuProduct.getSkuDisabledContentIds();
         List<String> skuEnabled = skuProduct.getSkuEnabledContentIds();

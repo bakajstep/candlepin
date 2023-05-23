@@ -17,7 +17,7 @@ package org.candlepin.policy.js.entitlement;
 import org.candlepin.audit.EventFactory;
 import org.candlepin.audit.EventSink;
 import org.candlepin.bind.PoolOperationCallback;
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 import org.candlepin.controller.PoolManager;
 import org.candlepin.dto.ModelTranslator;
@@ -165,7 +165,7 @@ public class EntitlementRules implements Enforcer {
         args.put("consumer", this.translator.translate(consumer, ConsumerDTO.class));
         args.put("hostConsumer", this.translator.translate(host, ConsumerDTO.class));
         args.put("consumerEntitlements", entStream.collect(Collectors.toSet()));
-        args.put("standalone", config.getBoolean(ConfigProperties.STANDALONE));
+        args.put("standalone", config.getBoolean(CommonConfigKey.STANDALONE));
         args.put("poolQuantities", quantityStream);
         args.put("caller", caller.getLabel());
         args.put("log", log, false);
@@ -214,7 +214,7 @@ public class EntitlementRules implements Enforcer {
         args.put("consumer", this.translator.translate(consumer, ConsumerDTO.class));
         args.put("hostConsumer", this.translator.translate(getHost(consumer), ConsumerDTO.class));
         args.put("consumerEntitlements", entStream.collect(Collectors.toSet()));
-        args.put("standalone", config.getBoolean(ConfigProperties.STANDALONE));
+        args.put("standalone", config.getBoolean(CommonConfigKey.STANDALONE));
         args.put("pools", poolStream.collect(Collectors.toSet()));
         args.put("caller", CallerType.LIST_POOLS.getLabel());
         args.put("log", log, false);
@@ -507,7 +507,7 @@ public class EntitlementRules implements Enforcer {
 
         boolean hostLimited = "true".equals(attributes.get(Product.Attributes.HOST_LIMITED));
 
-        if (!config.getBoolean(ConfigProperties.STANDALONE) && !hostLimited && ctype.isManifest()) {
+        if (!config.getBoolean(CommonConfigKey.STANDALONE) && !hostLimited && ctype.isManifest()) {
             // We're making an assumption that VIRT_LIMIT is defined the same way in every possible
             // source for the attributes map.
             String virtLimit = attributes.get(Product.Attributes.VIRT_LIMIT);
@@ -590,7 +590,7 @@ public class EntitlementRules implements Enforcer {
 
         boolean consumerFactExpression = !type.isManifest() && !consumer.isGuest();
 
-        boolean isStandalone = config.getBoolean(ConfigProperties.STANDALONE);
+        boolean isStandalone = config.getBoolean(CommonConfigKey.STANDALONE);
 
         List<Pool> createHostRestrictedPoolFor = new ArrayList<>();
         Map<String, Entitlement> decrementHostedBonusPoolQuantityFor = new HashMap<>();
@@ -658,8 +658,7 @@ public class EntitlementRules implements Enforcer {
 
         ConsumerType type = this.consumerTypeCurator.getConsumerType(consumer);
 
-        boolean consumerFactExpression = type.isManifest() && !config.getBoolean(ConfigProperties
-            .STANDALONE);
+        boolean consumerFactExpression = type.isManifest() && !config.getBoolean(CommonConfigKey.STANDALONE);
 
         if (!consumerFactExpression) {
             return poolOperationCallback;
@@ -793,7 +792,7 @@ public class EntitlementRules implements Enforcer {
                in hosted mode. These checks are done further below, but doing this up-front to save
                 us some computation.
              */
-            if (!(ctype.isManifest()) || !config.getBoolean(ConfigProperties.STANDALONE)) {
+            if (!(ctype.isManifest()) || !config.getBoolean(CommonConfigKey.STANDALONE)) {
 
                 poolOperationCallback
                     .appendCallback(postBindVirtLimit(poolManager, consumer, virtLimitEntitlements,

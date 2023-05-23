@@ -16,7 +16,7 @@ package org.candlepin.audit;
 
 import org.candlepin.audit.Event.Target;
 import org.candlepin.audit.Event.Type;
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 
 import java.util.HashSet;
@@ -42,7 +42,7 @@ import javax.inject.Inject;
  * @author fnguyen
  */
 public class EventFilter {
-    private FilterPolicy defaultFilterPolicy;
+
 
     /**
      * DO_FILTER - in case inclusion and exclusion doesn't contain the event, then
@@ -52,25 +52,27 @@ public class EventFilter {
      *
      */
     public enum FilterPolicy {
-        DO_FILTER, DO_NOT_FILTER
+        DO_FILTER, DO_NOT_FILTER;
     }
+
+    private final FilterPolicy defaultFilterPolicy;
 
     /**
      * Events that must not be filtered.
      */
-    private Set<EventTypeAndTarget> toNotFilter = new HashSet<>();
+    private final Set<EventTypeAndTarget> toNotFilter = new HashSet<>();
     /**
      * Events that must be filtered.
      */
-    private Set<EventTypeAndTarget> toFilter = new HashSet<>();
+    private final Set<EventTypeAndTarget> toFilter = new HashSet<>();
 
-    private Configuration config;
+    private final Configuration config;
 
     @Inject
     public EventFilter(Configuration config) {
         this.config = config;
 
-        String policyString = config.getString(ConfigProperties.AUDIT_FILTER_DEFAULT_POLICY);
+        String policyString = config.getString(CommonConfigKey.AUDIT_FILTER_DEFAULT_POLICY);
 
         try {
             defaultFilterPolicy = Enum.valueOf(FilterPolicy.class, policyString.trim());
@@ -79,8 +81,8 @@ public class EventFilter {
             throw new IllegalArgumentException("Unknown default policy settings: " + policyString, e);
         }
 
-        List<String> toNotFilterConfig = config.getList(ConfigProperties.AUDIT_FILTER_DO_NOT_FILTER);
-        List<String> toFilterConfig = config.getList(ConfigProperties.AUDIT_FILTER_DO_FILTER);
+        List<String> toNotFilterConfig = config.getList(CommonConfigKey.AUDIT_FILTER_DO_NOT_FILTER);
+        List<String> toFilterConfig = config.getList(CommonConfigKey.AUDIT_FILTER_DO_FILTER);
 
         fillEventTypeAndTargetFromConfig(toNotFilter, toNotFilterConfig);
         fillEventTypeAndTargetFromConfig(toFilter, toFilterConfig);
@@ -117,7 +119,7 @@ public class EventFilter {
     }
 
     public boolean shouldFilter(Event event) {
-        boolean enabled = config.getBoolean(ConfigProperties.AUDIT_FILTER_ENABLED);
+        boolean enabled = config.getBoolean(CommonConfigKey.AUDIT_FILTER_ENABLED);
         if (!enabled) {
             return false;
         }
@@ -146,8 +148,8 @@ public class EventFilter {
 
     private static class EventTypeAndTarget {
 
-        private Type type;
-        private Target target;
+        private final Type type;
+        private final Target target;
 
         EventTypeAndTarget(Type type, Target target) {
             super();

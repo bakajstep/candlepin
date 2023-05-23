@@ -24,7 +24,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import org.candlepin.bind.PoolOperationCallback;
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.model.ConsumerType;
 import org.candlepin.model.ConsumerType.ConsumerTypeEnum;
 import org.candlepin.model.Entitlement;
@@ -57,7 +57,7 @@ public class PostEntitlementRulesTest extends EntitlementRulesTestFixture {
         entitlements.put(pool.getId(), e);
         Map<String, PoolQuantity> poolQuantityMap = new HashMap<>();
         poolQuantityMap.put(pool.getId(), new PoolQuantity(pool, 5));
-        when(config.getBoolean(ConfigProperties.STANDALONE)).thenReturn(true);
+        when(config.getBoolean(CommonConfigKey.STANDALONE)).thenReturn(true);
         // Pool quantity should be virt_limit:
         PoolOperationCallback poolOperationCallback = enforcer.postEntitlement(poolManagerMock,
             consumer, owner, entitlements, null, false, poolQuantityMap);
@@ -84,7 +84,7 @@ public class PostEntitlementRulesTest extends EntitlementRulesTestFixture {
         poolQuantityMap.put(pool.getId(), new PoolQuantity(pool, 5));
         poolQuantityMap.put(pool2.getId(), new PoolQuantity(pool2, 5));
 
-        when(config.getBoolean(ConfigProperties.STANDALONE)).thenReturn(true);
+        when(config.getBoolean(CommonConfigKey.STANDALONE)).thenReturn(true);
         // Pool quantity should be virt_limit:
         PoolOperationCallback poolOperationCallback = enforcer.postEntitlement(poolManagerMock,
             consumer, owner, entitlements, null, false, poolQuantityMap);
@@ -101,7 +101,7 @@ public class PostEntitlementRulesTest extends EntitlementRulesTestFixture {
         pool.setAttribute(Product.Attributes.VIRT_LIMIT, "unlimited");
         Entitlement e = new Entitlement(pool, consumer, owner, 5);
 
-        when(config.getBoolean(ConfigProperties.STANDALONE)).thenReturn(true);
+        when(config.getBoolean(CommonConfigKey.STANDALONE)).thenReturn(true);
         Map<String, Entitlement> entitlements = new HashMap<>();
         entitlements.put(pool.getId(), e);
         Map<String, PoolQuantity> poolQuantityMap = new HashMap<>();
@@ -126,7 +126,7 @@ public class PostEntitlementRulesTest extends EntitlementRulesTestFixture {
         pool2.setAttribute(Product.Attributes.VIRT_LIMIT, "unlimited");
         Entitlement e2 = new Entitlement(pool2, consumer, owner, 5);
 
-        when(config.getBoolean(ConfigProperties.STANDALONE)).thenReturn(true);
+        when(config.getBoolean(CommonConfigKey.STANDALONE)).thenReturn(true);
         Map<String, Entitlement> entitlements = new HashMap<>();
         entitlements.put(pool.getId(), e);
         entitlements.put(pool2.getId(), e2);
@@ -147,7 +147,7 @@ public class PostEntitlementRulesTest extends EntitlementRulesTestFixture {
     // Sub-pools should not be created when distributors bind:
     @Test
     public void noSubPoolsForDistributorBinds() {
-        when(config.getBoolean(ConfigProperties.STANDALONE)).thenReturn(true);
+        when(config.getBoolean(CommonConfigKey.STANDALONE)).thenReturn(true);
         ConsumerType ctype = this.mockConsumerType(new ConsumerType(ConsumerTypeEnum.CANDLEPIN));
         consumer.setType(ctype);
         Pool pool = setupVirtLimitPool();
@@ -171,7 +171,7 @@ public class PostEntitlementRulesTest extends EntitlementRulesTestFixture {
     // Sub-pools should not be created when guests bind:
     @Test
     public void noSubPoolsForGuestBinds() {
-        when(config.getBoolean(ConfigProperties.STANDALONE)).thenReturn(true);
+        when(config.getBoolean(CommonConfigKey.STANDALONE)).thenReturn(true);
         Pool pool = setupVirtLimitPool();
         consumer.setFact("virt.is_guest", "true");
         Entitlement e = new Entitlement(pool, consumer, owner, 1);

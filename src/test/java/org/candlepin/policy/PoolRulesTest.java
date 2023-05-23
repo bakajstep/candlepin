@@ -31,7 +31,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import org.candlepin.auth.UserPrincipal;
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 import org.candlepin.controller.PoolManager;
 import org.candlepin.model.Branding;
@@ -103,7 +103,7 @@ public class PoolRulesTest {
         when(rulesCurator.getUpdated()).thenReturn(new Date());
         when(rulesCurator.getRules()).thenReturn(rules);
 
-        when(config.getInt(eq(ConfigProperties.PRODUCT_CACHE_MAX))).thenReturn(100);
+        when(config.getInt(CommonConfigKey.PRODUCT_CACHE_MAX)).thenReturn(100);
 
         poolRules = new PoolRules(poolManager, config, entitlementCurator, ownerProdCurator,
             productCurator);
@@ -149,7 +149,7 @@ public class PoolRulesTest {
 
     @Test
     public void hostedVirtLimitBadValueDoesntTraceBack() {
-        when(config.getBoolean(ConfigProperties.STANDALONE)).thenReturn(false);
+        when(config.getBoolean(CommonConfigKey.STANDALONE)).thenReturn(false);
         Product product = TestUtil.createProduct();
 
         when(this.ownerProdCurator.getProductById(owner, product.getId())).thenReturn(product);
@@ -399,7 +399,7 @@ public class PoolRulesTest {
     // Make sure host_limited false is working:
     @Test
     public void hostedVirtLimitWithHostLimitedFalseCreatesBonusPools() {
-        when(config.getBoolean(ConfigProperties.STANDALONE)).thenReturn(false);
+        when(config.getBoolean(CommonConfigKey.STANDALONE)).thenReturn(false);
         Pool p = createVirtLimitPool("virtLimitProduct", 10, 10);
         when(poolManager.isManaged(eq(p))).thenReturn(true);
         p.getProduct().setAttribute(Product.Attributes.HOST_LIMITED, "false");
@@ -409,7 +409,7 @@ public class PoolRulesTest {
 
     @Test
     public void hostedVirtLimitSubCreatesBonusVirtOnlyPool() {
-        when(config.getBoolean(ConfigProperties.STANDALONE)).thenReturn(false);
+        when(config.getBoolean(CommonConfigKey.STANDALONE)).thenReturn(false);
         Pool p = createVirtLimitPool("virtLimitProduct", 10, 10);
         when(poolManager.isManaged(eq(p))).thenReturn(true);
         List<Pool> pools = poolRules.createAndEnrichPools(p, new LinkedList<>());
@@ -429,7 +429,7 @@ public class PoolRulesTest {
 
     @Test
     public void hostedVirtLimitSubCreatesUnlimitedBonusVirtOnlyPool() {
-        when(config.getBoolean(ConfigProperties.STANDALONE)).thenReturn(false);
+        when(config.getBoolean(CommonConfigKey.STANDALONE)).thenReturn(false);
         Pool p = createVirtLimitPool("virtLimitProduct", 10, 10);
         when(poolManager.isManaged(eq(p))).thenReturn(true);
         p.getProduct().setAttribute(Product.Attributes.VIRT_LIMIT, "unlimited");
@@ -444,7 +444,7 @@ public class PoolRulesTest {
 
     @Test
     public void hostedVirtLimitSubUpdatesUnlimitedBonusVirtOnlyPool() {
-        when(config.getBoolean(ConfigProperties.STANDALONE)).thenReturn(false);
+        when(config.getBoolean(CommonConfigKey.STANDALONE)).thenReturn(false);
         Pool p = createVirtLimitPool("virtLimitProduct", 10, 10);
         when(poolManager.isManaged(eq(p))).thenReturn(true);
         p.getProduct().setAttribute(Product.Attributes.VIRT_LIMIT, "unlimited");
@@ -468,7 +468,7 @@ public class PoolRulesTest {
 
     @Test
     public void hostedVirtLimitRemovedFromSkuWithoutDerivedProduct() {
-        when(config.getBoolean(ConfigProperties.STANDALONE)).thenReturn(false);
+        when(config.getBoolean(CommonConfigKey.STANDALONE)).thenReturn(false);
         Pool p = createVirtLimitPool("virtLimitProduct", 10, 10);
         when(poolManager.isManaged(eq(p))).thenReturn(true);
         p.getProduct().setAttribute(Product.Attributes.VIRT_LIMIT, "4");
@@ -495,7 +495,7 @@ public class PoolRulesTest {
 
     @Test
     public void hostedVirtLimitRemovedFromSkuWithDerivedProduct() {
-        when(config.getBoolean(ConfigProperties.STANDALONE)).thenReturn(false);
+        when(config.getBoolean(CommonConfigKey.STANDALONE)).thenReturn(false);
         Pool p = createVirtLimitPool("virtLimitProduct", 10, 10);
 
         // also add a derived product
@@ -527,7 +527,7 @@ public class PoolRulesTest {
 
     @Test
     public void hostedVirtLimitSubWithMultiplierCreatesUnlimitedBonusVirtOnlyPool() {
-        when(config.getBoolean(ConfigProperties.STANDALONE)).thenReturn(false);
+        when(config.getBoolean(CommonConfigKey.STANDALONE)).thenReturn(false);
         Pool p = createVirtLimitPool("virtLimitProduct", 10, 10);
         when(poolManager.isManaged(eq(p))).thenReturn(true);
         p.getProduct().setAttribute(Product.Attributes.VIRT_LIMIT, "unlimited");
@@ -543,7 +543,7 @@ public class PoolRulesTest {
 
     @Test
     public void hostedVirtLimitSubCreateAttributesTest() {
-        when(config.getBoolean(ConfigProperties.STANDALONE)).thenReturn(false);
+        when(config.getBoolean(CommonConfigKey.STANDALONE)).thenReturn(false);
         Pool p = createVirtLimitPool("virtLimitProduct", 10, 10);
         when(poolManager.isManaged(eq(p))).thenReturn(true);
         p.getProduct().setAttribute(Pool.Attributes.PHYSICAL_ONLY, "true");
@@ -569,7 +569,7 @@ public class PoolRulesTest {
     public void standaloneVirtLimitSubCreate() {
         Pool p = createVirtLimitPool("virtLimitProduct", 10, 10);
 
-        doReturn(true).when(config).getBoolean(ConfigProperties.STANDALONE);
+        doReturn(true).when(config).getBoolean(CommonConfigKey.STANDALONE);
         doReturn(true).when(poolManager).isManaged(eq(p));
 
         Product provided1 = TestUtil.createProduct();
@@ -629,7 +629,7 @@ public class PoolRulesTest {
 
     @Test
     public void standaloneVirtLimitSubCreateDerived() {
-        when(config.getBoolean(ConfigProperties.STANDALONE)).thenReturn(true);
+        when(config.getBoolean(CommonConfigKey.STANDALONE)).thenReturn(true);
 
         Subscription s = createVirtLimitSubWithDerivedProducts("virtLimitProduct", "derivedProd", 10, 10);
 
@@ -731,7 +731,7 @@ public class PoolRulesTest {
 
     @Test
     public void standaloneVirtLimitSubUpdate() {
-        when(config.getBoolean(ConfigProperties.STANDALONE)).thenReturn(true);
+        when(config.getBoolean(CommonConfigKey.STANDALONE)).thenReturn(true);
         Pool p = createVirtLimitPool("virtLimitProduct", 10, 10);
         when(poolManager.isManaged(eq(p))).thenReturn(true);
         List<Pool> pools = poolRules.createAndEnrichPools(p, new LinkedList<>());
@@ -762,7 +762,7 @@ public class PoolRulesTest {
 
     @Test
     public void hostedVirtOnlySubCreate() {
-        when(config.getBoolean(ConfigProperties.STANDALONE)).thenReturn(true);
+        when(config.getBoolean(CommonConfigKey.STANDALONE)).thenReturn(true);
         Pool p = createVirtOnlyPool("virtOnlyProduct", 10);
         List<Pool> pools = poolRules.createAndEnrichPools(p, new LinkedList<>());
         assertEquals(1, pools.size());
@@ -772,7 +772,7 @@ public class PoolRulesTest {
 
     @Test
     public void hostedVirtOnlySubCreateWithMultiplier() {
-        when(config.getBoolean(ConfigProperties.STANDALONE)).thenReturn(true);
+        when(config.getBoolean(CommonConfigKey.STANDALONE)).thenReturn(true);
         Pool p = createVirtOnlyPool("virtOnlyProduct", 10);
         p.getProduct().setMultiplier(5L);
         List<Pool> pools = poolRules.createAndEnrichPools(p, new LinkedList<>());
@@ -783,7 +783,7 @@ public class PoolRulesTest {
 
     @Test
     public void hostedVirtOnlySubUpdate() {
-        when(config.getBoolean(ConfigProperties.STANDALONE)).thenReturn(true);
+        when(config.getBoolean(CommonConfigKey.STANDALONE)).thenReturn(true);
         Pool p = createVirtOnlyPool("virtOnlyProduct", 10);
         List<Pool> pools = poolRules.createAndEnrichPools(p, new LinkedList<>());
         assertEquals(1, pools.size());
@@ -798,7 +798,7 @@ public class PoolRulesTest {
 
     @Test
     public void standaloneVirtSubPoolUpdateNoChanges() {
-        when(config.getBoolean(ConfigProperties.STANDALONE)).thenReturn(true);
+        when(config.getBoolean(CommonConfigKey.STANDALONE)).thenReturn(true);
         Pool p = createVirtLimitPool("virtLimitProduct", 10, 10);
         when(poolManager.isManaged(eq(p))).thenReturn(true);
         List<Pool> pools = poolRules.createAndEnrichPools(p, new LinkedList<>());
@@ -823,7 +823,7 @@ public class PoolRulesTest {
 
     @Test
     public void standaloneVirtSubPoolUpdateVirtLimitChanged() {
-        when(config.getBoolean(ConfigProperties.STANDALONE)).thenReturn(true);
+        when(config.getBoolean(CommonConfigKey.STANDALONE)).thenReturn(true);
         Pool p = createVirtLimitPool("virtLimitProduct", 10, 10);
         when(poolManager.isManaged(eq(p))).thenReturn(true);
         List<Pool> pools = poolRules.createAndEnrichPools(p, new LinkedList<>());
@@ -856,7 +856,7 @@ public class PoolRulesTest {
 
     @Test
     public void dontUpdateVirtOnlyNoVirtLimit() {
-        when(config.getBoolean(ConfigProperties.STANDALONE)).thenReturn(false);
+        when(config.getBoolean(CommonConfigKey.STANDALONE)).thenReturn(false);
         Pool p = TestUtil.createPool(owner, TestUtil.createProduct());
         p.setQuantity(10L);
 
@@ -876,7 +876,7 @@ public class PoolRulesTest {
 
     @Test
     public void updateVirtOnlyNoVirtLimit() {
-        when(config.getBoolean(ConfigProperties.STANDALONE)).thenReturn(false);
+        when(config.getBoolean(CommonConfigKey.STANDALONE)).thenReturn(false);
         Pool p = TestUtil.createPool(owner, TestUtil.createProduct());
         p.setQuantity(10L);
 

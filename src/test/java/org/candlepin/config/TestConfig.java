@@ -41,22 +41,22 @@ public final class TestConfig {
             String key = TestConfig.class.getResource("candlepin-ca.key").toURI().getPath();
             String certUpstream = TestConfig.class.getClassLoader()
                 .getResource("certs/upstream").toURI().getPath();
-            defaults.put(ConfigProperties.CA_CERT, cert);
-            defaults.put(ConfigProperties.CA_CERT_UPSTREAM, certUpstream);
-            defaults.put(ConfigProperties.CA_KEY, key);
+            defaults.put(CommonConfigKey.CA_CERT.key(), cert);
+            defaults.put(CommonConfigKey.CA_CERT_UPSTREAM.key(), certUpstream);
+            defaults.put(CommonConfigKey.CA_KEY.key(), key);
         }
         catch (URISyntaxException e) {
             throw new RuntimeException("Error loading cert/key resources!", e);
         }
 
-        defaults.put(ConfigProperties.CA_KEY_PASSWORD, "password");
-        defaults.put(ConfigProperties.SYNC_WORK_DIR, "/tmp");
-        defaults.put(ConfigProperties.ACTIVEMQ_LARGE_MSG_SIZE, "0");
-        defaults.put(ConfigProperties.HIDDEN_RESOURCES, "");
-        defaults.put(DatabaseConfigFactory.IN_OPERATOR_BLOCK_SIZE, "10");
-        defaults.put(DatabaseConfigFactory.CASE_OPERATOR_BLOCK_SIZE, "10");
-        defaults.put(DatabaseConfigFactory.BATCH_BLOCK_SIZE, "10");
-        defaults.put(DatabaseConfigFactory.QUERY_PARAMETER_LIMIT, "32000");
+        defaults.put(CommonConfigKey.CA_KEY_PASSWORD.key(), "password");
+        defaults.put(CommonConfigKey.SYNC_WORK_DIR.key(), "/tmp");
+        defaults.put(CommonConfigKey.ACTIVEMQ_LARGE_MSG_SIZE.key(), "0");
+        defaults.put(CommonConfigKey.HIDDEN_RESOURCES.key(), "");
+        defaults.put(CommonConfigKey.IN_OPERATOR_BLOCK_SIZE.key(), "10");
+        defaults.put(CommonConfigKey.CASE_OPERATOR_BLOCK_SIZE.key(), "10");
+        defaults.put(CommonConfigKey.BATCH_BLOCK_SIZE.key(), "10");
+        defaults.put(CommonConfigKey.QUERY_PARAMETER_LIMIT.key(), "32000");
 
         return defaults;
     }

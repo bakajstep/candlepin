@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.DevConfig;
 import org.candlepin.config.TestConfig;
 import org.candlepin.dto.manifest.v1.BrandingDTO;
@@ -62,7 +62,7 @@ public class ProductImporterTest {
         this.i18n = I18nFactory.getI18n(this.getClass(), Locale.US, I18nFactory.FALLBACK);
 
         this.config = TestConfig.defaults();
-        this.config.setProperty(ConfigProperties.FAIL_ON_UNKNOWN_IMPORT_PROPERTIES, "false");
+        this.config.setProperty(CommonConfigKey.FAIL_ON_UNKNOWN_IMPORT_PROPERTIES, "false");
 
         this.tmpdir = Files.createTempDirectory("product_importer_test").toFile();
         this.tmpdir.deleteOnExit();

@@ -18,7 +18,7 @@ import org.candlepin.auth.KeycloakConfiguration;
 import org.candlepin.auth.SecurityHole;
 import org.candlepin.cache.CandlepinCache;
 import org.candlepin.cache.StatusCache;
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 import org.candlepin.controller.mode.CandlepinModeManager;
 import org.candlepin.controller.mode.CandlepinModeManager.Mode;
@@ -85,8 +85,8 @@ public class StatusResource implements StatusApi {
         release = map.get("release");
 
         if (config != null) {
-            this.standalone = config.getBoolean(ConfigProperties.STANDALONE);
-            this.keycloakEnabled = config.getBoolean(ConfigProperties.KEYCLOAK_AUTHENTICATION);
+            this.standalone = config.getBoolean(CommonConfigKey.STANDALONE);
+            this.keycloakEnabled = config.getBoolean(CommonConfigKey.KEYCLOAK_AUTHENTICATION);
         }
         else {
             this.standalone = true;

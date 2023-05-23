@@ -62,8 +62,16 @@ public class DevConfig implements Configuration {
         this.config.put(key, value);
     }
 
+    public void setProperty(ConfigKey key, String value) {
+        this.config.put(key.key(), value);
+    }
+
     public void clearProperty(String key) {
         this.config.put(key, null);
+    }
+
+    public void clearProperty(ConfigKey key) {
+        this.config.put(key.key(), null);
     }
 
     @Override
@@ -72,26 +80,26 @@ public class DevConfig implements Configuration {
     }
 
     @Override
-    public boolean getBoolean(String key) {
+    public boolean getBoolean(ConfigKey key) {
         String value = this.config.get(key);
         return Boolean.parseBoolean(value);
     }
 
     @Override
-    public int getInt(String key) {
-        String value = this.config.get(key);
+    public int getInt(ConfigKey key) {
+        String value = this.config.get(key.key());
         return Integer.parseInt(value);
     }
 
     @Override
-    public long getLong(String key) {
-        String value = this.config.get(key);
+    public long getLong(ConfigKey key) {
+        String value = this.config.get(key.key());
         return Long.parseLong(value);
     }
 
     @Override
-    public String getString(String key) {
-        String value = this.config.get(key);
+    public String getString(ConfigKey key) {
+        String value = this.config.get(key.key());
         if (value != null) {
             return value.trim();
         }
@@ -99,8 +107,8 @@ public class DevConfig implements Configuration {
     }
 
     @Override
-    public List<String> getList(String key) {
-        String value = this.config.get(key);
+    public List<String> getList(ConfigKey key) {
+        String value = this.config.get(key.key());
         if (value == null || StringUtils.isEmpty(value)) {
             return new ArrayList<>();
         }
@@ -114,7 +122,7 @@ public class DevConfig implements Configuration {
     }
 
     @Override
-    public Set<String> getSet(String key) {
+    public Set<String> getSet(ConfigKey key) {
         return new HashSet<>(getList(key));
     }
 

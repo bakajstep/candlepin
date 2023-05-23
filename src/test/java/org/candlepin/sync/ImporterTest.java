@@ -33,7 +33,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import org.candlepin.audit.EventSink;
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.DevConfig;
 import org.candlepin.config.TestConfig;
 import org.candlepin.controller.ContentAccessManager;
@@ -160,7 +160,7 @@ public class ImporterTest {
     @BeforeEach
     public void init() throws Exception {
         this.config = TestConfig.defaults();
-        this.config.setProperty(ConfigProperties.FAIL_ON_UNKNOWN_IMPORT_PROPERTIES, "false");
+        this.config.setProperty(CommonConfigKey.FAIL_ON_UNKNOWN_IMPORT_PROPERTIES.key(), "false");
 
         this.i18n = I18nFactory.getI18n(this.getClass(), Locale.US, I18nFactory.FALLBACK);
         this.modelTranslator = new StandardTranslator(this.mockConsumerTypeCurator,

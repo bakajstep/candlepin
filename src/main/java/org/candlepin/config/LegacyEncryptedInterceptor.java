@@ -120,7 +120,8 @@ public class LegacyEncryptedInterceptor implements ConfigSourceInterceptor {
     }
 
     private String readPassphrase(final ConfigSourceInterceptorContext context) {
-        ConfigValue configValue = doLocked(() -> context.proceed(ConfigProperties.PASSPHRASE_SECRET_FILE));
+        ConfigValue configValue = doLocked(() -> context
+            .proceed(CommonConfigKey.PASSPHRASE_SECRET_FILE.key()));
         String passFilePath = configValue.getValue();
         if (StringUtils.isEmpty(passFilePath)) {
             log.info("No secret file provided.");
@@ -130,7 +131,7 @@ public class LegacyEncryptedInterceptor implements ConfigSourceInterceptor {
         Path path = Paths.get(passFilePath);
         if (!Files.exists(path)) {
             log.warn("{} is present in the configuration but the file does not exist",
-                ConfigProperties.PASSPHRASE_SECRET_FILE);
+                CommonConfigKey.PASSPHRASE_SECRET_FILE);
             return null;
         }
 

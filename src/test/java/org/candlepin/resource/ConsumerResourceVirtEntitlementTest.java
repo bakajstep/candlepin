@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.candlepin.async.JobException;
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 import org.candlepin.config.DevConfig;
 import org.candlepin.config.TestConfig;
@@ -249,11 +249,11 @@ public class ConsumerResourceVirtEntitlementTest extends DatabaseTestFixture {
         @Override
         protected void configure() {
             DevConfig config = TestConfig.defaults();
-            config.setProperty(ConfigProperties.STANDALONE, "false");
-            config.setProperty(ConfigProperties.CONSUMER_FACTS_MATCHER, "^virt.*");
-            config.setProperty(ConfigProperties.CONSUMER_SYSTEM_NAME_PATTERN,
+            config.setProperty(CommonConfigKey.STANDALONE, "false");
+            config.setProperty(CommonConfigKey.CONSUMER_FACTS_MATCHER, "^virt.*");
+            config.setProperty(CommonConfigKey.CONSUMER_SYSTEM_NAME_PATTERN,
                 "[\\#\\?\\'\\`\\!@{}()\\[\\]\\?&\\w-\\.]+");
-            config.setProperty(ConfigProperties.CONSUMER_PERSON_NAME_PATTERN,
+            config.setProperty(CommonConfigKey.CONSUMER_PERSON_NAME_PATTERN,
                 "[\\#\\?\\'\\`\\!@{}()\\[\\]\\?&\\w-\\.]+");
             bind(Configuration.class).toInstance(config);
             bind(Enforcer.class).to(EntitlementRules.class);

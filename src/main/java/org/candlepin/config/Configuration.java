@@ -37,10 +37,10 @@ public interface Configuration {
      * @param key the key of the retrieved property
      * @return a String property with all whitespace trimmed by String.trim()
      */
-    String getString(String key);
-    boolean getBoolean(String key);
-    int getInt(String key);
-    long getLong(String key);
-    List<String> getList(String key);
-    Set<String> getSet(String key);
+    String getString(ConfigKey key);
+    boolean getBoolean(ConfigKey key);
+    int getInt(ConfigKey key);
+    long getLong(ConfigKey key);
+    List<String> getList(ConfigKey key);
+    Set<String> getSet(ConfigKey key);
 }

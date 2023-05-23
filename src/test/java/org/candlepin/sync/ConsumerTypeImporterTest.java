@@ -21,7 +21,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.DevConfig;
 import org.candlepin.config.TestConfig;
 import org.candlepin.model.ConsumerType;
@@ -45,7 +45,7 @@ public class ConsumerTypeImporterTest {
     @BeforeEach
     public void init() {
         DevConfig config = TestConfig.custom(Map.of(
-            ConfigProperties.FAIL_ON_UNKNOWN_IMPORT_PROPERTIES, "false"
+            CommonConfigKey.FAIL_ON_UNKNOWN_IMPORT_PROPERTIES.key(), "false"
         ));
 
         this.mapper = new SyncUtils(config).getObjectMapper();

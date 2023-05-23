@@ -14,7 +14,7 @@
  */
 package org.candlepin.service.impl;
 
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 import org.candlepin.controller.util.ContentPrefix;
 import org.candlepin.controller.util.EntitlementContentPrefix;
@@ -285,7 +285,7 @@ public class DefaultEntitlementCertServiceAdapter extends BaseEntitlementCertSer
             consumer, pool, entitledPools);
 
         int contentCounter = 0;
-        boolean enableEnvironmentFiltering = config.getBoolean(ConfigProperties.ENV_CONTENT_FILTERING);
+        boolean enableEnvironmentFiltering = config.getBoolean(CommonConfigKey.ENV_CONTENT_FILTERING);
 
         Product skuProd = pool.getProduct();
 

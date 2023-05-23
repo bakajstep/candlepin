@@ -17,13 +17,12 @@ package org.candlepin.policy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import org.candlepin.audit.EventFactory;
 import org.candlepin.audit.EventSink;
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 import org.candlepin.controller.ProductManager;
 import org.candlepin.dto.ModelTranslator;
@@ -98,7 +97,7 @@ public class EnforcerTest extends DatabaseTestFixture {
     public void createEnforcer() throws Exception {
         MockitoAnnotations.initMocks(this);
 
-        when(config.getInt(eq(ConfigProperties.PRODUCT_CACHE_MAX))).thenReturn(100);
+        when(config.getInt(CommonConfigKey.PRODUCT_CACHE_MAX)).thenReturn(100);
 
         owner = createOwner();
         ownerCurator.create(owner);

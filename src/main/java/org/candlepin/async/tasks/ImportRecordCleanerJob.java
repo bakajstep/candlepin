@@ -17,8 +17,8 @@ package org.candlepin.async.tasks;
 import org.candlepin.async.AsyncJob;
 import org.candlepin.async.JobExecutionContext;
 import org.candlepin.async.JobExecutionException;
-import org.candlepin.config.ConfigProperties;
 import org.candlepin.config.Configuration;
+import org.candlepin.config.JobConfigKey;
 import org.candlepin.model.ImportRecord;
 import org.candlepin.model.ImportRecordCurator;
 import org.candlepin.model.Owner;
@@ -44,8 +44,6 @@ public class ImportRecordCleanerJob implements AsyncJob {
 
     // Every noon
     public static final String DEFAULT_SCHEDULE = "0 0 12 * * ?";
-
-    public static final String CFG_KEEP = "num_of_records_to_keep";
     public static final String DEFAULT_KEEP = "10";
 
     private final OwnerCurator ownerCurator;
@@ -62,7 +60,7 @@ public class ImportRecordCleanerJob implements AsyncJob {
 
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {
-        int toKeep = this.config.getInt(ConfigProperties.jobConfig(JOB_KEY, CFG_KEEP));
+        int toKeep = this.config.getInt(JobConfigKey.KEEP.keyForJob(JOB_KEY));
 
         if (toKeep < 0) {
             String errmsg = String.format(

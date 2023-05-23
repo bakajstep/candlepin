@@ -15,7 +15,7 @@
 package org.candlepin.controller;
 
 import org.candlepin.audit.ActiveMQStatus;
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 
 import org.apache.activemq.artemis.api.core.client.ActiveMQClient;
@@ -65,7 +65,7 @@ public class ActiveMQStatusMonitor implements Closeable, Runnable, CloseListener
     @Inject
     public ActiveMQStatusMonitor(Configuration config) throws Exception {
         this.config = config;
-        this.monitorInterval = config.getLong(ConfigProperties.ACTIVEMQ_CONNECTION_MONITOR_INTERVAL);
+        this.monitorInterval = config.getLong(CommonConfigKey.ACTIVEMQ_CONNECTION_MONITOR_INTERVAL);
         this.registeredListeners = new LinkedList<>();
         executorService = Executors.newSingleThreadScheduledExecutor();
         this.lastReported = ActiveMQStatus.UNKNOWN;
@@ -74,7 +74,7 @@ public class ActiveMQStatusMonitor implements Closeable, Runnable, CloseListener
 
     // Protected for testing purposes.
     protected void initializeLocator() throws Exception {
-        String brokerUrl = this.config.getString(ConfigProperties.ACTIVEMQ_BROKER_URL);
+        String brokerUrl = this.config.getString(CommonConfigKey.ACTIVEMQ_BROKER_URL);
         locator = ActiveMQClient.createServerLocator(brokerUrl);
     }
 

@@ -36,7 +36,7 @@ import org.candlepin.async.JobException;
 import org.candlepin.async.JobManager;
 import org.candlepin.async.JobManager.ManagerState;
 import org.candlepin.async.StateManagementException;
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.DevConfig;
 import org.candlepin.config.TestConfig;
 import org.candlepin.dto.api.server.v1.AsyncJobStatusDTO;
@@ -1502,7 +1502,7 @@ public class JobResourceTest extends DatabaseTestFixture {
 
     private void setTriggerableJobs(String... jobs) {
         String value = String.join(",", jobs);
-        this.config.setProperty(ConfigProperties.ASYNC_JOBS_TRIGGERABLE_JOBS, value);
+        this.config.setProperty(CommonConfigKey.ASYNC_JOBS_TRIGGERABLE_JOBS, value);
     }
 
     @ParameterizedTest

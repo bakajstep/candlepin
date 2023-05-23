@@ -14,20 +14,17 @@
  */
 package org.candlepin.audit;
 
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 import org.candlepin.controller.ActiveMQStatusMonitor;
 import org.candlepin.controller.SuspendModeTransitioner;
 
-import com.google.common.collect.Lists;
 import com.google.inject.Injector;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.List;
-
 
 
 /**
@@ -35,7 +32,7 @@ import java.util.List;
  * doesn't actually implement ServletContextListener.
  */
 public class ActiveMQContextListener {
-    private static  Logger log = LoggerFactory.getLogger(ActiveMQContextListener.class);
+    private static final Logger log = LoggerFactory.getLogger(ActiveMQContextListener.class);
 
     private ArtemisMessageSource messageSource;
 
@@ -56,7 +53,7 @@ public class ActiveMQContextListener {
 
         ActiveMQStatusMonitor activeMQStatusMonitor = injector.getInstance(ActiveMQStatusMonitor.class);
         // If suspend mode is enabled, we need the transitioner to listen for connection drops.
-        if (candlepinConfig.getBoolean(ConfigProperties.SUSPEND_MODE_ENABLED)) {
+        if (candlepinConfig.getBoolean(CommonConfigKey.SUSPEND_MODE_ENABLED)) {
             activeMQStatusMonitor.registerListener(injector.getInstance(SuspendModeTransitioner.class));
         }
 
@@ -68,17 +65,6 @@ public class ActiveMQContextListener {
         // Initialize the ActiveMQ status monitor so that client sessions can be established
         // if the broker is active.
         activeMQStatusMonitor.initialize();
-    }
-
-    /**
-     * @param candlepinConfig
-     * @return List of class names that will be configured as ActiveMQ listeners.
-     */
-    public static List<String> getActiveMQListeners(Configuration candlepinConfig) {
-        List<String> listeners = Lists.newArrayList(
-            candlepinConfig.getList(ConfigProperties.AUDIT_LISTENERS));
-
-        return listeners;
     }
 
 }

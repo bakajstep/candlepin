@@ -18,8 +18,9 @@ import org.candlepin.async.AsyncJob;
 import org.candlepin.async.JobExecutionContext;
 import org.candlepin.async.JobExecutionException;
 import org.candlepin.async.JobManager;
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.ConfigKey;
 import org.candlepin.config.Configuration;
+import org.candlepin.config.JobConfigKey;
 import org.candlepin.model.AsyncJobStatus.JobState;
 import org.candlepin.model.AsyncJobStatusCurator.AsyncJobStatusQueryArguments;
 import org.candlepin.util.Util;
@@ -49,9 +50,6 @@ public class JobCleaner implements AsyncJob {
     public static final String JOB_KEY = "JobCleaner";
     public static final String JOB_NAME = "Job Cleaner";
 
-    public static final String CFG_MAX_TERMINAL_JOB_AGE = "max_terminal_job_age";
-    public static final String CFG_MAX_NONTERMINAL_JOB_AGE = "max_nonterminal_job_age";
-    public static final String CFG_MAX_RUNNING_JOB_AGE = "max_running_job_age";
     // 7 days
     public static final String DEFAULT_MAX_TERMINAL_AGE = "10080";
     // 3 days
@@ -70,14 +68,9 @@ public class JobCleaner implements AsyncJob {
 
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {
-        Date terminalCutoff = this.parseMaxJobAgeConfig(CFG_MAX_TERMINAL_JOB_AGE,
-            true);
-
-        Date nonterminalCutoff = this.parseMaxJobAgeConfig(CFG_MAX_NONTERMINAL_JOB_AGE,
-            false);
-
-        Date runningCutoff = this.parseMaxJobAgeConfig(CFG_MAX_RUNNING_JOB_AGE,
-            false);
+        Date terminalCutoff = this.parseMaxJobAgeConfig(JobConfigKey.MAX_TERMINAL_JOB_AGE, true);
+        Date nonterminalCutoff = this.parseMaxJobAgeConfig(JobConfigKey.MAX_NON_TERMINAL_JOB_AGE, false);
+        Date runningCutoff = this.parseMaxJobAgeConfig(JobConfigKey.MAX_RUNNING_JOB_AGE, false);
 
         StringBuilder result = new StringBuilder();
 
@@ -101,10 +94,10 @@ public class JobCleaner implements AsyncJob {
         context.setJobResult(result.toString());
     }
 
-    private Date parseMaxJobAgeConfig(String cfgName, boolean required)
+    private Date parseMaxJobAgeConfig(JobConfigKey configKey, boolean required)
         throws JobExecutionException {
 
-        String fqcn = ConfigProperties.jobConfig(JOB_KEY, cfgName);
+        ConfigKey fqcn = configKey.keyForJob(JOB_KEY);
         int value = this.config.getInt(fqcn);
 
         Date output = null;

@@ -18,7 +18,7 @@ import org.candlepin.async.JobConfig;
 import org.candlepin.async.JobManager;
 import org.candlepin.async.tasks.RefreshPoolsJob;
 import org.candlepin.auth.SecurityHole;
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 import org.candlepin.dto.ModelTranslator;
 import org.candlepin.dto.api.server.v1.AsyncJobStatusDTO;
@@ -139,7 +139,7 @@ public class ProductResource implements ProductsApi {
             throw new BadRequestException(i18n.tr("No product IDs specified"));
         }
 
-        if (config.getBoolean(ConfigProperties.STANDALONE)) {
+        if (config.getBoolean(CommonConfigKey.STANDALONE)) {
             log.warn("Ignoring refresh pools request due to standalone config.");
             return null;
         }

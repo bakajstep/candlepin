@@ -25,7 +25,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.when;
 
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 import org.candlepin.dto.ModelTranslator;
 import org.candlepin.dto.StandardTranslator;
@@ -110,7 +110,7 @@ public class AutobindRulesTest {
     public void createEnforcer() {
         MockitoAnnotations.initMocks(this);
 
-        when(config.getInt(eq(ConfigProperties.PRODUCT_CACHE_MAX))).thenReturn(100);
+        when(config.getInt(CommonConfigKey.PRODUCT_CACHE_MAX)).thenReturn(100);
 
         InputStream is = this.getClass().getResourceAsStream(RulesCurator.DEFAULT_RULES_FILE);
         Rules rules = new Rules(Util.readFile(is));

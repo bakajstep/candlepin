@@ -22,12 +22,11 @@ import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import org.candlepin.bind.PoolOperationCallback;
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 import org.candlepin.controller.PoolManager;
 import org.candlepin.model.Branding;
@@ -65,7 +64,7 @@ public class PoolHelperTest {
         ent = mock(Entitlement.class);
         productCurator = Mockito.mock(ProductCurator.class);
         Configuration config = mock(Configuration.class);
-        when(config.getInt(eq(ConfigProperties.PRODUCT_CACHE_MAX))).thenReturn(100);
+        when(config.getInt(CommonConfigKey.PRODUCT_CACHE_MAX)).thenReturn(100);
 
         owner = TestUtil.createOwner();
     }

@@ -14,7 +14,7 @@
  */
 package org.candlepin.resteasy;
 
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 import org.candlepin.dto.api.server.v1.AsyncJobStatusDTO;
 import org.candlepin.dto.api.server.v1.ConsumerTypeDTO;
@@ -72,7 +72,7 @@ public class JsonProvider extends JacksonJsonProvider {
 
     @Inject
     public JsonProvider(Configuration config) {
-        this(config.getBoolean(ConfigProperties.PRETTY_PRINT));
+        this(config.getBoolean(CommonConfigKey.PRETTY_PRINT));
     }
 
     public JsonProvider(boolean indentJson) {

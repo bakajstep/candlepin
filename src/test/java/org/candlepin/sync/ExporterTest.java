@@ -26,7 +26,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import org.candlepin.auth.Principal;
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.DevConfig;
 import org.candlepin.config.TestConfig;
 import org.candlepin.controller.ContentAccessManager;
@@ -99,9 +99,7 @@ import java.util.zip.ZipInputStream;
 // wasting dev time tracking down non-issues when a mock silently fails because the implementation changes.
 
 
-/**
- * ExporterTest
- */
+
 public class ExporterTest {
 
     private ConsumerTypeCurator ctc;
@@ -180,7 +178,7 @@ public class ExporterTest {
     @SuppressWarnings("unchecked")
     @Test
     public void exportProducts() throws Exception {
-        config.setProperty(ConfigProperties.SYNC_WORK_DIR, "/tmp/");
+        config.setProperty(CommonConfigKey.SYNC_WORK_DIR, "/tmp/");
         Consumer consumer = mock(Consumer.class);
         Entitlement ent = mock(Entitlement.class);
         Rules mrules = mock(Rules.class);
@@ -285,7 +283,7 @@ public class ExporterTest {
 
     @Test
     public void doNotExportDirtyEntitlements() throws Exception {
-        config.setProperty(ConfigProperties.SYNC_WORK_DIR, "/tmp/");
+        config.setProperty(CommonConfigKey.SYNC_WORK_DIR, "/tmp/");
         Consumer consumer = mock(Consumer.class);
         Entitlement ent = mock(Entitlement.class);
         Principal principal = mock(Principal.class);
@@ -326,7 +324,7 @@ public class ExporterTest {
 
     @Test
     public void exportMetadata() throws ExportCreationException, IOException {
-        config.setProperty(ConfigProperties.SYNC_WORK_DIR, "/tmp/");
+        config.setProperty(CommonConfigKey.SYNC_WORK_DIR, "/tmp/");
         Instant start = Instant.now().minusSeconds(1L);
         Rules mrules = mock(Rules.class);
         Consumer consumer = mock(Consumer.class);
@@ -377,7 +375,7 @@ public class ExporterTest {
 
     @Test
     public void exportIdentityCertificate() throws Exception {
-        config.setProperty(ConfigProperties.SYNC_WORK_DIR, "/tmp/");
+        config.setProperty(CommonConfigKey.SYNC_WORK_DIR, "/tmp/");
         Rules mrules = mock(Rules.class);
         Consumer consumer = mock(Consumer.class);
         Principal principal = mock(Principal.class);
@@ -424,9 +422,9 @@ public class ExporterTest {
 
     @Test
     public void exportConsumer() throws ExportCreationException, IOException {
-        config.setProperty(ConfigProperties.SYNC_WORK_DIR, "/tmp/");
-        config.setProperty(ConfigProperties.PREFIX_WEBURL, "localhost:8443/weburl");
-        config.setProperty(ConfigProperties.PREFIX_APIURL, "localhost:8443/apiurl");
+        config.setProperty(CommonConfigKey.SYNC_WORK_DIR, "/tmp/");
+        config.setProperty(CommonConfigKey.PREFIX_WEBURL, "localhost:8443/weburl");
+        config.setProperty(CommonConfigKey.PREFIX_APIURL, "localhost:8443/apiurl");
         Rules mrules = mock(Rules.class);
         Consumer consumer = mock(Consumer.class);
         Principal principal = mock(Principal.class);
@@ -479,9 +477,9 @@ public class ExporterTest {
 
     @Test
     public void exportDistributorVersions() throws ExportCreationException, IOException {
-        config.setProperty(ConfigProperties.SYNC_WORK_DIR, "/tmp/");
-        config.setProperty(ConfigProperties.PREFIX_WEBURL, "localhost:8443/weburl");
-        config.setProperty(ConfigProperties.PREFIX_APIURL, "localhost:8443/apiurl");
+        config.setProperty(CommonConfigKey.SYNC_WORK_DIR, "/tmp/");
+        config.setProperty(CommonConfigKey.PREFIX_WEBURL, "localhost:8443/weburl");
+        config.setProperty(CommonConfigKey.PREFIX_APIURL, "localhost:8443/apiurl");
         Rules mrules = mock(Rules.class);
         Consumer consumer = mock(Consumer.class);
         Principal principal = mock(Principal.class);
@@ -544,7 +542,7 @@ public class ExporterTest {
 
     @Test
     public void testGetEntitlementExport() throws ExportCreationException, IOException {
-        config.setProperty(ConfigProperties.SYNC_WORK_DIR, "/tmp/");
+        config.setProperty(CommonConfigKey.SYNC_WORK_DIR, "/tmp/");
 
         // Setup consumer
         Consumer consumer = mock(Consumer.class);
@@ -604,7 +602,7 @@ public class ExporterTest {
     @Test
     public void testGetEntitlementExportWithUnknownSerialId() throws ExportCreationException,
         IOException {
-        config.setProperty(ConfigProperties.SYNC_WORK_DIR, "/tmp/");
+        config.setProperty(CommonConfigKey.SYNC_WORK_DIR, "/tmp/");
 
         // Setup consumer
         Consumer consumer = mock(Consumer.class);
@@ -666,7 +664,7 @@ public class ExporterTest {
     @Test
     public void testGetEntitlementExportWithValidEntitlementCertSerial() throws ExportCreationException,
         IOException {
-        config.setProperty(ConfigProperties.SYNC_WORK_DIR, "/tmp/");
+        config.setProperty(CommonConfigKey.SYNC_WORK_DIR, "/tmp/");
 
         // Setup consumer
         Consumer consumer = mock(Consumer.class);
@@ -728,7 +726,7 @@ public class ExporterTest {
     @Test
     public void testGetEntitlementExportWithValidContentAccessCertSerial() throws ExportCreationException,
         IOException {
-        config.setProperty(ConfigProperties.SYNC_WORK_DIR, "/tmp/");
+        config.setProperty(CommonConfigKey.SYNC_WORK_DIR, "/tmp/");
 
         // Setup consumer
         Consumer consumer = mock(Consumer.class);
@@ -906,7 +904,7 @@ public class ExporterTest {
             os.close();
 
             DevConfig config = TestConfig.custom(Map.of(
-                ConfigProperties.FAIL_ON_UNKNOWN_IMPORT_PROPERTIES, "false"
+                CommonConfigKey.FAIL_ON_UNKNOWN_IMPORT_PROPERTIES.key(), "false"
             ));
 
             ObjectMapper mapper = new SyncUtils(config).getObjectMapper();
@@ -1004,7 +1002,7 @@ public class ExporterTest {
             os.close();
 
             DevConfig config = TestConfig.custom(Map.of(
-                ConfigProperties.FAIL_ON_UNKNOWN_IMPORT_PROPERTIES, "false"
+                CommonConfigKey.FAIL_ON_UNKNOWN_IMPORT_PROPERTIES.key(), "false"
             ));
 
             ObjectMapper mapper = new SyncUtils(config).getObjectMapper();
@@ -1040,7 +1038,7 @@ public class ExporterTest {
             os.close();
 
             DevConfig config = TestConfig.custom(Map.of(
-                ConfigProperties.FAIL_ON_UNKNOWN_IMPORT_PROPERTIES, "false"
+                CommonConfigKey.FAIL_ON_UNKNOWN_IMPORT_PROPERTIES.key(), "false"
             ));
 
             ObjectMapper mapper = new SyncUtils(config).getObjectMapper();

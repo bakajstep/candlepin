@@ -22,7 +22,7 @@ import static org.mockito.Mockito.when;
 
 import org.candlepin.audit.EventFactory;
 import org.candlepin.audit.EventSink;
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 import org.candlepin.controller.PoolManager;
 import org.candlepin.controller.ProductManager;
@@ -116,7 +116,7 @@ public class EntitlementRulesTestFixture {
     public void createEnforcer() {
         MockitoAnnotations.initMocks(this);
 
-        when(config.getInt(eq(ConfigProperties.PRODUCT_CACHE_MAX))).thenReturn(100);
+        when(config.getInt(CommonConfigKey.PRODUCT_CACHE_MAX)).thenReturn(100);
 
         InputStream is = this.getClass().getResourceAsStream(
             RulesCurator.DEFAULT_RULES_FILE);

@@ -37,7 +37,7 @@ import org.candlepin.auth.Principal;
 import org.candlepin.auth.SecurityHole;
 import org.candlepin.auth.UserPrincipal;
 import org.candlepin.auth.permissions.PermissionFactory;
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.exceptions.BadRequestException;
 import org.candlepin.exceptions.NotAuthorizedException;
 import org.candlepin.model.ConsumerCurator;
@@ -133,10 +133,10 @@ public class AuthenticationFilterTest extends DatabaseTestFixture {
         ResteasyContext.pushContext(HttpRequest.class, mockReq);
         when(mockRequestContext.getSecurityContext()).thenReturn(mockSecurityContext);
 
-        config.setProperty(ConfigProperties.OAUTH_AUTHENTICATION, "false");
-        config.setProperty(ConfigProperties.SSL_AUTHENTICATION, "false");
-        config.setProperty(ConfigProperties.BASIC_AUTHENTICATION, "true");
-        config.setProperty(ConfigProperties.TRUSTED_AUTHENTICATION, "true");
+        config.setProperty(CommonConfigKey.OAUTH_AUTHENTICATION, "false");
+        config.setProperty(CommonConfigKey.SSL_AUTHENTICATION, "false");
+        config.setProperty(CommonConfigKey.BASIC_AUTHENTICATION, "true");
+        config.setProperty(CommonConfigKey.TRUSTED_AUTHENTICATION, "true");
 
         when(keycloakAdapterConfiguration.getAdapterConfig()).thenReturn(adapterConfig);
         when(adapterConfig.getAuthServerUrl()).thenReturn("https://example.com/auth");
@@ -228,7 +228,7 @@ public class AuthenticationFilterTest extends DatabaseTestFixture {
     void noSecurityHoleNoPrincipalNoSslButOverridenByConfigForResource(Class<?> resourceClass)
         throws Exception {
         setResourceClass(resourceClass);
-        config.setProperty(ConfigProperties.AUTH_OVER_HTTP, "true");
+        config.setProperty(CommonConfigKey.AUTH_OVER_HTTP, "true");
         when(mockHttpServletRequest.isSecure()).thenReturn(false);
         Method method = resourceClass.getMethod("someMethod", String.class);
         mockResourceMethod(method);
@@ -236,7 +236,7 @@ public class AuthenticationFilterTest extends DatabaseTestFixture {
         AuthenticationFilter interceptor = this.buildInterceptor();
         assertThrows(NotAuthorizedException.class, () -> interceptor.filter(getContext()));
         // Revert default settings
-        config.setProperty(ConfigProperties.AUTH_OVER_HTTP, "false");
+        config.setProperty(CommonConfigKey.AUTH_OVER_HTTP, "false");
     }
 
     @Test
@@ -388,14 +388,14 @@ public class AuthenticationFilterTest extends DatabaseTestFixture {
 
     @Test
     public void keycloakAuthAuthentication() throws Exception {
-        this.config.setProperty(ConfigProperties.KEYCLOAK_AUTHENTICATION, "true");
+        this.config.setProperty(CommonConfigKey.KEYCLOAK_AUTHENTICATION, "true");
 
         // Attempt to disable all other auth methods
-        this.config.setProperty(ConfigProperties.OAUTH_AUTHENTICATION, "false");
-        this.config.setProperty(ConfigProperties.SSL_AUTHENTICATION, "false");
-        this.config.setProperty(ConfigProperties.BASIC_AUTHENTICATION, "false");
-        this.config.setProperty(ConfigProperties.TRUSTED_AUTHENTICATION, "false");
-        this.config.setProperty(ConfigProperties.CLOUD_AUTHENTICATION, "false");
+        this.config.setProperty(CommonConfigKey.OAUTH_AUTHENTICATION, "false");
+        this.config.setProperty(CommonConfigKey.SSL_AUTHENTICATION, "false");
+        this.config.setProperty(CommonConfigKey.BASIC_AUTHENTICATION, "false");
+        this.config.setProperty(CommonConfigKey.TRUSTED_AUTHENTICATION, "false");
+        this.config.setProperty(CommonConfigKey.CLOUD_AUTHENTICATION, "false");
 
         Method method = FakeResource.class.getMethod("someMethod", String.class);
         mockResourceMethod(method);
@@ -411,14 +411,14 @@ public class AuthenticationFilterTest extends DatabaseTestFixture {
 
     @Test
     public void testCloudAuthSupport() throws Exception {
-        this.config.setProperty(ConfigProperties.CLOUD_AUTHENTICATION, "true");
+        this.config.setProperty(CommonConfigKey.CLOUD_AUTHENTICATION, "true");
 
         // Attempt to disable all other auth methods
-        this.config.setProperty(ConfigProperties.OAUTH_AUTHENTICATION, "false");
-        this.config.setProperty(ConfigProperties.SSL_AUTHENTICATION, "false");
-        this.config.setProperty(ConfigProperties.BASIC_AUTHENTICATION, "false");
-        this.config.setProperty(ConfigProperties.TRUSTED_AUTHENTICATION, "false");
-        this.config.setProperty(ConfigProperties.KEYCLOAK_AUTHENTICATION, "false");
+        this.config.setProperty(CommonConfigKey.OAUTH_AUTHENTICATION, "false");
+        this.config.setProperty(CommonConfigKey.SSL_AUTHENTICATION, "false");
+        this.config.setProperty(CommonConfigKey.BASIC_AUTHENTICATION, "false");
+        this.config.setProperty(CommonConfigKey.TRUSTED_AUTHENTICATION, "false");
+        this.config.setProperty(CommonConfigKey.KEYCLOAK_AUTHENTICATION, "false");
 
         Method method = FakeResource.class.getMethod("someMethod", String.class);
         mockResourceMethod(method);

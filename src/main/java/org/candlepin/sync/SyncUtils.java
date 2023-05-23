@@ -14,7 +14,7 @@
  */
 package org.candlepin.sync;
 
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 import org.candlepin.exceptions.IseException;
 
@@ -44,7 +44,7 @@ public class SyncUtils {
     private ObjectMapper mapper;
 
     File makeTempDir(String baseName) throws IOException {
-        File baseDir = new File(config.getString(ConfigProperties.SYNC_WORK_DIR));
+        File baseDir = new File(config.getString(CommonConfigKey.SYNC_WORK_DIR));
         if (!baseDir.exists() && !baseDir.mkdirs()) {
             throw new IseException("Unable to create base dir for sync: " + baseDir);
         }
@@ -86,7 +86,7 @@ public class SyncUtils {
 
         if (config != null) {
             this.mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
-                config.getBoolean(ConfigProperties.FAIL_ON_UNKNOWN_IMPORT_PROPERTIES));
+                config.getBoolean(CommonConfigKey.FAIL_ON_UNKNOWN_IMPORT_PROPERTIES));
         }
     }
 

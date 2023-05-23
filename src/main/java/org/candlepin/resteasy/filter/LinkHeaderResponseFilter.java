@@ -14,6 +14,7 @@
  */
 package org.candlepin.resteasy.filter;
 
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 import org.candlepin.paging.Page;
 import org.candlepin.paging.PageRequest;
@@ -62,10 +63,8 @@ public class LinkHeaderResponseFilter implements ContainerResponseFilter {
     private final String apiUrlPrefix;
 
     @Inject
-    public LinkHeaderResponseFilter(Configuration config,
-        @Named("PREFIX_APIURL_KEY") String apiUrlPrefixKey) {
-
-        this.apiUrlPrefix = config.getString(apiUrlPrefixKey);
+    public LinkHeaderResponseFilter(Configuration config) {
+        this.apiUrlPrefix = config.getString(CommonConfigKey.PREFIX_APIURL);
     }
 
     @SuppressWarnings("rawtypes")

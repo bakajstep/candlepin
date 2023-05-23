@@ -19,7 +19,7 @@ package org.candlepin.resource;
  */
 
 import org.candlepin.auth.SecurityHole;
-import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 import org.candlepin.dto.api.server.v1.Link;
 import org.candlepin.resource.server.v1.RootApi;
@@ -113,7 +113,7 @@ public class RootResource implements RootApi {
     protected Iterable<Link> createLinks() {
         // Hidden resources will be omitted from the supported list we send to
         // the clients:
-        Set<String> hideResources = Set.of(config.getString(ConfigProperties.HIDDEN_RESOURCES).split(" "));
+        Set<String> hideResources = Set.of(config.getString(CommonConfigKey.HIDDEN_RESOURCES).split(" "));
         Map<String, Link> links = new HashMap<>();
 
         for (Map.Entry<Object, String> entry : RESOURCE_CLASSES.entrySet()) {
