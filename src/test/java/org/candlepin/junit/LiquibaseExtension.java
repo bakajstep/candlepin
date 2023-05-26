@@ -14,6 +14,9 @@
  */
 package org.candlepin.junit;
 
+import org.candlepin.config.ConfigurationException;
+import org.candlepin.liquibase.LiquibaseWrapper;
+
 import liquibase.Liquibase;
 import liquibase.database.Database;
 import liquibase.database.DatabaseFactory;
@@ -35,8 +38,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Collections;
+import java.util.Map;
 
 /**
  * The LiquibaseExtension class performs initialization and teardown of a temporary database for use
@@ -51,42 +56,29 @@ public class LiquibaseExtension implements BeforeAllCallback, AfterAllCallback, 
     private static final String HSQLDB_DIR_PREFIX = "cp_unittest_hsqldb-";
     private static final String HSQLDB_DIR_PROPERTY = "hsqldb_dir";
 
-    private static final String TRUNCATE_SQL = "TRUNCATE SCHEMA %s RESTART IDENTITY AND COMMIT NO CHECK";
-    private static final String DROP_SQL = "DROP SCHEMA IF EXISTS %s CASCADE";
-    private static final String SHUTDOWN_CMD = "SHUTDOWN";
+    private static final String JDBC_PERSISTENCE_UNIT = "testing";
+    private static final String JDBC_URL_PROPERTY = "hibernate.connection.url";
 
-    private Liquibase liquibase;
-    private ResourceAccessor accessor;
-    private Database database;
-    private JdbcConnection connection;
+    private static final String LIQUIBASE_CHANGELOG_CONTEXT = "test";
+    private static final String LIQUIBASE_SCHEMA = "LIQUIBASE";
+    private static final String PUBLIC_SCHEMA = "PUBLIC";
+
+    private static final String TRUNCATE_SQL = "TRUNCATE SCHEMA %s RESTART IDENTITY AND COMMIT NO CHECK";
+    private static final String CREATE_SCHEMA_SQL = "CREATE SCHEMA IF NOT EXISTS %s";
+    private static final String DROP_SCHEMA_SQL = "DROP SCHEMA IF EXISTS %s CASCADE";
+    private static final String SHUTDOWN_CMD = "SHUTDOWN";
 
     private File hsqldbDir;
 
-    public LiquibaseExtension(String changelogFile) {
-        try {
-            this.hsqldbDir = this.setupTempDirectory();
+    private JdbcConnection connection;
+    private LiquibaseWrapper liquibaseWrapper;
 
-            String connectionUrl = getJdbcUrl("testing");
-            Connection jdbcConnection = DriverManager.getConnection(connectionUrl, "sa", "");
-            this.connection = new JdbcConnection(jdbcConnection);
-            this.database = DatabaseFactory.getInstance().findCorrectDatabaseImplementation(this.connection);
-            this.accessor = new ClassLoaderResourceAccessor();
-            this.liquibase = new Liquibase(changelogFile, this.accessor, this.database);
+    public LiquibaseExtension() throws IOException, SQLException {
+        this.hsqldbDir = this.setupTempDirectory();
+        this.connection = this.buildJdbcConnection();
+        this.liquibaseWrapper = new LiquibaseWrapper(this.connection);
 
-            this.dropLiquibaseSchema();
-            this.dropPublicSchema();
-        }
-        catch (Exception e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
-    public LiquibaseExtension() {
-        this("db/changelog/changelog-update.xml");
-    }
-
-    public Liquibase getLiquibase() {
-        return this.liquibase;
+        this.initDb();
     }
 
     private File setupTempDirectory() throws IOException {
@@ -108,60 +100,32 @@ public class LiquibaseExtension implements BeforeAllCallback, AfterAllCallback, 
         }
     }
 
-    @Override
-    public void beforeAll(ExtensionContext context) throws Exception {
-        createLiquibaseSchema();
-        runUpdate();
-    }
-
-    @Override
-    public void afterAll(ExtensionContext context) throws Exception {
-        dropPublicSchema();
-        dropLiquibaseSchema();
-        this.executeUpdate(SHUTDOWN_CMD);
-
-        this.tearDownTempFiles(this.hsqldbDir);
-    }
-
-    @Override
-    public void afterEach(ExtensionContext context) throws Exception {
-        truncatePublicSchema();
-    }
-
     private String getJdbcUrl(String persistenceUnit) {
-        for (ParsedPersistenceXmlDescriptor unit :
-            PersistenceXmlParser.locatePersistenceUnits(Collections.emptyMap())) {
-            if (unit.getName().equals("testing")) {
-                return unit.getProperties().getProperty("hibernate.connection.url");
-            }
-        }
-        throw new RuntimeException("Couldn't locate persistence unit " + persistenceUnit + " in your " +
-            "persistence.xml!");
+        ParsedPersistenceXmlDescriptor unit = PersistenceXmlParser.locatePersistenceUnits(Map.of())
+            .stream()
+            .filter(elem -> persistenceUnit.equals(elem.getName()))
+            .findFirst()
+            .orElseThrow(() -> {
+                String errmsg = String.format("Could not locate persistence unit \"%s\" in persistence.xml",
+                    persistenceUnit);
+
+                return new ConfigurationException(errmsg);
+            });
+
+        return unit.getProperties()
+            .getProperty(JDBC_URL_PROPERTY);
     }
 
-    public void runUpdate() throws LiquibaseException {
-        liquibase.update("test");
+    private JdbcConnection buildJdbcConnection() throws SQLException {
+        String jdbcUrl = this.getJdbcUrl(JDBC_PERSISTENCE_UNIT);
+
+        Connection jdbcConnection = DriverManager.getConnection(jdbcUrl, "sa", "");
+        return new JdbcConnection(jdbcConnection);
     }
 
-    public void dropPublicSchema() {
-        this.executeUpdate(String.format(DROP_SQL, "PUBLIC"));
-    }
-
-    public void dropLiquibaseSchema() {
-        this.executeUpdate(String.format(DROP_SQL, "LIQUIBASE"));
-    }
-
-    public void truncatePublicSchema() {
-        this.executeUpdate(String.format(TRUNCATE_SQL, "PUBLIC"));
-    }
-
-    public void truncateLiquibaseSchema() {
-        this.executeUpdate(String.format(TRUNCATE_SQL, "LIQUIBASE"));
-    }
-
-    public void createLiquibaseSchema() {
-        this.executeUpdate("CREATE SCHEMA LIQUIBASE");
-        database.setLiquibaseSchemaName("LIQUIBASE");
+    private void initDb() {
+        this.dropLiquibaseSchema();
+        this.dropPublicSchema();
     }
 
     private void executeUpdate(String sql) {
@@ -172,4 +136,46 @@ public class LiquibaseExtension implements BeforeAllCallback, AfterAllCallback, 
             throw new RuntimeException(e);
         }
     }
+
+    private void createCandlepinSchema() {
+        this.executeUpdate(String.format(CREATE_SCHEMA_SQL, LIQUIBASE_SCHEMA));
+
+        this.liquibaseWrapper.setLiquibaseSchema(LIQUIBASE_SCHEMA)
+            .executeUpdate(LIQUIBASE_CHANGELOG_CONTEXT);
+    }
+
+    private void dropPublicSchema() {
+        this.executeUpdate(String.format(DROP_SCHEMA_SQL, PUBLIC_SCHEMA));
+    }
+
+    private void dropLiquibaseSchema() {
+        this.executeUpdate(String.format(DROP_SCHEMA_SQL, LIQUIBASE_SCHEMA));
+    }
+
+    private void truncatePublicSchema() {
+        this.executeUpdate(String.format(TRUNCATE_SQL, PUBLIC_SCHEMA));
+    }
+
+    @Override
+    public void beforeAll(ExtensionContext context) throws Exception {
+        this.createCandlepinSchema();
+    }
+
+    @Override
+    public void afterAll(ExtensionContext context) throws Exception {
+        dropPublicSchema();
+        dropLiquibaseSchema();
+        this.executeUpdate(SHUTDOWN_CMD);
+
+        this.liquibaseWrapper.close();
+        this.connection.close();
+
+        this.tearDownTempFiles(this.hsqldbDir);
+    }
+
+    @Override
+    public void afterEach(ExtensionContext context) throws Exception {
+        truncatePublicSchema();
+    }
+
 }

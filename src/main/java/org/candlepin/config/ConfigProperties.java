@@ -26,6 +26,7 @@ import org.candlepin.async.tasks.ManifestCleanerJob;
 import org.candlepin.async.tasks.OrphanCleanupJob;
 import org.candlepin.async.tasks.UnmappedGuestEntitlementCleanerJob;
 import org.candlepin.guice.CandlepinContextListener;
+import org.candlepin.liquibase.DatabaseManagementLevel;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -410,7 +411,7 @@ public class ConfigProperties {
             // submit one when registering.
             this.put(HIDDEN_RESOURCES, "environments");
             this.put(HIDDEN_CAPABILITIES, "");
-            this.put(DB_MANAGE_ON_START, CandlepinContextListener.DBManagementLevel.NONE.getName());
+            this.put(DB_MANAGE_ON_START, DatabaseManagementLevel.REPORT.toString());
             this.put(SSL_VERIFY, "false");
 
             this.put(FAIL_ON_UNKNOWN_IMPORT_PROPERTIES, "false");

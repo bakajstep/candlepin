@@ -12,27 +12,19 @@
  * granted to use or replicate Red Hat trademarks that are incorporated
  * in this software or its documentation.
  */
-package org.candlepin.config;
+package org.candlepin.liquibase;
 
-/**
- * A ConfigurationException is thrown when there is a problem building a Configuration
- * object.
- */
-@SuppressWarnings("serial")
-public class ConfigurationException extends RuntimeException {
-    public ConfigurationException() {
-        super();
+public enum DatabaseManagementLevel {
+    NONE,
+    REPORT,
+    HALT,
+    MANAGE;
+
+    DatabaseManagementLevel() {
+        // intentionally left empty
     }
 
-    public ConfigurationException(String message) {
-        super(message);
-    }
-
-    public ConfigurationException(Throwable cause) {
-        super(cause);
-    }
-
-    public ConfigurationException(String message, Throwable cause) {
-        super(message, cause);
+    public String getName() {
+        return this.toString();
     }
 }

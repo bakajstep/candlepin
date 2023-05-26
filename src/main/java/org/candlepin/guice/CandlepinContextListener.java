@@ -29,6 +29,8 @@ import org.candlepin.config.EncryptedConfiguration;
 import org.candlepin.config.MapConfiguration;
 import org.candlepin.logging.LoggerContextListener;
 import org.candlepin.logging.LoggingConfigurator;
+import org.candlepin.liquibase.DatabaseManagementLevel;
+import org.candlepin.liquibase.LiquibaseWrapper;
 import org.candlepin.messaging.CPMContextListener;
 import org.candlepin.resteasy.MethodLocator;
 import org.candlepin.resteasy.ResourceLocatorMap;
@@ -80,6 +82,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.cache.CacheManager;
+import javax.inject.Provider;
 import javax.persistence.EntityManagerFactory;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
@@ -171,7 +174,7 @@ public class CandlepinContextListener extends GuiceResteasyBootstrapServletConte
         log.debug("Candlepin stored config on context.");
 
         // check state of database against liquibase changelogs
-        checkDbChangelog();
+        this.performDatabaseManagement(config);
 
         // set things up BEFORE calling the super class' initialize method.
         super.contextInitialized(sce);
@@ -388,156 +391,103 @@ public class CandlepinContextListener extends GuiceResteasyBootstrapServletConte
      * @param injector
      */
     private void insertValidationEventListeners(Injector injector) {
-        javax.inject.Provider<EntityManagerFactory> emfProvider =
-            injector.getProvider(EntityManagerFactory.class);
+        Provider<EntityManagerFactory> emfProvider = injector.getProvider(EntityManagerFactory.class);
         HibernateEntityManagerFactory hibernateEntityManagerFactory =
             (HibernateEntityManagerFactory) emfProvider.get();
         SessionFactoryImpl sessionFactoryImpl =
             (SessionFactoryImpl) hibernateEntityManagerFactory.getSessionFactory();
         EventListenerRegistry registry =
             sessionFactoryImpl.getServiceRegistry().getService(EventListenerRegistry.class);
-
-        javax.inject.Provider<BeanValidationEventListener> listenerProvider =
+        Provider<BeanValidationEventListener> listenerProvider =
             injector.getProvider(BeanValidationEventListener.class);
+
         registry.getEventListenerGroup(EventType.PRE_INSERT).appendListener(listenerProvider.get());
         registry.getEventListenerGroup(EventType.PRE_UPDATE).appendListener(listenerProvider.get());
         registry.getEventListenerGroup(EventType.PRE_DELETE).appendListener(listenerProvider.get());
     }
 
-    public enum DBManagementLevel {
-        NONE("NONE"),
-        REPORT("REPORT"),
-        HALT("HALT"),
-        MANAGE("MANAGE");
+    /**
+     * Parses the database management level from the configuration. If the management level cannot
+     * be parsed, this method throws a ConfigurationException.
+     *
+     * @param config
+     *  the configuration from which to read the database management level
+     *
+     * @throws ConfigurationException
+     *  if the configured management level is invalid
+     *
+     * @return
+     *  the configured database management level
+     */
+    private DatabaseManagementLevel parseDatabaseManagementLevel(Configuration config) {
+        String mgmtLevel = this.config.getString(ConfigProperties.DB_MANAGE_ON_START);
 
-        private String name;
-
-        DBManagementLevel(String name) {
-            this.name = name;
+        try {
+            return DatabaseManagementLevel.valueOf(mgmtLevel.toUpperCase());
         }
+        catch (IllegalArgumentException e) {
+            String errmsg = String.format("Invalid database management level: %s; permitted values: %s",
+                mgmtLevel, DatabaseManagementLevel.values());
 
-        public String getName() {
-            return this.name;
+            throw new ConfigurationException(errmsg, e);
         }
     }
 
     /**
-     * Check the state of the database in regards to the application of changesets via Liquibase.
+     * Performs database management according to the level indicated in the configuration. If the
+     * configured database management level is invalid, this method throws an exception.
+     * <p></p>
+     * An exception may also be thrown depending on the state of the database and the management
+     * level indicated. For instance, if the management level is set to "HALT" and there are one or
+     * more unapplied change sets, this method will throw an IllegalStateException.
      *
-     * The number of changesets not applied will be logged at error level.
-     *
-     * @throws RuntimeException if there are missing changesets or a LiqubaseException
+     * @param config
+     *  the configuration to use for performing database management
      */
-    protected void checkDbChangelog() {
-        String configStart = config.getString(DB_MANAGE_ON_START, "none");
-        log.info("Liquibase startup management set to {}", configStart);
-        DBManagementLevel dbmLevel = null;
-        try {
-            dbmLevel = DBManagementLevel.valueOf(configStart.toUpperCase());
-        }
-        catch (IllegalArgumentException iae) {
-            log.error("The value of parameter '{}' is not allowed", configStart, DB_MANAGE_ON_START);
-            throw new RuntimeException(iae.getMessage());
-        }
+    private void performDatabaseManagement(Configuration config) {
+        DatabaseManagementLevel mgmtLevel = this.parseDatabaseManagementLevel(config);
+        log.debug("Database management level: {}", mgmtLevel);
 
-        if (DBManagementLevel.NONE.equals(dbmLevel)) {
+        if (mgmtLevel == DatabaseManagementLevel.NONE) {
             return;
         }
 
-        try (Database database = this.getDatabase()) {
-            List<ChangeSet> unrunChangeSets = getUnrunChangeSets(database);
+        // Provider<LiquibaseWrapper> liquibaseProvider = injector.getProvider(LiquibaseWrapper.class);
+
+        try (LiquibaseWrapper wrapper = new LiquibaseWrapper(config)) {
+            List<ChangeSet> unrunChangeSets = wrapper.listUnrunChangeSets();
+
             if (unrunChangeSets.isEmpty()) {
                 log.info("Candlepin database is up to date!");
+                return;
             }
-            else {
-                Stream<String> csStream = unrunChangeSets.stream()
-                    .map(changeset ->
-                    String.format("file: %s, changeset: %s", changeset.getFilePath(), changeset.getId()));
 
-                switch (dbmLevel) {
-                    case REPORT:
-                        log.warn("Database has {} unrun changeset(s): \n{}", unrunChangeSets.size(),
-                            csStream.collect(Collectors.joining("\n  ", "  ", "")));
-                        break;
-                    case HALT:
-                        log.error("Database has {} unrun changeset(s); halting startup...\n{}",
-                            unrunChangeSets.size(), csStream.collect(Collectors.joining("\n  ", "  ", "")));
-                        throw new RuntimeException("The database is missing Liquibase changeset(s)");
-                    case MANAGE:
-                        log.info("Calling liquibase to update the database");
-                        log.info("Database has {} unrun changeset(s): \n{}", unrunChangeSets.size(),
-                            csStream.collect(Collectors.joining("\n  ", "  ", "")));
-                        executeUpdate(database);
-                        log.info("Update complete");
-                        break;
-                    default:
-                        throw new RuntimeException("Cannot determine database management mode.");
-                }
+            Stream<String> changesets = unrunChangeSets.stream()
+                .map(cs -> String.format("file: %s, changeset: %s", cs.getFilePath(), cs.getId()));
+
+            switch (mgmtLevel) {
+                case REPORT:
+                    log.warn("Database has {} unrun changeset(s):\n{}",
+                        unrunChangeSets.size(), changesets.collect(Collectors.joining("\n  ", "  ", "")));
+                    break;
+
+                case HALT:
+                    log.error("Database has {} unrun changeset(s); halting startup...\n{}",
+                        unrunChangeSets.size(), changesets.collect(Collectors.joining("\n  ", "  ", "")));
+                    throw new IllegalStateException(String.format("Database has %s unrun changeset(s)",
+                        unrunChangeSets.size()));
+
+                case MANAGE:
+                    log.info("Database has {} unrun changeset(s); applying changesets...\n{}",
+                        unrunChangeSets.size(), changesets.collect(Collectors.joining("\n  ", "  ", "")));
+
+                    int result = wrapper.executeUpdate();
+                    log.info("Update completed with status code: {}", result);
+                    break;
+
+                default:
+                    throw new RuntimeException("Unexpected database management level: " + mgmtLevel);
             }
         }
-        catch (LiquibaseException e) {
-            log.error("Liquibase exception: {}", e.getMessage());
-            throw new RuntimeException(e);
-        }
-    }
-
-    /**
-     * Initializes the CommandScope object and executes the update
-     *
-     * @param database the object which defines the database connection
-     * @throws LiquibaseException
-     */
-    protected void executeUpdate(Database database) throws LiquibaseException {
-        CommandScope commandScope = new CommandScope(UpdateCommandStep.COMMAND_NAME)
-            .addArgumentValue(DbUrlConnectionCommandStep.DATABASE_ARG, database)
-            .addArgumentValue(UpdateCommandStep.CHANGELOG_FILE_ARG, CHANGELOG_FILE_NAME);
-        commandScope.execute();
-    }
-
-    /**
-     * Reads the list of unrun changesets from the database supplied based on the changelog.
-     *
-     * @param database the object which defines the database connection
-     * @return List of unrun changesets
-     * @throws LiquibaseException if there is an issue with reading the changesets.
-     */
-    protected List<ChangeSet> getUnrunChangeSets(Database database) throws LiquibaseException {
-        try {
-            return new StatusCommandStep().listUnrunChangeSets(
-                null,
-                null,
-                new XMLChangeLogSAXParser().parse(CHANGELOG_FILE_NAME,
-                    new ChangeLogParameters(), new ClassLoaderResourceAccessor()),
-                database);
-        }
-        catch (Exception e) {
-            // method throws generic exception
-            throw new LiquibaseException(e.getMessage());
-        }
-    }
-
-    /**
-     * Establish the object for database communication from the configuration parameters
-     *
-     * @return Database object which defines the database connection
-     * @throws LiquibaseException if there is an issue with establishing the Database object
-     */
-    protected Database getDatabase() throws LiquibaseException {
-        Database database = null;
-        try {
-            Class.forName(config.getString(ConfigProperties.DB_DRIVER_CLASS))
-                .getDeclaredConstructor().newInstance();
-            Connection connection = DriverManager.getConnection(
-                config.getString(ConfigProperties.DB_URL),
-                config.getString(ConfigProperties.DB_USERNAME),
-                config.getString(ConfigProperties.DB_PASSWORD));
-            JdbcConnection jdbcConnection = new JdbcConnection(connection);
-            database =
-                DatabaseFactory.getInstance().findCorrectDatabaseImplementation(jdbcConnection);
-        }
-        catch (ReflectiveOperationException | SQLException e) {
-            throw new LiquibaseException(e);
-        }
-        return database;
     }
 }
