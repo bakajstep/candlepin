@@ -17,8 +17,6 @@ package org.candlepin.controller;
 import org.candlepin.audit.Event;
 import org.candlepin.audit.EventFactory;
 import org.candlepin.audit.EventSink;
-import org.candlepin.config.CommonConfigKey;
-import org.candlepin.config.ConfigProperties;
 import org.candlepin.config.Configuration;
 import org.candlepin.controller.refresher.RefreshResult;
 import org.candlepin.controller.refresher.RefreshResult.EntityState;
@@ -70,6 +68,7 @@ import java.util.Map.Entry;
 import java.util.SortedSet;
 
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.inject.Provider;
 
 
@@ -82,26 +81,28 @@ public class Entitler {
     private static final Logger log = LoggerFactory.getLogger(Entitler.class);
     private static final int MAX_DEV_LIFE_DAYS = 90;
 
-    private Configuration config;
-    private ConsumerCurator consumerCurator;
-    private ConsumerTypeCurator consumerTypeCurator;
-    private EventFactory evtFactory;
-    private EventSink sink;
-    private EntitlementRulesTranslator messageTranslator;
-    private EntitlementCurator entitlementCurator;
-    private I18n i18n;
-    private OwnerCurator ownerCurator;
-    private PoolCurator poolCurator;
-    private PoolManager poolManager;
-    private ProductServiceAdapter productAdapter;
-    private Provider<RefreshWorker> refreshWorkerProvider;
+    private final ConsumerCurator consumerCurator;
+    private final ConsumerTypeCurator consumerTypeCurator;
+    private final EventFactory evtFactory;
+    private final EventSink sink;
+    private final EntitlementRulesTranslator messageTranslator;
+    private final EntitlementCurator entitlementCurator;
+    private final I18n i18n;
+    private final OwnerCurator ownerCurator;
+    private final PoolCurator poolCurator;
+    private final PoolManager poolManager;
+    private final ProductServiceAdapter productAdapter;
+    private final Provider<RefreshWorker> refreshWorkerProvider;
+    private final boolean isStandalone;
+    private final int bulkSize;
 
     @Inject
     public Entitler(PoolManager pm, ConsumerCurator cc, I18n i18n, EventFactory evtFactory,
         EventSink sink, EntitlementRulesTranslator messageTranslator,
         EntitlementCurator entitlementCurator, Configuration config,
         OwnerCurator ownerCurator, PoolCurator poolCurator, ProductServiceAdapter productAdapter,
-        ConsumerTypeCurator ctc, Provider<RefreshWorker> refreshWorkerProvider) {
+        ConsumerTypeCurator ctc, Provider<RefreshWorker> refreshWorkerProvider,
+        @Named("candlepin.standalone") String standalone, @Named("entitler.bulk.size") String bulkSize) {
 
         this.poolManager = pm;
         this.i18n = i18n;
@@ -110,12 +111,13 @@ public class Entitler {
         this.consumerCurator = cc;
         this.messageTranslator = messageTranslator;
         this.entitlementCurator = entitlementCurator;
-        this.config = config;
         this.ownerCurator = ownerCurator;
         this.poolCurator = poolCurator;
         this.productAdapter = productAdapter;
         this.consumerTypeCurator = ctc;
         this.refreshWorkerProvider = refreshWorkerProvider;
+        this.isStandalone = Boolean.parseBoolean(standalone);
+        this.bulkSize = Integer.parseInt(bulkSize);
     }
 
     public List<Entitlement> bindByPoolQuantity(Consumer consumer, String poolId, Integer quantity) {
@@ -297,7 +299,7 @@ public class Entitler {
         }
 
         if (consumer.isDev()) {
-            if (config.getBoolean(CommonConfigKey.STANDALONE) ||
+            if (this.isStandalone ||
                 !poolCurator.hasActiveEntitlementPools(consumer.getOwnerId(), null)) {
 
                 throw new ForbiddenException(i18n.tr(
@@ -499,7 +501,7 @@ public class Entitler {
         List<PoolQuantity> result = new ArrayList<>();
         try {
             if (consumer.isDev()) {
-                if (config.getBoolean(CommonConfigKey.STANDALONE) ||
+                if (this.isStandalone ||
                     !poolCurator.hasActiveEntitlementPools(consumer.getOwnerId(), null)) {
                     throw new ForbiddenException(i18n.tr(
                         "Development units may only be used on hosted servers" +
@@ -568,7 +570,7 @@ public class Entitler {
     }
 
     private Iterable<List<Entitlement>> partition(List<Entitlement> entsToDelete) {
-        return Iterables.partition(entsToDelete, config.getInt(CommonConfigKey.ENTITLER_BULK_SIZE));
+        return Iterables.partition(entsToDelete, this.bulkSize);
     }
 
     public int revokeUnmappedGuestEntitlements() {

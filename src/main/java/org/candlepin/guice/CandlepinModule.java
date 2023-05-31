@@ -427,6 +427,12 @@ public class CandlepinModule extends AbstractModule {
 
         bindConstant().annotatedWith(Names.named("PREFIX_APIURL_KEY"))
             .to(CommonConfigKey.PREFIX_APIURL.key());
+
+        // Bind all properties by key
+        for (String key : this.config.getKeys()) {
+            bindConstant().annotatedWith(Names.named(key))
+                .to(this.config.getString(key));
+        }
     }
 
     private void configureAsyncJobs() {

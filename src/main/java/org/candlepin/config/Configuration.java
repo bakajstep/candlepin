@@ -38,6 +38,7 @@ public interface Configuration {
      * @return a String property with all whitespace trimmed by String.trim()
      */
     String getString(ConfigKey key);
+    String getString(String key);
     boolean getBoolean(ConfigKey key);
     int getInt(ConfigKey key);
     long getLong(ConfigKey key);

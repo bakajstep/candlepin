@@ -98,6 +98,15 @@ public class DevConfig implements Configuration {
     }
 
     @Override
+    public String getString(String key) {
+        String value = this.config.get(key);
+        if (value != null) {
+            return value.trim();
+        }
+        return null;
+    }
+
+    @Override
     public String getString(ConfigKey key) {
         String value = this.config.get(key.key());
         if (value != null) {

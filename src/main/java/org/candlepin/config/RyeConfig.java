@@ -57,6 +57,15 @@ public class RyeConfig implements Configuration {
     }
 
     @Override
+    public String getString(String key) {
+        String rawValue = this.config.getRawValue(key);
+        if (rawValue != null) {
+            return rawValue.trim();
+        }
+        return null;
+    }
+
+    @Override
     public String getString(ConfigKey key) {
         String rawValue = config.getRawValue(key.key());
         if (rawValue != null) {
