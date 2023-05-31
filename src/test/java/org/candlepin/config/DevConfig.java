@@ -86,6 +86,12 @@ public class DevConfig implements Configuration {
     }
 
     @Override
+    public int getInt(String key) {
+        String value = this.config.get(key);
+        return Integer.parseInt(value);
+    }
+
+    @Override
     public int getInt(ConfigKey key) {
         String value = this.config.get(key.key());
         return Integer.parseInt(value);

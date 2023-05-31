@@ -80,6 +80,11 @@ public class RyeConfig implements Configuration {
     }
 
     @Override
+    public int getInt(String key) {
+        return config.getValue(key, Integer.class);
+    }
+
+    @Override
     public int getInt(ConfigKey key) {
         return config.getValue(key.key(), Integer.class);
     }

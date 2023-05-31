@@ -40,6 +40,7 @@ public interface Configuration {
     String getString(ConfigKey key);
     String getString(String key);
     boolean getBoolean(ConfigKey key);
+    int getInt(String key);
     int getInt(ConfigKey key);
     long getLong(ConfigKey key);
     List<String> getList(ConfigKey key);

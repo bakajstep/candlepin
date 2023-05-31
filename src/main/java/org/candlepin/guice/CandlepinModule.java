@@ -433,6 +433,13 @@ public class CandlepinModule extends AbstractModule {
             bindConstant().annotatedWith(Names.named(key))
                 .to(this.config.getString(key));
         }
+
+        bind(BatchSizeConfig.class).toInstance(new BatchSizeConfig(
+            this.config.getInt("db.config.in.operator.block.size"),
+            this.config.getInt("db.config.case.operator.block.size"),
+            this.config.getInt("db.config.batch.block.size"),
+            this.config.getInt("db.config.query.parameter.limit")
+        ));
     }
 
     private void configureAsyncJobs() {

@@ -19,6 +19,7 @@ import org.candlepin.auth.permissions.Permission;
 import org.candlepin.config.CommonConfigKey;
 import org.candlepin.config.Configuration;
 import org.candlepin.exceptions.ConcurrentModificationException;
+import org.candlepin.guice.BatchSizeConfig;
 import org.candlepin.guice.PrincipalProvider;
 import org.candlepin.paging.Page;
 import org.candlepin.paging.PageRequest;
@@ -90,6 +91,7 @@ public abstract class AbstractHibernateCurator<E extends Persisted> {
     @Inject protected Provider<I18n> i18nProvider;
     @Inject protected Configuration config;
     @Inject private PrincipalProvider principalProvider;
+    @Inject private BatchSizeConfig batchConfig;
 
     private final Class<E> entityType;
     private NaturalIdLoadAccess<E> natIdLoader;
@@ -106,19 +108,19 @@ public abstract class AbstractHibernateCurator<E extends Persisted> {
     }
 
     public int getInBlockSize() {
-        return config.getInt(CommonConfigKey.IN_OPERATOR_BLOCK_SIZE);
+        return this.batchConfig.inBlockSize();
     }
 
     public int getCaseBlockSize() {
-        return config.getInt(CommonConfigKey.CASE_OPERATOR_BLOCK_SIZE);
+        return this.batchConfig.caseBlockSize();
     }
 
     public int getBatchBlockSize() {
-        return config.getInt(CommonConfigKey.BATCH_BLOCK_SIZE);
+        return this.batchConfig.batchBlockSize();
     }
 
     public int getQueryParameterLimit() {
-        return config.getInt(CommonConfigKey.QUERY_PARAMETER_LIMIT);
+        return this.batchConfig.queryParamLimit();
     }
 
     public String getDatabaseDialect() {
