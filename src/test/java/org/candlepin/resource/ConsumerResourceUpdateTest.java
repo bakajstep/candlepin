@@ -271,6 +271,7 @@ public class ConsumerResourceUpdateTest {
                     Consumer consumer = (Consumer) args[0];
                     ConsumerTypeCurator curator = (ConsumerTypeCurator) invocation.getMock();
                     ConsumerType ctype = null;
+                    // comment
 
                     if (consumer == null || consumer.getTypeId() == null) {
                         throw new IllegalArgumentException("consumer is null or lacks a type ID");
