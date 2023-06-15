@@ -20,10 +20,13 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import org.candlepin.dto.api.server.v1.StatusDTO;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import java.time.OffsetDateTime;
 
 
+@Execution(ExecutionMode.SAME_THREAD)
 public class StatusCacheTest {
 
     @Test

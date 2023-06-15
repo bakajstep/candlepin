@@ -23,6 +23,8 @@ import org.hibernate.annotations.Type;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import java.util.Properties;
 
@@ -35,7 +37,7 @@ import javax.persistence.Persistence;
 import javax.persistence.Table;
 
 
-
+@Execution(ExecutionMode.SAME_THREAD)
 public class EmptyStringUserTypeTest {
     private EntityManagerFactory emf;
     private EntityManager em;

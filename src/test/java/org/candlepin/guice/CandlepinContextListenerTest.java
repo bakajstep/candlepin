@@ -50,6 +50,8 @@ import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.Mockito;
 
 import java.sql.Driver;
@@ -66,6 +68,7 @@ import javax.servlet.ServletContextEvent;
 
 
 @ExtendWith(LiquibaseExtension.class)
+@Execution(ExecutionMode.SAME_THREAD)
 public class CandlepinContextListenerTest {
     private DevConfig config;
     private CandlepinContextListener listener;

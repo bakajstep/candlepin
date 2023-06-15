@@ -71,6 +71,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -99,9 +101,7 @@ import java.util.zip.ZipInputStream;
 // wasting dev time tracking down non-issues when a mock silently fails because the implementation changes.
 
 
-/**
- * ExporterTest
- */
+@Execution(ExecutionMode.SAME_THREAD)
 public class ExporterTest {
 
     private ConsumerTypeCurator ctc;

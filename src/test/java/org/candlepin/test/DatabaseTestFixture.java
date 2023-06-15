@@ -101,6 +101,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xnap.commons.i18n.I18n;
@@ -124,6 +126,7 @@ import javax.servlet.http.HttpServletResponse;
 /**
  * Test fixture for test classes requiring access to the database.
  */
+@Execution(ExecutionMode.SAME_THREAD)
 @ExtendWith(LiquibaseExtension.class)
 public class DatabaseTestFixture {
     protected static Logger log = LoggerFactory.getLogger(DatabaseTestFixture.class);

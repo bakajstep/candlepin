@@ -36,6 +36,8 @@ import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -48,9 +50,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
-/**
- * Test suite for the ProductData class
- */
+
+@Execution(ExecutionMode.SAME_THREAD)
 public class ProductDataTest {
 
     public static final String PRODUCT_JSON_BASE = "{" +

@@ -23,12 +23,15 @@ import org.candlepin.version.VersionUtil;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import java.io.File;
 import java.io.PrintStream;
 import java.util.Map;
 
 
+@Execution(ExecutionMode.SAME_THREAD)
 public class VersionUtilTest {
 
     @AfterEach

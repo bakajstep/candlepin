@@ -47,6 +47,8 @@ import ch.qos.logback.core.Appender;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.keycloak.representations.adapters.config.AdapterConfig;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
@@ -64,6 +66,7 @@ import java.util.ArrayList;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
+@Execution(ExecutionMode.SAME_THREAD)
 public class StatusResourceTest {
 
     @Mock private RulesCurator rulesCurator;

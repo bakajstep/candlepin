@@ -24,6 +24,8 @@ import org.hibernate.annotations.Type;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
@@ -44,9 +46,8 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 
-/**
- * Test for ResultDataUserType
- */
+
+@Execution(ExecutionMode.SAME_THREAD)
 public class ResultDataUserTypeTest {
     private EntityManagerFactory emf;
     private EntityManager em;
