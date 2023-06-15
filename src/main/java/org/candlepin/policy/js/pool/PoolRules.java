@@ -61,20 +61,20 @@ public class PoolRules {
     private static final long UNLIMITED_QUANTITY = -1L;
 
     private final PoolManager poolManager;
-    private final Configuration config;
     private final EntitlementCurator entCurator;
     private final OwnerProductCurator ownerProductCurator;
     private final ProductCurator productCurator;
+    private final boolean isStandalone;
 
     @Inject
     public PoolRules(PoolManager poolManager, Configuration config, EntitlementCurator entCurator,
         OwnerProductCurator ownerProductCurator, ProductCurator productCurator) {
 
         this.poolManager = Objects.requireNonNull(poolManager);
-        this.config = Objects.requireNonNull(config);
         this.entCurator = Objects.requireNonNull(entCurator);
         this.ownerProductCurator = Objects.requireNonNull(ownerProductCurator);
         this.productCurator = Objects.requireNonNull(productCurator);
+        this.isStandalone = config.getBoolean(ConfigProperties.STANDALONE);
     }
 
     private long calculateQuantity(long quantity, Product product, String upstreamPoolId) {
@@ -190,14 +190,14 @@ public class PoolRules {
         // we have no way of linking the bonus/derived pools to the primary pool (at the time of
         // writing), and we'd end up with orphaned pools. If/when this issue is resolved, the check
         // for a source subscription should be removed.
-        if (poolManager.isManaged(primaryPool) && virtQuantity != null &&
+        if (primaryPool.isManaged(this.isStandalone) && virtQuantity != null &&
             !hasBonusPool(existingPools)) {
             boolean hostLimited = "true".equals(attributes.get(Product.Attributes.HOST_LIMITED));
             HashMap<String, String> virtAttributes = new HashMap<>();
             virtAttributes.put(Pool.Attributes.VIRT_ONLY, "true");
             virtAttributes.put(Pool.Attributes.DERIVED_POOL, "true");
             virtAttributes.put(Pool.Attributes.PHYSICAL_ONLY, "false");
-            if (hostLimited || config.getBoolean(ConfigProperties.STANDALONE)) {
+            if (hostLimited || this.isStandalone) {
                 virtAttributes.put(Pool.Attributes.UNMAPPED_GUESTS_ONLY, "true");
             }
 
@@ -716,7 +716,7 @@ public class PoolRules {
                 else {
                     try {
                         int virtLimit = Integer.parseInt(virtLimitStr);
-                        if (config.getBoolean(ConfigProperties.STANDALONE) && !"true".equals(
+                        if (this.isStandalone && !"true".equals(
                             existingPool.getAttributeValue(Pool.Attributes.UNMAPPED_GUESTS_ONLY))) {
 
                             // this is how we determined the quantity
@@ -768,6 +768,10 @@ public class PoolRules {
             }
         }
         return expectedQuantity;
+    }
+
+    public boolean isManaged(Pool pool) {
+        return pool.isManaged(this.isStandalone);
     }
 
 }

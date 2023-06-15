@@ -23,9 +23,9 @@ import static org.mockito.Mockito.when;
 import org.candlepin.audit.EventFactory;
 import org.candlepin.audit.EventSink;
 import org.candlepin.config.ConfigProperties;
-import org.candlepin.config.Configuration;
+import org.candlepin.config.DevConfig;
+import org.candlepin.config.TestConfig;
 import org.candlepin.controller.PoolManager;
-import org.candlepin.controller.ProductManager;
 import org.candlepin.dto.ModelTranslator;
 import org.candlepin.dto.StandardTranslator;
 import org.candlepin.model.Consumer;
@@ -50,7 +50,6 @@ import org.candlepin.policy.js.JsRunnerRequestCache;
 import org.candlepin.policy.js.RulesObjectMapper;
 import org.candlepin.policy.js.compliance.ComplianceStatus;
 import org.candlepin.policy.js.pool.PoolRules;
-import org.candlepin.service.ProductServiceAdapter;
 import org.candlepin.test.TestUtil;
 import org.candlepin.util.DateSourceImpl;
 import org.candlepin.util.Util;
@@ -58,24 +57,21 @@ import org.candlepin.util.Util;
 import com.google.inject.Provider;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.mockito.invocation.InvocationOnMock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
 import org.xnap.commons.i18n.I18nFactory;
 
 import java.io.InputStream;
 import java.util.Locale;
 
+@ExtendWith(MockitoExtension.class)
 public class EntitlementRulesTestFixture {
-    protected Enforcer enforcer;
 
     @Mock
     protected RulesCurator rulesCurator;
-    @Mock
-    protected ProductServiceAdapter prodAdapter;
-    @Mock
-    protected Configuration config;
     @Mock
     protected ConsumerCurator consumerCurator;
     @Mock
@@ -97,14 +93,14 @@ public class EntitlementRulesTestFixture {
     @Mock
     private OwnerCurator ownerCurator;
     @Mock
-    protected ProductManager productManager;
-    @Mock
     protected EventSink eventSink;
     @Mock
     protected EventFactory eventFactory;
     @Mock
     protected EnvironmentCurator environmentCurator;
 
+    protected Enforcer enforcer;
+    protected DevConfig config;
     protected Owner owner;
     protected ConsumerType consumerType;
     protected Consumer consumer;
@@ -114,10 +110,8 @@ public class EntitlementRulesTestFixture {
 
     @BeforeEach
     public void createEnforcer() {
-        MockitoAnnotations.initMocks(this);
-
-        when(config.getInt(eq(ConfigProperties.PRODUCT_CACHE_MAX))).thenReturn(100);
-
+        this.config = TestConfig.defaults();
+        this.config.setProperty(ConfigProperties.PRODUCT_CACHE_MAX, "100");
         InputStream is = this.getClass().getResourceAsStream(
             RulesCurator.DEFAULT_RULES_FILE);
         Rules rules = new Rules(Util.readFile(is));
