@@ -295,6 +295,10 @@ test {
 
     useJUnitPlatform()
 
+    maxParallelForks = Runtime.runtime.availableProcessors().intdiv(2) ?: 1
+    reports.html.required = false
+    reports.junitXml.required = false
+
     // Sometimes causes out of memory on vagrant
     maxHeapSize = "2g"
     jvmArgs = [
