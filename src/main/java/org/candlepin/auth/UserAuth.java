@@ -16,13 +16,19 @@ package org.candlepin.auth;
 
 import org.candlepin.auth.permissions.PermissionFactory;
 import org.candlepin.exceptions.BadRequestException;
+import org.candlepin.exceptions.CandlepinException;
 import org.candlepin.service.UserServiceAdapter;
+import org.candlepin.service.exception.user.UserDisabledException;
+import org.candlepin.service.exception.user.UserLoginNotFoundException;
+import org.candlepin.service.exception.user.UserMissingOwnerException;
+import org.candlepin.service.exception.user.UserUnknownRetrievalException;
 import org.candlepin.service.model.UserInfo;
 
 import org.xnap.commons.i18n.I18n;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
+import javax.ws.rs.core.Response.Status;
 
 
 
@@ -48,7 +54,28 @@ public abstract class UserAuth implements AuthProvider {
      * Creates a user principal for a given username
      */
     protected Principal createPrincipal(String username) {
-        UserInfo user = this.userServiceAdapter.findByLogin(username);
+        UserInfo user;
+        try {
+            user = this.userServiceAdapter.findByLogin(username);
+        }
+        catch (UserMissingOwnerException e) {
+            throw new CandlepinException(null,
+                i18nProvider.get().tr("The system is unable to find an organization for user '{0}'",
+                    username));
+        }
+        catch (UserDisabledException e) {
+            throw new CandlepinException(null,
+                i18nProvider.get().tr("The user '{0}' has been disabled, if this is a mistake, " +
+                    "please contact customer service.", username));
+        }
+        catch (UserLoginNotFoundException e) {
+            throw new CandlepinException(Status.fromStatusCode(e.getStatus()),
+                i18nProvider.get().tr("Unable to find user '{0}'", username));
+        }
+        catch (UserUnknownRetrievalException e) {
+            throw new CandlepinException(Status.fromStatusCode(e.getStatus()),
+                i18nProvider.get().tr("Unexpected error when retrieving user '{0}'", username));
+        }
 
         if (user == null) {
             throw new BadRequestException(this.i18nProvider.get().tr("User not found: {0}", username));

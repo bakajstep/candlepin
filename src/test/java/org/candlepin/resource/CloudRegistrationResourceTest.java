@@ -26,12 +26,12 @@ import org.candlepin.auth.CloudRegistrationAuth;
 import org.candlepin.auth.Principal;
 import org.candlepin.auth.UserPrincipal;
 import org.candlepin.dto.api.server.v1.CloudRegistrationDTO;
-import org.candlepin.exceptions.BadRequestException;
 import org.candlepin.exceptions.NotAuthorizedException;
 import org.candlepin.exceptions.NotImplementedException;
 import org.candlepin.resource.validation.DTOValidator;
-import org.candlepin.service.exception.CloudRegistrationAuthorizationException;
-import org.candlepin.service.exception.MalformedCloudRegistrationException;
+import org.candlepin.service.exception.cloudregistration.CloudRegistrationAuthorizationException;
+import org.candlepin.service.exception.cloudregistration.CloudRegistrationBadTypeException;
+import org.candlepin.service.exception.cloudregistration.CloudRegistrationServiceException;
 import org.candlepin.service.model.CloudRegistrationInfo;
 
 import org.jboss.resteasy.core.ResteasyContext;
@@ -47,6 +47,7 @@ import org.xnap.commons.i18n.I18nFactory;
 import java.util.Locale;
 
 
+
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 public class CloudRegistrationResourceTest {
@@ -55,7 +56,6 @@ public class CloudRegistrationResourceTest {
     private CloudRegistrationAuth mockCloudRegistrationAuth;
     private Principal principal;
     private DTOValidator mockValidator;
-
 
     @BeforeEach
     public void init() {
@@ -75,7 +75,7 @@ public class CloudRegistrationResourceTest {
     }
 
     @Test
-    public void testAuthorize() {
+    public void testAuthorize() throws CloudRegistrationServiceException {
         String token = "test-token";
 
         CloudRegistrationResource resource = this.buildResource();
@@ -95,7 +95,7 @@ public class CloudRegistrationResourceTest {
     }
 
     @Test
-    public void testAuthorizeFailsGracefullyWhenNotImplemented() {
+    public void testAuthorizeFailsGracefullyWhenNotImplemented() throws CloudRegistrationServiceException {
         CloudRegistrationResource resource = this.buildResource();
 
         doThrow(new UnsupportedOperationException()).when(this.mockCloudRegistrationAuth)
@@ -106,7 +106,8 @@ public class CloudRegistrationResourceTest {
     }
 
     @Test
-    public void testAuthorizeFailsGracefullyWhenAuthenticationFails() {
+    public void testAuthorizeFailsGracefullyWhenAuthenticationFails()
+        throws CloudRegistrationServiceException {
         CloudRegistrationResource resource = this.buildResource();
 
         doThrow(new CloudRegistrationAuthorizationException()).when(this.mockCloudRegistrationAuth)
@@ -117,13 +118,13 @@ public class CloudRegistrationResourceTest {
     }
 
     @Test
-    public void testAuthorizeFailsGracefullyWithMalformedInput() {
+    public void testAuthorizeFailsGracefullyWithMalformedInput() throws CloudRegistrationServiceException {
         CloudRegistrationResource resource = this.buildResource();
 
-        doThrow(new MalformedCloudRegistrationException()).when(this.mockCloudRegistrationAuth)
+        doThrow(new CloudRegistrationBadTypeException()).when(this.mockCloudRegistrationAuth)
             .generateRegistrationToken(eq(principal), any(CloudRegistrationInfo.class));
 
-        assertThrows(BadRequestException.class,
+        assertThrows(IllegalArgumentException.class,
             () -> resource.cloudAuthorize(new CloudRegistrationDTO()));
     }
 

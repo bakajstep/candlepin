@@ -18,6 +18,7 @@ import org.candlepin.auth.Access;
 import org.candlepin.dto.ModelTranslator;
 import org.candlepin.dto.api.server.v1.PermissionBlueprintDTO;
 import org.candlepin.dto.api.server.v1.RoleDTO;
+import org.candlepin.exceptions.CandlepinException;
 import org.candlepin.exceptions.ConflictException;
 import org.candlepin.exceptions.NotFoundException;
 import org.candlepin.model.OwnerCurator;
@@ -26,6 +27,10 @@ import org.candlepin.resource.server.v1.RolesApi;
 import org.candlepin.resource.util.InfoAdapter;
 import org.candlepin.resource.validation.DTOValidator;
 import org.candlepin.service.UserServiceAdapter;
+import org.candlepin.service.exception.user.UserDisabledException;
+import org.candlepin.service.exception.user.UserLoginNotFoundException;
+import org.candlepin.service.exception.user.UserMissingOwnerException;
+import org.candlepin.service.exception.user.UserUnknownRetrievalException;
 import org.candlepin.service.model.RoleInfo;
 import org.candlepin.service.model.UserInfo;
 
@@ -36,6 +41,9 @@ import java.util.Collection;
 import java.util.stream.Stream;
 
 import javax.inject.Inject;
+import javax.ws.rs.core.Response.Status;
+
+
 
 /**
  * API implementation for Role operations
@@ -108,9 +116,29 @@ public class RoleResource implements RolesApi {
             throw new BadRequestException(this.i18n.tr("username is null or empty"));
         }
 
-        UserInfo user = this.userService.findByLogin(username);
-        if (user == null) {
-            throw new NotFoundException(this.i18n.tr("User not found: {0}", username));
+        UserInfo user;
+        try {
+            user = this.userService.findByLogin(username);
+            if (user == null) {
+                throw new NotFoundException(this.i18n.tr("User not found: {0}", username));
+            }
+        }
+        catch (UserMissingOwnerException e) {
+            throw new NotFoundException(this.i18n.tr(
+                "The system is unable to find an organization for user '{0}'", username));
+        }
+        catch (UserDisabledException e) {
+            throw new CandlepinException(null,
+                i18n.tr("The user '{0}' has been disabled, if this is a mistake, " +
+                    "please contact customer service.", username));
+        }
+        catch (UserLoginNotFoundException e) {
+            throw new CandlepinException(Status.fromStatusCode(e.getStatus()),
+                this.i18n.tr("Unable to find user '{0}'", username));
+        }
+        catch (UserUnknownRetrievalException e) {
+            throw new CandlepinException(Status.fromStatusCode(e.getStatus()),
+                i18n.tr("Unexpected error when retrieving user '{0}'", username));
         }
 
         return user;

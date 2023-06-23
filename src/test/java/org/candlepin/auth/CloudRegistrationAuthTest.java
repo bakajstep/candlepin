@@ -37,7 +37,8 @@ import org.candlepin.model.OwnerCurator;
 import org.candlepin.pki.CertificateReader;
 import org.candlepin.pki.impl.JSSPrivateKeyReader;
 import org.candlepin.service.CloudRegistrationAdapter;
-import org.candlepin.service.exception.CloudRegistrationAuthorizationException;
+import org.candlepin.service.exception.cloudregistration.CloudRegistrationAuthorizationException;
+import org.candlepin.service.exception.cloudregistration.CloudRegistrationServiceException;
 import org.candlepin.service.model.CloudRegistrationInfo;
 import org.candlepin.util.Util;
 
@@ -69,6 +70,7 @@ import java.util.Map;
 import javax.inject.Provider;
 
 
+
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 public class CloudRegistrationAuthTest {
@@ -81,9 +83,8 @@ public class CloudRegistrationAuthTest {
     private CloudRegistrationAdapter mockCloudRegistrationAdapter;
     private OwnerCurator mockOwnerCurator;
 
-
     @BeforeEach
-    public void init() {
+    public void init() throws CloudRegistrationServiceException {
         this.config = TestConfig.defaults();
         this.i18n = I18nFactory.getI18n(getClass(), Locale.US, I18nFactory.FALLBACK);
         this.i18nProvider = () -> i18n;
@@ -151,7 +152,7 @@ public class CloudRegistrationAuthTest {
     }
 
     private int getCurrentSeconds() {
-        return  (int) (System.currentTimeMillis() / 1000);
+        return (int) (System.currentTimeMillis() / 1000);
     }
 
     private String buildMalformedToken(JsonWebToken token) {
@@ -193,7 +194,7 @@ public class CloudRegistrationAuthTest {
     }
 
     @Test
-    public void testGenerateRegistrationToken() {
+    public void testGenerateRegistrationToken() throws CloudRegistrationServiceException {
         Principal principal = mock(Principal.class);
         CloudRegistrationInfo cloudRegInfo = this.buildCloudRegistrationInfo("test_type", "metadata", "sig");
         CloudRegistrationAuth provider = this.buildAuthProvider();
@@ -207,7 +208,7 @@ public class CloudRegistrationAuthTest {
     }
 
     @Test
-    public void testGenerateRegistrationTokenFailsWhenDisabled() {
+    public void testGenerateRegistrationTokenFailsWhenDisabled() throws CloudRegistrationServiceException {
         // Should pass when enabled and throw an exception when disabled
         this.config.setProperty(ConfigProperties.CLOUD_AUTHENTICATION, "true");
 
@@ -218,12 +219,13 @@ public class CloudRegistrationAuthTest {
         this.config.setProperty(ConfigProperties.CLOUD_AUTHENTICATION, "false");
         CloudRegistrationAuth disabledProvider = this.buildAuthProvider();
 
-        assertThrows(UnsupportedOperationException.class, () ->
-            disabledProvider.generateRegistrationToken(mock(Principal.class), cloudRegInfo));
+        assertThrows(UnsupportedOperationException.class,
+            () -> disabledProvider.generateRegistrationToken(mock(Principal.class), cloudRegInfo));
     }
 
     @Test
-    public void testGenerateRegistrationTokenFailsOnResolutionFailure() {
+    public void testGenerateRegistrationTokenFailsOnResolutionFailure()
+        throws CloudRegistrationServiceException {
         Principal principal = mock(Principal.class);
         CloudRegistrationInfo cloudRegInfo = this.buildCloudRegistrationInfo("test_type", "metadata", "sig");
         CloudRegistrationAuth provider = this.buildAuthProvider();
@@ -237,7 +239,7 @@ public class CloudRegistrationAuthTest {
     }
 
     @Test
-    public void testGenerateRegistrationTokenRequiresPrincipal() {
+    public void testGenerateRegistrationTokenRequiresPrincipal() throws CloudRegistrationServiceException {
         CloudRegistrationInfo cloudRegInfo = this.buildCloudRegistrationInfo("test_type", "metadata", "sig");
         CloudRegistrationAuth provider = this.buildAuthProvider();
 
@@ -249,7 +251,8 @@ public class CloudRegistrationAuthTest {
     }
 
     @Test
-    public void testGenerateRegistrationTokenRequiresCloudRegistrationData() {
+    public void testGenerateRegistrationTokenRequiresCloudRegistrationData()
+        throws CloudRegistrationServiceException {
         Principal principal = mock(Principal.class);
         CloudRegistrationAuth provider = this.buildAuthProvider();
 
@@ -261,7 +264,7 @@ public class CloudRegistrationAuthTest {
     }
 
     @Test
-    public void testGetPrincipal() {
+    public void testGetPrincipal() throws CloudRegistrationServiceException {
         CloudRegistrationInfo cloudRegInfo = this.buildCloudRegistrationInfo("test_type", "metadata", "sig");
         CloudRegistrationAuth provider = this.buildAuthProvider();
         String token = provider.generateRegistrationToken(mock(Principal.class), cloudRegInfo);
@@ -285,7 +288,7 @@ public class CloudRegistrationAuthTest {
     }
 
     @Test
-    public void testGetPrincipalAbortsWhenDisabled() {
+    public void testGetPrincipalAbortsWhenDisabled() throws CloudRegistrationServiceException {
         // Enable cloud registration to get a valid token, so we can ensure the reason it aborts is due to
         // cloud registration being disabled
         this.config.setProperty(ConfigProperties.CLOUD_AUTHENTICATION, "true");
@@ -317,7 +320,7 @@ public class CloudRegistrationAuthTest {
     }
 
     @Test
-    public void testGetPrincipalAbortsIfAuthenticationIsWrongType() {
+    public void testGetPrincipalAbortsIfAuthenticationIsWrongType() throws CloudRegistrationServiceException {
         CloudRegistrationInfo cloudRegInfo = this.buildCloudRegistrationInfo("test_type", "metadata", "sig");
         CloudRegistrationAuth provider = this.buildAuthProvider();
         String token = provider.generateRegistrationToken(mock(Principal.class), cloudRegInfo);

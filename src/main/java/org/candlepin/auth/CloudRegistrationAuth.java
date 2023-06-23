@@ -24,8 +24,8 @@ import org.candlepin.model.OwnerCurator;
 import org.candlepin.pki.CertificateReader;
 import org.candlepin.resteasy.filter.AuthUtil;
 import org.candlepin.service.CloudRegistrationAdapter;
-import org.candlepin.service.exception.CloudRegistrationAuthorizationException;
-import org.candlepin.service.exception.MalformedCloudRegistrationException;
+import org.candlepin.service.exception.cloudregistration.CloudRegistrationAuthorizationException;
+import org.candlepin.service.exception.cloudregistration.CloudRegistrationServiceException;
 import org.candlepin.service.model.CloudRegistrationInfo;
 import org.candlepin.util.Util;
 
@@ -71,8 +71,10 @@ public class CloudRegistrationAuth implements AuthProvider {
     private static final String AUTH_TYPE = "Bearer";
     private static final String TOKEN_TYPE = "CP-Cloud-Registration";
 
-    @Context private ServletRequest servletRequest;
-    @Context private ServletResponse servletResponse;
+    @Context
+    private ServletRequest servletRequest;
+    @Context
+    private ServletResponse servletResponse;
 
     private final Configuration config;
     private final Provider<I18n> i18nProvider;
@@ -87,7 +89,6 @@ public class CloudRegistrationAuth implements AuthProvider {
     private final X509Certificate certificate;
     private final PublicKey publicKey;
     private final PrivateKey privateKey;
-
 
     @Inject
     public CloudRegistrationAuth(Configuration config, Provider<I18n> i18nProvider,
@@ -213,7 +214,7 @@ public class CloudRegistrationAuth implements AuthProvider {
 
         List<Permission> permissions = Arrays.asList(
             new OwnerPermission(owner, Access.CREATE)
-            // Add any additional permissions here as needed
+        // Add any additional permissions here as needed
         );
 
         return new UserPrincipal(subject, permissions, false);
@@ -244,7 +245,7 @@ public class CloudRegistrationAuth implements AuthProvider {
      *  specified cloud registration details
      */
     public String generateRegistrationToken(Principal principal, CloudRegistrationInfo cloudRegistrationInfo)
-        throws CloudRegistrationAuthorizationException, MalformedCloudRegistrationException {
+        throws CloudRegistrationServiceException {
 
         if (!this.enabled) {
             throw new UnsupportedOperationException(

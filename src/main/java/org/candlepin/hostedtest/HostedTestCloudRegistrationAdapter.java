@@ -16,16 +16,19 @@ package org.candlepin.hostedtest;
 
 import org.candlepin.service.CloudProvider;
 import org.candlepin.service.CloudRegistrationAdapter;
-import org.candlepin.service.exception.CloudRegistrationAuthorizationException;
 import org.candlepin.service.exception.CouldNotAcquireCloudAccountLockException;
 import org.candlepin.service.exception.CouldNotEntitleOrganizationException;
-import org.candlepin.service.exception.MalformedCloudRegistrationException;
+import org.candlepin.service.exception.cloudregistration.CloudRegistrationAuthorizationException;
+import org.candlepin.service.exception.cloudregistration.CloudRegistrationBadMetadataException;
+import org.candlepin.service.exception.cloudregistration.CloudRegistrationMissingTypeException;
 import org.candlepin.service.model.CloudAccountData;
 import org.candlepin.service.model.CloudRegistrationInfo;
 import org.candlepin.service.model.OwnerInfo;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
+
 
 /**
  * The HostedTestProductServiceAdapter is a CloudRegistrationAdapter implementation backed by the
@@ -50,14 +53,15 @@ public class HostedTestCloudRegistrationAdapter implements CloudRegistrationAdap
      */
     @Override
     public String resolveCloudRegistrationData(CloudRegistrationInfo cloudRegInfo)
-        throws CloudRegistrationAuthorizationException, MalformedCloudRegistrationException {
+        throws CloudRegistrationMissingTypeException, CloudRegistrationBadMetadataException,
+        CloudRegistrationAuthorizationException {
 
         if (cloudRegInfo == null) {
-            throw new MalformedCloudRegistrationException("No cloud registration information provided");
+            throw new CloudRegistrationMissingTypeException("No cloud registration information provided");
         }
 
         if (cloudRegInfo.getMetadata() == null) {
-            throw new MalformedCloudRegistrationException(
+            throw new CloudRegistrationBadMetadataException(
                 "No metadata provided with the cloud registration info");
 
         }

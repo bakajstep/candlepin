@@ -20,6 +20,7 @@ import org.candlepin.dto.api.server.v1.OwnerDTO;
 import org.candlepin.dto.api.server.v1.RoleDTO;
 import org.candlepin.dto.api.server.v1.UserDTO;
 import org.candlepin.exceptions.BadRequestException;
+import org.candlepin.exceptions.CandlepinException;
 import org.candlepin.exceptions.ConflictException;
 import org.candlepin.exceptions.NotFoundException;
 import org.candlepin.model.Owner;
@@ -28,6 +29,10 @@ import org.candlepin.model.User;
 import org.candlepin.resource.server.v1.UsersApi;
 import org.candlepin.resource.util.InfoAdapter;
 import org.candlepin.service.UserServiceAdapter;
+import org.candlepin.service.exception.user.UserDisabledException;
+import org.candlepin.service.exception.user.UserLoginNotFoundException;
+import org.candlepin.service.exception.user.UserMissingOwnerException;
+import org.candlepin.service.exception.user.UserUnknownRetrievalException;
 import org.candlepin.service.model.OwnerInfo;
 import org.candlepin.service.model.RoleInfo;
 import org.candlepin.service.model.UserInfo;
@@ -42,6 +47,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import javax.inject.Inject;
+import javax.ws.rs.core.Response.Status;
 
 
 
@@ -85,11 +91,30 @@ public class UserResource implements UsersApi {
             throw new BadRequestException(this.i18n.tr("username is null or empty"));
         }
 
-        UserInfo user = this.userService.findByLogin(username);
-        if (user == null) {
-            throw new NotFoundException(this.i18n.tr("User not found: {0}", username));
+        UserInfo user;
+        try {
+            user = this.userService.findByLogin(username);
+            if (user == null) {
+                throw new NotFoundException(this.i18n.tr("User not found: {0}", username));
+            }
         }
-
+        catch (UserMissingOwnerException e) {
+            throw new NotFoundException(this.i18n.tr(
+                "The system is unable to find an organization for user '{0}'", username));
+        }
+        catch (UserDisabledException e) {
+            throw new CandlepinException(null,
+                i18n.tr("The user '{0}' has been disabled, if this is a mistake, " +
+                    "please contact customer service.", username));
+        }
+        catch (UserLoginNotFoundException e) {
+            throw new CandlepinException(Status.fromStatusCode(e.getStatus()),
+                i18n.tr("Unable to find user '{0}'", username));
+        }
+        catch (UserUnknownRetrievalException e) {
+            throw new CandlepinException(Status.fromStatusCode(e.getStatus()),
+                i18n.tr("Unexpected error when retrieving user '{0}'", username));
+        }
         return user;
     }
 
@@ -140,14 +165,33 @@ public class UserResource implements UsersApi {
             throw new BadRequestException(this.i18n.tr("Username not specified"));
         }
 
-        if (this.userService.findByLogin(dto.getUsername()) != null) {
-            throw new ConflictException(this.i18n.tr("User already exists: {0}", dto.getUsername()));
+        try {
+            if (this.userService.findByLogin(dto.getUsername()) != null) {
+                throw new ConflictException(this.i18n.tr("User already exists: {0}", dto.getUsername()));
+            }
+        }
+        catch (UserMissingOwnerException e) {
+            throw new NotFoundException(this.i18n.tr(
+                "The system is unable to find an organization for user '{0}'", dto.getUsername()));
+        }
+        catch (UserDisabledException e) {
+            throw new CandlepinException(null,
+                i18n.tr("The user '{0}' has been disabled, if this is a mistake, " +
+                    "please contact customer service.", dto.getUsername()));
+        }
+        catch (UserLoginNotFoundException e) {
+            throw new CandlepinException(Status.fromStatusCode(e.getStatus()),
+                i18n.tr("Unable to find user '{0}'", dto.getUsername()));
+        }
+        catch (UserUnknownRetrievalException e) {
+            throw new CandlepinException(Status.fromStatusCode(e.getStatus()),
+                i18n.tr("Unexpected error when retrieving user '{0}'", dto.getUsername()));
         }
 
         return this.modelTranslator.translate(
             // Translating UserDTO to User Info because UserDTO is no longer supporting UserInfo
             userService.createUser(InfoAdapter.userInfoAdapter(dto)),
-                UserDTO.class);
+            UserDTO.class);
     }
 
     @Override
@@ -159,7 +203,7 @@ public class UserResource implements UsersApi {
 
         return this.modelTranslator.translate(
             userService.updateUser(username, InfoAdapter.userInfoAdapter(dto)),
-                UserDTO.class);
+            UserDTO.class);
     }
 
     @Override
@@ -184,7 +228,23 @@ public class UserResource implements UsersApi {
         // Fetch the user for a simple existence check. We don't actually need it.
         UserInfo user = this.fetchUserByUsername(username);
 
-        Collection<? extends OwnerInfo> owners = this.userService.getAccessibleOwners(username);
+        Collection<? extends OwnerInfo> owners = null;
+        try {
+            owners = this.userService.getAccessibleOwners(username);
+        }
+        catch (UserLoginNotFoundException e) {
+            throw new CandlepinException(Status.fromStatusCode(e.getStatus()),
+                i18n.tr("Unable to find user '{0}'", username));
+        }
+        catch (UserDisabledException e) {
+            throw new CandlepinException(Status.fromStatusCode(e.getStatus()),
+                i18n.tr("\"The user '{0}' has been disabled, if this is a mistake, " +
+                    "please contact customer service.", username));
+        }
+        catch (UserUnknownRetrievalException e) {
+            throw new CandlepinException(Status.fromStatusCode(e.getStatus()),
+                i18n.tr("Unexpected error when retrieving user '{0}'", username));
+        }
 
         if (owners != null) {
             // If this ends up being a bottleneck, change this to do a bulk owner lookup

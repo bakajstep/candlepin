@@ -31,6 +31,7 @@ import org.candlepin.model.Consumer;
 import org.candlepin.model.ConsumerCurator;
 import org.candlepin.model.Pool;
 import org.candlepin.service.SubscriptionServiceAdapter;
+import org.candlepin.service.exception.subscription.SubscriptionServiceException;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,16 +47,22 @@ import java.util.Locale;
 import javax.ws.rs.core.Response;
 
 
+
 /**
  * SubscriptionResourceTest
  */
 @ExtendWith(MockitoExtension.class)
-public class SubscriptionResourceTest  {
-    @Mock private SubscriptionServiceAdapter subService;
-    @Mock private ConsumerCurator consumerCurator;
-    @Mock private PoolManager poolManager;
-    @Mock private ModelTranslator modelTranslator;
-    @Mock private ContentAccessManager mockContentAccessManager;
+public class SubscriptionResourceTest {
+    @Mock
+    private SubscriptionServiceAdapter subService;
+    @Mock
+    private ConsumerCurator consumerCurator;
+    @Mock
+    private PoolManager poolManager;
+    @Mock
+    private ModelTranslator modelTranslator;
+    @Mock
+    private ContentAccessManager mockContentAccessManager;
 
     private SubscriptionResource subResource;
 
@@ -64,8 +71,7 @@ public class SubscriptionResourceTest  {
         I18n i18n = I18nFactory.getI18n(
             getClass(),
             Locale.US,
-            I18nFactory.READ_PROPERTIES | I18nFactory.FALLBACK
-        );
+            I18nFactory.READ_PROPERTIES | I18nFactory.FALLBACK);
 
         this.subResource = new SubscriptionResource(
             subService, consumerCurator, poolManager, i18n, modelTranslator, mockContentAccessManager);
@@ -100,7 +106,7 @@ public class SubscriptionResourceTest  {
     }
 
     @Test
-    public void activateSubServiceCalled() {
+    public void activateSubServiceCalled() throws SubscriptionServiceException {
         Consumer consumer = new Consumer()
             .setName("test_consumer")
             .setUsername("alf");
