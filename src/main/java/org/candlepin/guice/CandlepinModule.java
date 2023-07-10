@@ -19,6 +19,7 @@ import org.candlepin.async.JobMessageDispatcher;
 import org.candlepin.async.JobMessageReceiver;
 import org.candlepin.async.tasks.ActiveEntitlementJob;
 import org.candlepin.async.tasks.CertificateCleanupJob;
+import org.candlepin.async.tasks.CloudAccountOrgSetupJob;
 import org.candlepin.async.tasks.EntitleByProductsJob;
 import org.candlepin.async.tasks.EntitlerJob;
 import org.candlepin.async.tasks.ExpiredPoolsCleanupJob;
@@ -347,7 +348,8 @@ public class CandlepinModule extends AbstractModule {
         configureBindFactories();
     }
 
-    @Provides @Named("ValidationProperties")
+    @Provides
+    @Named("ValidationProperties")
     protected Properties getValidationProperties() {
         return new Properties();
     }
@@ -456,6 +458,7 @@ public class CandlepinModule extends AbstractModule {
         JobManager.registerJob(UnmappedGuestEntitlementCleanerJob.JOB_KEY,
             UnmappedGuestEntitlementCleanerJob.class);
         JobManager.registerJob(InactiveConsumerCleanerJob.JOB_KEY, InactiveConsumerCleanerJob.class);
+        JobManager.registerJob(CloudAccountOrgSetupJob.JOB_KEY, CloudAccountOrgSetupJob.class);
     }
 
     private void configureExporter() {
@@ -481,7 +484,9 @@ public class CandlepinModule extends AbstractModule {
         bind(ModelTranslator.class).to(StandardTranslator.class).asEagerSingleton();
     }
 
-    @Provides @Singleton @Named("ActivationListenerObjectMapper")
+    @Provides
+    @Singleton
+    @Named("ActivationListenerObjectMapper")
     private ObjectMapper configureActivationListenerObjectMapper() {
         ObjectMapper mapper = new ObjectMapper();
         AnnotationIntrospector primary = new JacksonAnnotationIntrospector();
@@ -492,7 +497,9 @@ public class CandlepinModule extends AbstractModule {
         return mapper;
     }
 
-    @Provides @Singleton @Named("EventFactoryObjectMapper")
+    @Provides
+    @Singleton
+    @Named("EventFactoryObjectMapper")
     private ObjectMapper configureEventFactoryObjectMapper() {
         ObjectMapper mapper = new ObjectMapper();
 
@@ -515,7 +522,9 @@ public class CandlepinModule extends AbstractModule {
         return mapper;
     }
 
-    @Provides @Singleton @Named("X509V3ExtensionUtilObjectMapper")
+    @Provides
+    @Singleton
+    @Named("X509V3ExtensionUtilObjectMapper")
     private ObjectMapper configureX509V3ExtensionUtilObjectMapper() {
         ObjectMapper mapper = new ObjectMapper();
         mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
@@ -523,7 +532,9 @@ public class CandlepinModule extends AbstractModule {
         return mapper;
     }
 
-    @Provides @Singleton @Named("HypervisorUpdateJobObjectMapper")
+    @Provides
+    @Singleton
+    @Named("HypervisorUpdateJobObjectMapper")
     private ObjectMapper configureHypervisorUpdateJobObjectMapper() {
         ObjectMapper mapper = new ObjectMapper();
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
