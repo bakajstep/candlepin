@@ -31,6 +31,8 @@ import com.google.inject.Injector;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+
+
 public class CertificateSerialResourceTest {
 
     protected ModelTranslator modelTranslator;

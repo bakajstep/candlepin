@@ -23,6 +23,7 @@ import static org.mockito.Mockito.when;
 
 import org.candlepin.controller.ContentAccessManager;
 import org.candlepin.controller.PoolManager;
+import org.candlepin.controller.PoolService;
 import org.candlepin.dto.ModelTranslator;
 import org.candlepin.exceptions.BadRequestException;
 import org.candlepin.exceptions.NotFoundException;
@@ -46,16 +47,24 @@ import java.util.Locale;
 import javax.ws.rs.core.Response;
 
 
+
 /**
  * SubscriptionResourceTest
  */
 @ExtendWith(MockitoExtension.class)
-public class SubscriptionResourceTest  {
-    @Mock private SubscriptionServiceAdapter subService;
-    @Mock private ConsumerCurator consumerCurator;
-    @Mock private PoolManager poolManager;
-    @Mock private ModelTranslator modelTranslator;
-    @Mock private ContentAccessManager mockContentAccessManager;
+public class SubscriptionResourceTest {
+    @Mock
+    private SubscriptionServiceAdapter subService;
+    @Mock
+    private ConsumerCurator consumerCurator;
+    @Mock
+    private PoolManager poolManager;
+    @Mock
+    private PoolService poolService;
+    @Mock
+    private ModelTranslator modelTranslator;
+    @Mock
+    private ContentAccessManager mockContentAccessManager;
 
     private SubscriptionResource subResource;
 
@@ -64,11 +73,10 @@ public class SubscriptionResourceTest  {
         I18n i18n = I18nFactory.getI18n(
             getClass(),
             Locale.US,
-            I18nFactory.READ_PROPERTIES | I18nFactory.FALLBACK
-        );
+            I18nFactory.READ_PROPERTIES | I18nFactory.FALLBACK);
 
-        this.subResource = new SubscriptionResource(
-            subService, consumerCurator, poolManager, i18n, modelTranslator, mockContentAccessManager);
+        this.subResource = new SubscriptionResource(subService, consumerCurator, poolManager, i18n,
+            modelTranslator, mockContentAccessManager, poolService);
     }
 
     @Test

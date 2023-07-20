@@ -19,18 +19,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyInt;
-import static org.mockito.Mockito.anyLong;
 import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import org.candlepin.bind.PoolOperations;
 import org.candlepin.config.ConfigProperties;
 import org.candlepin.config.DevConfig;
 import org.candlepin.config.TestConfig;
-import org.candlepin.controller.PoolManager;
+import org.candlepin.controller.PoolService;
 import org.candlepin.dto.ModelTranslator;
 import org.candlepin.dto.StandardTranslator;
 import org.candlepin.model.Consumer;
@@ -73,12 +69,14 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+
+
 /**
- * PostEntitlementRulesTest: Tests for post-entitlement rules, as well as the post-unbind
- * rules which tend to clean up after them.
+ * PostEntitlementRulesTest: Tests for post-entitlement rules, as well as the post-unbind rules
+ * which tend to clean up after them.
  *
- * These tests only cover standalone/universal situations. See hosted specific test
- * suites for behaviour which is specific to hosted.
+ * These tests only cover standalone/universal situations. See hosted specific test suites for
+ * behaviour which is specific to hosted.
  */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -91,8 +89,6 @@ public class PostEntitlementRulesTest {
     @Mock
     private ConsumerTypeCurator consumerTypeCurator;
     @Mock
-    private PoolManager poolManager;
-    @Mock
     private Provider<JsRunnerRequestCache> cacheProvider;
     @Mock
     private JsRunnerRequestCache cache;
@@ -100,6 +96,8 @@ public class PostEntitlementRulesTest {
     private OwnerCurator ownerCurator;
     @Mock
     private EnvironmentCurator environmentCurator;
+    @Mock
+    private PoolService poolService;
 
     private Enforcer enforcer;
     private DevConfig config;
@@ -131,8 +129,7 @@ public class PostEntitlementRulesTest {
             consumerTypeCurator,
             new RulesObjectMapper(),
             translator,
-            poolManager
-        );
+            poolService);
 
         owner = TestUtil.createOwner();
 
@@ -258,11 +255,7 @@ public class PostEntitlementRulesTest {
             consumer, entitlements, null, false, poolQuantityMap);
 
         assertTrue(poolOperations.creations().isEmpty());
-        verify(poolManager, never()).setPoolQuantity(any(Pool.class), anyInt());
-
-        enforcer.postUnbind(e);
-        verify(poolManager, never()).setPoolQuantity(any(Pool.class), anyInt());
-        verify(poolManager, never()).setPoolQuantity(any(Pool.class), anyLong());
+        assertTrue(poolOperations.updates().isEmpty());
     }
 
     // Sub-pools should not be created when guests bind:
@@ -281,11 +274,7 @@ public class PostEntitlementRulesTest {
             consumer, entitlements, null, false, poolQuantityMap);
 
         assertTrue(poolOperations.creations().isEmpty());
-        verify(poolManager, never()).setPoolQuantity(any(Pool.class), anyInt());
-
-        enforcer.postUnbind(e);
-        verify(poolManager, never()).setPoolQuantity(any(Pool.class), anyInt());
-        verify(poolManager, never()).setPoolQuantity(any(Pool.class), anyLong());
+        assertTrue(poolOperations.updates().isEmpty());
     }
 
     private ConsumerType mockConsumerType(ConsumerType ctype) {

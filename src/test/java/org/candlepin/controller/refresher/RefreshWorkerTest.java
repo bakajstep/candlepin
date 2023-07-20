@@ -76,9 +76,9 @@ import java.util.Set;
 
 import javax.persistence.EntityManager;
 
-
 // FIXME: Rewrite this class to not mock the DB-level operations and just use the mock DB as a whole.
 // Mocking DB functionality is nonsense and makes maintaining and adding new tests incredibly painful.
+
 
 
 /**
@@ -373,7 +373,7 @@ public class RefreshWorkerTest {
     @ValueSource(strings = { "true", "false" })
     public void testAddSubscriptionAddsNestedObjects(boolean variadic) {
         // Subscription -> Product (x2) -> ProductContent -> Content
-        //                              -> Product -> ProductContent -> Content
+        // -> Product -> ProductContent -> Content
 
         ProductContentInfo pcinfo1 = this.mockProductContentInfo("cid-1", "content-1");
         ProductContentInfo pcinfo2 = this.mockProductContentInfo("cid-2", "content-2");
@@ -639,8 +639,8 @@ public class RefreshWorkerTest {
     @ValueSource(strings = { "true", "false" })
     public void testAddProductsAddsNestedObjects(boolean variadic) {
         // Product -> ProductContent -> Content
-        //         -> Product -> ProductContent -> Content
-        //                    -> Product -> ...
+        // -> Product -> ProductContent -> Content
+        // -> Product -> ...
 
         ProductContentInfo pcinfo1 = this.mockProductContentInfo("cid-1", "content-1");
         ProductContentInfo pcinfo2 = this.mockProductContentInfo("cid-2", "content-2");

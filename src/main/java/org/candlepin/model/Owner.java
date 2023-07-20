@@ -46,6 +46,8 @@ import javax.persistence.Table;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
+
+
 /**
  * Represents the owner of entitlements. This is akin to an organization, whereas a User is an
  * individual account within that organization.

@@ -19,6 +19,8 @@ import org.candlepin.service.CloudRegistrationAdapter;
 import org.candlepin.service.model.CloudAccountData;
 import org.candlepin.service.model.CloudRegistrationInfo;
 
+
+
 /**
  * The default implementation of the {@link CloudRegistrationAdapter}.
  *

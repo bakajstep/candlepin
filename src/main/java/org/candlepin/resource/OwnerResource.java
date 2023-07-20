@@ -39,6 +39,7 @@ import org.candlepin.controller.ManifestManager;
 import org.candlepin.controller.OwnerContentAccess;
 import org.candlepin.controller.OwnerManager;
 import org.candlepin.controller.PoolManager;
+import org.candlepin.controller.PoolService;
 import org.candlepin.dto.ModelTranslator;
 import org.candlepin.dto.api.server.v1.ActivationKeyDTO;
 import org.candlepin.dto.api.server.v1.ActivationKeyPoolDTO;
@@ -142,6 +143,7 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -158,41 +160,42 @@ import javax.persistence.PersistenceException;
  */
 public class OwnerResource implements OwnerApi {
 
-    private static Logger log = LoggerFactory.getLogger(OwnerResource.class);
+    private static final Logger log = LoggerFactory.getLogger(OwnerResource.class);
 
     private static final Pattern AK_CHAR_FILTER = Pattern.compile("^[a-zA-Z0-9_-]+$");
 
     /** The maximum number of consumers to return per list or find request */
     private static final int MAX_CONSUMERS_PER_REQUEST = 1000;
 
-    private OwnerCurator ownerCurator;
-    private OwnerInfoCurator ownerInfoCurator;
-    private ActivationKeyCurator activationKeyCurator;
-    private OwnerServiceAdapter ownerService;
-    private ConsumerCurator consumerCurator;
-    private I18n i18n;
-    private EventSink sink;
-    private EventFactory eventFactory;
-    private ManifestManager manifestManager;
-    private ExporterMetadataCurator exportCurator;
-    private ImportRecordCurator importRecordCurator;
-    private ContentAccessManager contentAccessManager;
-    private PoolManager poolManager;
-    private OwnerManager ownerManager;
-    private EntitlementCurator entitlementCurator;
-    private UeberCertificateCurator ueberCertCurator;
-    private UeberCertificateGenerator ueberCertGenerator;
-    private EnvironmentCurator envCurator;
-    private CalculatedAttributesUtil calculatedAttributesUtil;
-    private ContentOverrideValidator contentOverrideValidator;
-    private ServiceLevelValidator serviceLevelValidator;
-    private Configuration config;
-    private ConsumerTypeValidator consumerTypeValidator;
-    private OwnerProductCurator ownerProductCurator;
-    private ModelTranslator translator;
-    private JobManager jobManager;
-    private DTOValidator validator;
-    private PrincipalProvider principalProvider;
+    private final OwnerCurator ownerCurator;
+    private final OwnerInfoCurator ownerInfoCurator;
+    private final ActivationKeyCurator activationKeyCurator;
+    private final OwnerServiceAdapter ownerService;
+    private final ConsumerCurator consumerCurator;
+    private final I18n i18n;
+    private final EventSink sink;
+    private final EventFactory eventFactory;
+    private final ManifestManager manifestManager;
+    private final ExporterMetadataCurator exportCurator;
+    private final ImportRecordCurator importRecordCurator;
+    private final ContentAccessManager contentAccessManager;
+    private final PoolManager poolManager;
+    private final OwnerManager ownerManager;
+    private final EntitlementCurator entitlementCurator;
+    private final UeberCertificateCurator ueberCertCurator;
+    private final UeberCertificateGenerator ueberCertGenerator;
+    private final EnvironmentCurator envCurator;
+    private final CalculatedAttributesUtil calculatedAttributesUtil;
+    private final ContentOverrideValidator contentOverrideValidator;
+    private final ServiceLevelValidator serviceLevelValidator;
+    private final Configuration config;
+    private final ConsumerTypeValidator consumerTypeValidator;
+    private final OwnerProductCurator ownerProductCurator;
+    private final ModelTranslator translator;
+    private final JobManager jobManager;
+    private final DTOValidator validator;
+    private final PrincipalProvider principalProvider;
+    private final PoolService poolService;
 
     @Inject
     @SuppressWarnings("checkstyle:parameternumber")
@@ -223,36 +226,38 @@ public class OwnerResource implements OwnerApi {
         ModelTranslator translator,
         JobManager jobManager,
         DTOValidator validator,
+        PoolService poolService,
         PrincipalProvider principalProvider) {
 
-        this.ownerCurator = ownerCurator;
-        this.ownerInfoCurator = ownerInfoCurator;
-        this.activationKeyCurator = activationKeyCurator;
-        this.consumerCurator = consumerCurator;
-        this.i18n = i18n;
-        this.sink = sink;
-        this.eventFactory = eventFactory;
-        this.exportCurator = exportCurator;
-        this.importRecordCurator = importRecordCurator;
-        this.contentAccessManager = contentAccessManager;
-        this.poolManager = poolManager;
-        this.manifestManager = manifestManager;
-        this.ownerManager = ownerManager;
-        this.entitlementCurator = entitlementCurator;
-        this.ueberCertCurator = ueberCertCurator;
-        this.ueberCertGenerator = ueberCertGenerator;
-        this.envCurator = envCurator;
-        this.calculatedAttributesUtil = calculatedAttributesUtil;
-        this.contentOverrideValidator = contentOverrideValidator;
-        this.serviceLevelValidator = serviceLevelValidator;
-        this.ownerService = ownerService;
-        this.config = config;
-        this.consumerTypeValidator = consumerTypeValidator;
-        this.ownerProductCurator = ownerProductCurator;
-        this.translator = translator;
-        this.jobManager = jobManager;
-        this.validator = validator;
-        this.principalProvider = principalProvider;
+        this.ownerCurator = Objects.requireNonNull(ownerCurator);
+        this.ownerInfoCurator = Objects.requireNonNull(ownerInfoCurator);
+        this.activationKeyCurator = Objects.requireNonNull(activationKeyCurator);
+        this.consumerCurator = Objects.requireNonNull(consumerCurator);
+        this.i18n = Objects.requireNonNull(i18n);
+        this.sink = Objects.requireNonNull(sink);
+        this.eventFactory = Objects.requireNonNull(eventFactory);
+        this.exportCurator = Objects.requireNonNull(exportCurator);
+        this.importRecordCurator = Objects.requireNonNull(importRecordCurator);
+        this.contentAccessManager = Objects.requireNonNull(contentAccessManager);
+        this.poolManager = Objects.requireNonNull(poolManager);
+        this.manifestManager = Objects.requireNonNull(manifestManager);
+        this.ownerManager = Objects.requireNonNull(ownerManager);
+        this.entitlementCurator = Objects.requireNonNull(entitlementCurator);
+        this.ueberCertCurator = Objects.requireNonNull(ueberCertCurator);
+        this.ueberCertGenerator = Objects.requireNonNull(ueberCertGenerator);
+        this.envCurator = Objects.requireNonNull(envCurator);
+        this.calculatedAttributesUtil = Objects.requireNonNull(calculatedAttributesUtil);
+        this.contentOverrideValidator = Objects.requireNonNull(contentOverrideValidator);
+        this.serviceLevelValidator = Objects.requireNonNull(serviceLevelValidator);
+        this.ownerService = Objects.requireNonNull(ownerService);
+        this.config = Objects.requireNonNull(config);
+        this.consumerTypeValidator = Objects.requireNonNull(consumerTypeValidator);
+        this.ownerProductCurator = Objects.requireNonNull(ownerProductCurator);
+        this.translator = Objects.requireNonNull(translator);
+        this.jobManager = Objects.requireNonNull(jobManager);
+        this.validator = Objects.requireNonNull(validator);
+        this.principalProvider = Objects.requireNonNull(principalProvider);
+        this.poolService = Objects.requireNonNull(poolService);
     }
 
     /**
@@ -420,7 +425,7 @@ public class OwnerResource implements OwnerApi {
     private Pool findPool(String poolId) {
         Pool pool;
         if (poolId != null && !poolId.isEmpty()) {
-            pool = poolManager.get(poolId);
+            pool = this.poolService.get(poolId);
         }
         else {
             throw new BadRequestException(i18n.tr("Pool id is null or empty."));
@@ -612,7 +617,7 @@ public class OwnerResource implements OwnerApi {
                     if (overrideDTO != null) {
                         entity.addContentOverride(
                             new ActivationKeyContentOverride(entity, overrideDTO.getContentLabel(),
-                            overrideDTO.getName(), overrideDTO.getValue()));
+                                overrideDTO.getName(), overrideDTO.getValue()));
                     }
                 }
             }
@@ -772,12 +777,10 @@ public class OwnerResource implements OwnerApi {
             OwnerContentAccess owner = this.ownerCurator.getOwnerContentAccess(ownerKey);
             String caMode = Util.firstOf(
                 owner.getContentAccessMode(),
-                ContentAccessManager.ContentAccessMode.getDefault().toDatabaseValue()
-            );
+                ContentAccessManager.ContentAccessMode.getDefault().toDatabaseValue());
             String caList = Util.firstOf(
                 owner.getContentAccessModeList(),
-                ContentAccessManager.getListDefaultDatabaseValue()
-            );
+                ContentAccessManager.getListDefaultDatabaseValue());
             return new ContentAccessDTO()
                 .contentAccessMode(caMode)
                 .contentAccessModeList(Util.toList(caList));
@@ -912,7 +915,7 @@ public class OwnerResource implements OwnerApi {
         Event event = eventFactory.ownerDeleted(owner);
 
         try {
-            ownerManager.cleanupAndDelete(owner, Boolean.valueOf(revoke));
+            ownerManager.cleanupAndDelete(owner, revoke);
         }
         catch (PersistenceException e) {
             if (e.getCause() instanceof ConstraintViolationException) {
@@ -1265,7 +1268,7 @@ public class OwnerResource implements OwnerApi {
         Owner owner = this.findOwnerByKey(ownerKey);
         List<SubscriptionDTO> subscriptions = new LinkedList<>();
 
-        for (Pool pool : this.poolManager.listPoolsByOwner(owner).list()) {
+        for (Pool pool : this.poolService.listPoolsByOwner(owner).list()) {
 
             SourceSubscription srcsub = pool.getSourceSubscription();
             if (srcsub != null && PRIMARY_POOL_SUB_KEY.equalsIgnoreCase(srcsub.getSubscriptionSubKey())) {
@@ -1358,7 +1361,7 @@ public class OwnerResource implements OwnerApi {
         this.validator.validateCollectionElementsNotNull(
             newPoolDTO::getDerivedProvidedProducts, newPoolDTO::getProvidedProducts);
 
-        Pool currentPool = this.poolManager.get(newPoolDTO.getId());
+        Pool currentPool = this.poolService.get(newPoolDTO.getId());
         if (currentPool == null) {
             throw new NotFoundException(
                 i18n.tr("Unable to find a pool with the ID \"{0}\"", newPoolDTO.getId()));
@@ -1538,8 +1541,8 @@ public class OwnerResource implements OwnerApi {
 
     @Override
     public SystemPurposeAttributesDTO getSyspurpose(
-        @Verify(value = Owner.class, subResource = SubResource.POOLS, require = Access.READ_ONLY)
-        String ownerKey) {
+        @Verify(value = Owner.class, subResource = SubResource.POOLS,
+            require = Access.READ_ONLY) String ownerKey) {
 
         Owner owner = findOwnerByKey(ownerKey);
         Map<String, Set<String>> attributeMap = ownerProductCurator.getSyspurposeAttributesByOwner(owner);
@@ -1606,8 +1609,8 @@ public class OwnerResource implements OwnerApi {
 
         Owner owner = this.findOwnerByKey(ownerKey);
         UpstreamConsumer consumer = owner.getUpstreamConsumer();
-        UpstreamConsumerDTOArrayElement dto =
-            this.translator.translate(consumer, UpstreamConsumerDTOArrayElement.class);
+        UpstreamConsumerDTOArrayElement dto = this.translator.translate(consumer,
+            UpstreamConsumerDTOArrayElement.class);
 
         // returning as a list for future proofing. today we support one, but
         // users of this api want to protect against having to change their code
@@ -1631,13 +1634,12 @@ public class OwnerResource implements OwnerApi {
      * could not be found, this method throws an exception.
      *
      * @param key
-     *  The key for the owner to retrieve
+     *     The key for the owner to retrieve
      *
      * @throws NotFoundException
-     *  if an owner could not be found for the specified key.
+     *     if an owner could not be found for the specified key.
      *
-     * @return
-     *  the Owner instance for the owner with the specified key.
+     * @return the Owner instance for the owner with the specified key.
      *
      * @httpcode 200
      * @httpcode 404
@@ -1667,6 +1669,7 @@ public class OwnerResource implements OwnerApi {
 
         return originalSize != updatedContents.size();
     }
+
     private Owner createOwnerFromDTO(OwnerDTO ownerDTO) {
         // Verify that we have an owner key (as required)
         if (StringUtils.isBlank(ownerDTO.getKey())) {

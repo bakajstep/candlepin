@@ -32,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.candlepin.auth.NoAuthPrincipal;
 import org.candlepin.config.DatabaseConfigFactory;
 import org.candlepin.controller.CandlepinPoolManager;
+import org.candlepin.controller.PoolService;
 import org.candlepin.model.ConsumerType.ConsumerTypeEnum;
 import org.candlepin.model.activationkeys.ActivationKey;
 import org.candlepin.model.dto.Subscription;
@@ -69,6 +70,8 @@ import java.util.stream.Stream;
 
 import javax.persistence.PersistenceException;
 
+
+
 /**
  * Test suite for the PoolCurator object
  */
@@ -77,6 +80,7 @@ import javax.persistence.PersistenceException;
 public class PoolCuratorTest extends DatabaseTestFixture {
 
     private CandlepinPoolManager poolManager;
+    private PoolService poolService;
     private UeberCertificateGenerator ueberCertGenerator;
 
     private Owner owner;
@@ -91,6 +95,7 @@ public class PoolCuratorTest extends DatabaseTestFixture {
     @BeforeEach
     public void setUp() {
         poolManager = injector.getInstance(CandlepinPoolManager.class);
+        poolService = injector.getInstance(PoolService.class);
         ueberCertGenerator = injector.getInstance(UeberCertificateGenerator.class);
 
         owner = createOwner();
@@ -1573,7 +1578,7 @@ public class PoolCuratorTest extends DatabaseTestFixture {
         poolCurator.create(pool2);
 
         assertEquals(2, poolCurator.getBySubscriptionId(owner, sub.getId()).size());
-        poolManager.deletePool(sourcePool);
+        poolService.deletePool(sourcePool);
 
         // because we check for null now, we want to verify the
         // subpool gets deleted when the original pool is deleted.

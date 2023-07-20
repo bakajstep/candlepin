@@ -27,6 +27,8 @@ import org.candlepin.service.model.OwnerInfo;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+
+
 /**
  * The HostedTestProductServiceAdapter is a CloudRegistrationAdapter implementation backed by the
  * HostedTestDataStore upstream simulator.

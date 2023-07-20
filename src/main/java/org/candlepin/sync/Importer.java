@@ -84,9 +84,6 @@ import javax.persistence.PersistenceException;
 
 
 
-/**
- * Importer
- */
 public class Importer {
     private static final Logger log = LoggerFactory.getLogger(Importer.class);
 
@@ -242,10 +239,12 @@ public class Importer {
         }
 
         if (!activeSubscriptionFound) {
+            msg += " ";
             msg += i18n.tr("No active subscriptions found in the file.");
             record.recordStatus(ImportRecord.Status.SUCCESS_WITH_WARNING, msg);
         }
         else if (expiredSubscriptionFound) {
+            msg += " ";
             msg += i18n.tr("One or more inactive subscriptions found in the file.");
             record.recordStatus(ImportRecord.Status.SUCCESS_WITH_WARNING, msg);
         }

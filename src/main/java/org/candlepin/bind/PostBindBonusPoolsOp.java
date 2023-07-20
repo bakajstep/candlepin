@@ -14,7 +14,7 @@
  */
 package org.candlepin.bind;
 
-import org.candlepin.controller.PoolManager;
+import org.candlepin.controller.PoolService;
 import org.candlepin.model.Consumer;
 import org.candlepin.model.ConsumerType;
 import org.candlepin.model.ConsumerTypeCurator;
@@ -35,13 +35,15 @@ import java.util.Set;
 
 import javax.inject.Inject;
 
+
+
 /**
  * This BindOperation will be replaced shortly in an upcoming PR, where we
  * will split the implementation into pre-process and execute steps.
  */
 public class PostBindBonusPoolsOp implements BindOperation {
 
-    private final PoolManager poolManager;
+    private final PoolService poolService;
     private final ConsumerTypeCurator consumerTypeCurator;
     private final PoolCurator poolCurator;
     private final Enforcer enforcer;
@@ -50,10 +52,10 @@ public class PostBindBonusPoolsOp implements BindOperation {
     private List<Pool> subPoolsForStackIds = null;
 
     @Inject
-    public PostBindBonusPoolsOp(PoolManager poolManager, ConsumerTypeCurator consumerTypeCurator,
+    public PostBindBonusPoolsOp(PoolService poolService, ConsumerTypeCurator consumerTypeCurator,
         PoolCurator poolCurator, Enforcer enforcer, PoolOpProcessor poolOpProcessor) {
 
-        this.poolManager = poolManager;
+        this.poolService = poolService;
         this.consumerTypeCurator = consumerTypeCurator;
         this.poolCurator = poolCurator;
         this.enforcer = enforcer;
@@ -89,9 +91,8 @@ public class PostBindBonusPoolsOp implements BindOperation {
         if (!stackIds.isEmpty() && !ctype.isManifest()) {
             subPoolsForStackIds = poolCurator.getSubPoolsForStackIds(consumer, stackIds);
             if (CollectionUtils.isNotEmpty(subPoolsForStackIds)) {
-                poolManager.updatePoolsFromStackWithoutDeletingStack(consumer,
-                    subPoolsForStackIds,
-                    entitlements.values());
+                this.poolService.updatePoolsFromStack(
+                    consumer, subPoolsForStackIds, entitlements.values(), false);
             }
         }
         else {
@@ -103,8 +104,7 @@ public class PostBindBonusPoolsOp implements BindOperation {
             entitlements,
             subPoolsForStackIds,
             false,
-            poolQuantities
-        ));
+            poolQuantities));
 
         // un-associate pools with entitlements.
         for (Entitlement entitlement : entitlements.values()) {

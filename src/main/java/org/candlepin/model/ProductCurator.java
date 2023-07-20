@@ -122,7 +122,7 @@ public class ProductCurator extends AbstractHibernateCurator<Product> {
     public Set<String> getPoolProvidedProductUuids(String poolId) {
         TypedQuery<String> query = getEntityManager().createQuery(
             "SELECT product.uuid FROM Pool p INNER JOIN p.product.providedProducts product " +
-            "where p.id = :poolid",
+                "where p.id = :poolid",
             String.class);
         query.setParameter("poolid", poolId);
         return new HashSet<>(query.getResultList());

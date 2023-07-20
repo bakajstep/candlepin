@@ -18,12 +18,14 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import org.candlepin.config.ConfigProperties;
 import org.candlepin.config.DevConfig;
 import org.candlepin.config.TestConfig;
 import org.candlepin.controller.PoolManager;
+import org.candlepin.controller.PoolService;
 import org.candlepin.dto.ModelTranslator;
 import org.candlepin.dto.StandardTranslator;
 import org.candlepin.model.Consumer;
@@ -44,7 +46,6 @@ import org.candlepin.policy.js.JsRunnerProvider;
 import org.candlepin.policy.js.JsRunnerRequestCache;
 import org.candlepin.policy.js.RulesObjectMapper;
 import org.candlepin.policy.js.compliance.ComplianceStatus;
-import org.candlepin.policy.js.pool.PoolRules;
 import org.candlepin.test.TestUtil;
 import org.candlepin.util.DateSourceImpl;
 import org.candlepin.util.Util;
@@ -64,6 +65,8 @@ import org.xnap.commons.i18n.I18nFactory;
 import java.io.InputStream;
 import java.util.Locale;
 
+
+
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 public class EntitlementRulesTestFixture {
@@ -79,7 +82,9 @@ public class EntitlementRulesTestFixture {
     @Mock
     protected PoolManager poolManager;
     @Mock
-    protected EntitlementCurator entCurMock;
+    protected PoolService poolService;
+    @Mock
+    protected EntitlementCurator entitlementCurator;
     @Mock
     private Provider<JsRunnerRequestCache> cacheProvider;
     @Mock
@@ -95,7 +100,6 @@ public class EntitlementRulesTestFixture {
     protected ConsumerType consumerType;
     protected Consumer consumer;
     protected String productId = "a-product";
-    protected PoolRules poolRules;
     protected ModelTranslator translator;
 
     @BeforeEach
@@ -112,6 +116,11 @@ public class EntitlementRulesTestFixture {
 
         JsRunner jsRules = new JsRunnerProvider(rulesCurator, cacheProvider).get();
 
+// poolService = new PoolService(poolCurator, sink, eventFactory, poolRules, entitlementCurator,
+// consumerCurator, consumerTypeCurator, environmentCertCurator, complianceRules,
+// systemPurposeComplianceRules, config, i18n);
+        poolService = mock(PoolService.class);
+
         translator = new StandardTranslator(consumerTypeCurator, environmentCurator, ownerCurator);
         enforcer = new EntitlementRules(
             new DateSourceImpl(),
@@ -122,8 +131,7 @@ public class EntitlementRulesTestFixture {
             consumerTypeCurator,
             new RulesObjectMapper(),
             translator,
-            poolManager
-        );
+            poolService);
 
         owner = TestUtil.createOwner();
 
@@ -133,8 +141,6 @@ public class EntitlementRulesTestFixture {
             .setUsername("test user")
             .setOwner(owner)
             .setType(consumerType);
-
-        poolRules = new PoolRules(poolManager, config, entCurMock);
     }
 
     protected ConsumerType mockConsumerType(ConsumerType ctype) {

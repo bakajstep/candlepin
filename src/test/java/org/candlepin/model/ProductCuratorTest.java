@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.candlepin.config.ConfigProperties;
+import org.candlepin.config.DevConfig;
 import org.candlepin.test.DatabaseTestFixture;
 import org.candlepin.test.TestUtil;
 import org.candlepin.util.AttributeValidator;
@@ -53,7 +54,11 @@ import java.util.stream.Collectors;
 import javax.persistence.PersistenceException;
 import javax.validation.ConstraintViolationException;
 
+
+
 public class ProductCuratorTest extends DatabaseTestFixture {
+
+    private DevConfig config;
 
     private Owner owner;
     private Product product;
@@ -64,6 +69,7 @@ public class ProductCuratorTest extends DatabaseTestFixture {
 
     @BeforeEach
     public void setUp() throws Exception {
+        config = this.injector.getInstance(DevConfig.class);
         config.setProperty(ConfigProperties.INTEGER_ATTRIBUTES, "product.count, product.multiplier");
         config.setProperty(ConfigProperties.NON_NEG_INTEGER_ATTRIBUTES, "product.pos_count");
         config.setProperty(ConfigProperties.LONG_ATTRIBUTES, "product.long_count, product.long_multiplier");

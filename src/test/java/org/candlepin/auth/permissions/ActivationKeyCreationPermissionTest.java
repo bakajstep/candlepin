@@ -25,7 +25,6 @@ import org.candlepin.auth.Access;
 import org.candlepin.auth.SubResource;
 import org.candlepin.model.Owner;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -86,7 +85,7 @@ public class ActivationKeyCreationPermissionTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = Access.class, names = {"ALL"}, mode = EnumSource.Mode.EXCLUDE)
+    @EnumSource(value = Access.class, names = { "ALL" }, mode = EnumSource.Mode.EXCLUDE)
     public void testProvidesCreateLevelAccess(Access required) {
         Owner owner = this.createOwner("test_org");
         ActivationKeyCreationPermission perm = new ActivationKeyCreationPermission(owner);
@@ -96,7 +95,7 @@ public class ActivationKeyCreationPermissionTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = Access.class, names = {"ALL"}, mode = EnumSource.Mode.INCLUDE)
+    @EnumSource(value = Access.class, names = { "ALL" }, mode = EnumSource.Mode.INCLUDE)
     public void testDoesNotProvideHigherThanCreateAccess(Access required) {
         Owner owner = this.createOwner("test_org");
         ActivationKeyCreationPermission perm = new ActivationKeyCreationPermission(owner);
@@ -107,7 +106,7 @@ public class ActivationKeyCreationPermissionTest {
 
     @ParameterizedTest
     @NullSource
-    @EnumSource(value = SubResource.class, names = {"ACTIVATION_KEYS"}, mode = EnumSource.Mode.EXCLUDE)
+    @EnumSource(value = SubResource.class, names = { "ACTIVATION_KEYS" }, mode = EnumSource.Mode.EXCLUDE)
     public void testRequiresActivationKeySubResource(SubResource subresource) {
         Owner owner = this.createOwner("test_org");
         ActivationKeyCreationPermission perm = new ActivationKeyCreationPermission(owner);

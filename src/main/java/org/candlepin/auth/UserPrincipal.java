@@ -24,6 +24,8 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 
+
+
 /**
  *
  */
@@ -82,7 +84,8 @@ public class UserPrincipal extends Principal {
 
         final UserPrincipal other = (UserPrincipal) obj;
         if ((this.username == null) ?
-            (other.username != null) : !this.username.equals(other.username)) {
+            (other.username != null) :
+            !this.username.equals(other.username)) {
             return false;
         }
 

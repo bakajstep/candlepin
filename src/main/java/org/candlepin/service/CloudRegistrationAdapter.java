@@ -21,6 +21,8 @@ import org.candlepin.service.exception.MalformedCloudRegistrationException;
 import org.candlepin.service.model.CloudAccountData;
 import org.candlepin.service.model.CloudRegistrationInfo;
 
+
+
 /**
  * The Cloud Registration Adapter provides the interface for verifying and resolving cloud
  * registration to a specific organization.

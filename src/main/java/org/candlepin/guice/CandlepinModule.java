@@ -58,6 +58,7 @@ import org.candlepin.controller.CandlepinPoolManager;
 import org.candlepin.controller.Entitler;
 import org.candlepin.controller.OwnerManager;
 import org.candlepin.controller.PoolManager;
+import org.candlepin.controller.PoolService;
 import org.candlepin.controller.RefresherFactory;
 import org.candlepin.controller.ScheduledExecutorServiceProvider;
 import org.candlepin.controller.SuspendModeTransitioner;
@@ -240,6 +241,7 @@ public class CandlepinModule extends AbstractModule {
         bind(Enforcer.class).to(EntitlementRules.class);
         bind(EntitlementRulesTranslator.class);
         bind(PoolManager.class).to(CandlepinPoolManager.class);
+        bind(PoolService.class);
         bind(RefresherFactory.class);
         bind(CandlepinModeManager.class).asEagerSingleton();
         bind(SuspendModeTransitioner.class).asEagerSingleton();
@@ -347,7 +349,8 @@ public class CandlepinModule extends AbstractModule {
         configureBindFactories();
     }
 
-    @Provides @Named("ValidationProperties")
+    @Provides
+    @Named("ValidationProperties")
     protected Properties getValidationProperties() {
         return new Properties();
     }
@@ -481,7 +484,9 @@ public class CandlepinModule extends AbstractModule {
         bind(ModelTranslator.class).to(StandardTranslator.class).asEagerSingleton();
     }
 
-    @Provides @Singleton @Named("ActivationListenerObjectMapper")
+    @Provides
+    @Singleton
+    @Named("ActivationListenerObjectMapper")
     private ObjectMapper configureActivationListenerObjectMapper() {
         ObjectMapper mapper = new ObjectMapper();
         AnnotationIntrospector primary = new JacksonAnnotationIntrospector();
@@ -492,7 +497,9 @@ public class CandlepinModule extends AbstractModule {
         return mapper;
     }
 
-    @Provides @Singleton @Named("EventFactoryObjectMapper")
+    @Provides
+    @Singleton
+    @Named("EventFactoryObjectMapper")
     private ObjectMapper configureEventFactoryObjectMapper() {
         ObjectMapper mapper = new ObjectMapper();
 
@@ -515,7 +522,9 @@ public class CandlepinModule extends AbstractModule {
         return mapper;
     }
 
-    @Provides @Singleton @Named("X509V3ExtensionUtilObjectMapper")
+    @Provides
+    @Singleton
+    @Named("X509V3ExtensionUtilObjectMapper")
     private ObjectMapper configureX509V3ExtensionUtilObjectMapper() {
         ObjectMapper mapper = new ObjectMapper();
         mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
@@ -523,7 +532,9 @@ public class CandlepinModule extends AbstractModule {
         return mapper;
     }
 
-    @Provides @Singleton @Named("HypervisorUpdateJobObjectMapper")
+    @Provides
+    @Singleton
+    @Named("HypervisorUpdateJobObjectMapper")
     private ObjectMapper configureHypervisorUpdateJobObjectMapper() {
         ObjectMapper mapper = new ObjectMapper();
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);

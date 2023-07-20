@@ -53,13 +53,12 @@ public abstract class AbstractNodeTest<E extends AbstractHibernateObject, I exte
      * Builds an EntityNode instance using the provided owner and entity ID
      *
      * @param owner
-     *  the owner for the new entity node
+     *     the owner for the new entity node
      *
      * @param entityId
-     *  the ID of the new entity node, and the expected ID of the entities it will contain
+     *     the ID of the new entity node, and the expected ID of the entities it will contain
      *
-     * @return
-     *  the newly created EntityNode instance
+     * @return the newly created EntityNode instance
      */
     protected abstract EntityNode<E, I> buildEntityNode(Owner owner, String entityId);
 
@@ -67,13 +66,12 @@ public abstract class AbstractNodeTest<E extends AbstractHibernateObject, I exte
      * Builds a new "local" entity to be used for testing.
      *
      * @param owner
-     *  the owner for the new local entity
+     *     the owner for the new local entity
      *
      * @param entityId
-     *  the ID for the new entity
+     *     the ID for the new entity
      *
-     * @return
-     *  a new local entity instance
+     * @return a new local entity instance
      */
     protected abstract E buildLocalEntity(Owner owner, String entityId);
 
@@ -81,21 +79,19 @@ public abstract class AbstractNodeTest<E extends AbstractHibernateObject, I exte
      * Builds a new "imported" entity to be used for testing
      *
      * @param owner
-     *  the owner for the new imported entity
+     *     the owner for the new imported entity
      *
      * @param entityId
-     *  the ID for the new entity
+     *     the ID for the new entity
      *
-     * @return
-     *  a new imported entity instance
+     * @return a new imported entity instance
      */
     protected abstract I buildImportedEntity(Owner owner, String entityId);
 
     /**
      * Builds an entity node using a generated owner and entity ID
      *
-     * @return
-     *  a new entity node
+     * @return a new entity node
      */
     public EntityNode<E, I> buildEntityNode() {
         return this.buildEntityNode(TestUtil.createOwner(), TestUtil.randomString());
@@ -125,8 +121,7 @@ public abstract class AbstractNodeTest<E extends AbstractHibernateObject, I exte
         List<EntityNode<E, I>> parentNodes = List.of(
             this.buildEntityNode(owner, "p1"),
             this.buildEntityNode(owner, "p2"),
-            this.buildEntityNode(owner, "p3")
-        );
+            this.buildEntityNode(owner, "p3"));
 
         // Verify initial state is an empty collection
         Stream<EntityNode<?, ?>> parents = node.getParentNodes();
@@ -213,8 +208,7 @@ public abstract class AbstractNodeTest<E extends AbstractHibernateObject, I exte
         List<EntityNode<E, I>> childrenNodes = List.of(
             this.buildEntityNode(owner, "c1"),
             this.buildEntityNode(owner, "c2"),
-            this.buildEntityNode(owner, "c3")
-        );
+            this.buildEntityNode(owner, "c3"));
 
         // Verify initial state is an empty collection
         Stream<EntityNode<?, ?>> children = node.getChildrenNodes();

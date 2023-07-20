@@ -79,11 +79,9 @@ import javax.persistence.EntityTransaction;
 
 
 
-
 /**
- * TestUtil for creating various testing objects. Objects backed by the database
- * are not persisted, the caller is expected to persist the entities returned
- * and any dependent objects.
+ * TestUtil for creating various testing objects. Objects backed by the database are not persisted,
+ * the caller is expected to persist the entities returned and any dependent objects.
  */
 public class TestUtil {
     private static final Random RANDOM = new Random(System.currentTimeMillis());
@@ -122,16 +120,15 @@ public class TestUtil {
      * Generates a random string of characters from the specified charset string.
      *
      * @param length
-     *  the length of the string to generate; must be a positive integer
+     *     the length of the string to generate; must be a positive integer
      *
      * @param charset
-     *  a string representing the character set to use for generating the string
+     *     a string representing the character set to use for generating the string
      *
      * @throws IllegalArgumentException
-     *  if length is a non-positive integer, or charset is null or empty
+     *     if length is a non-positive integer, or charset is null or empty
      *
-     * @return
-     *  a randomly generated string using the characters from the specified charset string
+     * @return a randomly generated string using the characters from the specified charset string
      */
     public static String randomString(int length, String charset) {
         if (length < 1) {
@@ -149,25 +146,24 @@ public class TestUtil {
     }
 
     /**
-     * Generates a string of characters from the specified charset string, appended to the given
-     * prefix string. If the prefix is null or empty, the resultant string will only contain the
-     * generated portion.
+     * Generates a string of characters from the specified charset string, appended to the given prefix
+     * string. If the prefix is null or empty, the resultant string will only contain the generated
+     * portion.
      *
      * @param prefix
-     *  the prefix to prepend to the generated string
+     *     the prefix to prepend to the generated string
      *
      * @param length
-     *  the length of the string to generate, not counting the prefix; must be a positive integer
+     *     the length of the string to generate, not counting the prefix; must be a positive integer
      *
      * @param charset
-     *  a string representing the character set to use for generating the string
+     *     a string representing the character set to use for generating the string
      *
      * @throws IllegalArgumentException
-     *  if length is a non-positive integer, or charset is null or empty
+     *     if length is a non-positive integer, or charset is null or empty
      *
-     * @return
-     *  a randomly generated string using the characters from the specified charset string appended
-     *  to the provided prefix
+     * @return a randomly generated string using the characters from the specified charset string
+     * appended to the provided prefix
      */
     public static String randomString(String prefix, int length, String charset) {
         String suffix = randomString(length, charset);
@@ -181,29 +177,27 @@ public class TestUtil {
      * Generates a random alphanumeric string of the specified length.
      *
      * @param length
-     *  the length of the string to generate; must be a positive integer
+     *     the length of the string to generate; must be a positive integer
      *
      * @throws IllegalArgumentException
-     *  if length is a non-positive integer
+     *     if length is a non-positive integer
      *
-     * @return
-     *  a randomly generated, alphanumeric string of the given length
+     * @return a randomly generated, alphanumeric string of the given length
      */
     public static String randomString(int length) {
         return randomString(length, DEFAULT_RANDOM_STRING_CHARSET);
     }
 
     /**
-     * Generates a random alphanumeric string, eight characters in length, appended to the
-     * given prefix string. If the prefix is null or empty, the resultant string will only contain
-     * the generated suffix.
+     * Generates a random alphanumeric string, eight characters in length, appended to the given prefix
+     * string. If the prefix is null or empty, the resultant string will only contain the generated
+     * suffix.
      *
      * @param prefix
-     *  the prefix to prepend to the generated string
+     *     the prefix to prepend to the generated string
      *
-     * @return
-     *  an eight-character, randomly generated, alphanumeric string appended to the provided
-     *  prefix
+     * @return an eight-character, randomly generated, alphanumeric string appended to the provided
+     * prefix
      */
     public static String randomString(String prefix) {
         return randomString(prefix, DEFAULT_RANDOM_STRING_LENGTH, DEFAULT_RANDOM_STRING_CHARSET);
@@ -212,8 +206,7 @@ public class TestUtil {
     /**
      * Generates a random alphanumeric string, eight characters in length.
      *
-     * @return
-     *  an eight-character, randomly generated, alphanumeric string
+     * @return an eight-character, randomly generated, alphanumeric string
      */
     public static String randomString() {
         return randomString(null);
@@ -535,8 +528,7 @@ public class TestUtil {
             1000L,
             createDate(2000, 1, 1),
             createDate(2050, 1, 1),
-            createDate(2000, 1, 1)
-        );
+            createDate(2000, 1, 1));
 
         sub.setId("test-sub-" + randomInt());
 
@@ -561,7 +553,7 @@ public class TestUtil {
         Pool pool = new Pool()
             .setOwner(owner)
             .setProduct(product)
-            .setQuantity(Long.valueOf(quantity))
+            .setQuantity((long) quantity)
             .setStartDate(TestUtil.createDateOffset(-1, 0, 0))
             .setEndDate(TestUtil.createDateOffset(1, 0, 0))
             .setContractNumber("SUB234598S" + random)
@@ -589,20 +581,19 @@ public class TestUtil {
     }
 
     /**
-     * Creates a new Date offset from the current date by the specified years, months and days. If
-     * the provided offsets are negative, the date created may be in the past.
+     * Creates a new Date offset from the current date by the specified years, months and days. If the
+     * provided offsets are negative, the date created may be in the past.
      *
      * @param years
-     *  the number of years to offset the created date
+     *     the number of years to offset the created date
      *
      * @param months
-     *  the number of months to offset the created date
+     *     the number of months to offset the created date
      *
      * @param days
-     *  the number of days to offset the created date
+     *     the number of days to offset the created date
      *
-     * @return
-     *  a new date offset from the current date by the specified date units
+     * @return a new date offset from the current date by the specified date units
      */
     public static Date createDateOffset(int years, int months, int days) {
         LocalDate now = LocalDate.now();
@@ -619,9 +610,8 @@ public class TestUtil {
     public static UserPrincipal createPrincipal(String username, Owner owner, Access role) {
         return new UserPrincipal(
             username,
-            Arrays.asList(new Permission[]{ new OwnerPermission(owner, role) }),
-            false
-        );
+            Arrays.asList(new Permission[] { new OwnerPermission(owner, role) }),
+            false);
     }
 
     public static UserPrincipal createOwnerPrincipal(Owner owner) {
@@ -632,7 +622,6 @@ public class TestUtil {
         Owner owner = createOwner("Test Owner " + randomInt());
         return createPrincipal("someuser", owner, Access.ALL);
     }
-
 
     public static Set<String> createSet(String productId) {
         Set<String> results = new HashSet<>();
@@ -686,8 +675,7 @@ public class TestUtil {
             owner,
             createConsumer(owner),
             createPool(owner, createProduct()),
-            null
-        );
+            null);
     }
 
     public static GuestIdDTO createGuestIdDTO(String guestId) {
@@ -714,15 +702,16 @@ public class TestUtil {
     }
 
     /**
-     * Returns a pool which will look like it was created from the given subscription
-     * during refresh pools.
+     * Returns a pool which will look like it was created from the given subscription during refresh
+     * pools.
      *
-     * @param sub source subscription
+     * @param sub
+     *     source subscription
      * @return pool for subscription
      */
     public static Pool copyFromSub(Subscription sub) {
-        Product product = createProduct((ProductData) sub.getProduct());
-        Product derivedProduct = createProduct((ProductData) sub.getDerivedProduct());
+        Product product = createProduct(sub.getProduct());
+        Product derivedProduct = createProduct(sub.getDerivedProduct());
 
         List<Product> providedProducts = new LinkedList<>();
         if (sub.getProvidedProducts() != null) {
@@ -807,7 +796,7 @@ public class TestUtil {
         return new String(charArray);
     }
 
-    public static Map<String, Product> stubChangedProducts(Product ... products) {
+    public static Map<String, Product> stubChangedProducts(Product... products) {
         Map<String, Product> result = new HashMap<>();
         for (Product p : products) {
             result.put(p.getId(), p);

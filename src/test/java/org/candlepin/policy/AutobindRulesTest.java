@@ -83,14 +83,22 @@ import java.util.Set;
 
 
 public class AutobindRulesTest {
-    @Mock private Provider<JsRunnerRequestCache> cacheProvider;
-    @Mock private JsRunnerRequestCache cache;
-    @Mock private Configuration config;
-    @Mock private RulesCurator rulesCurator;
-    @Mock private OwnerCurator mockOwnerCurator;
-    @Mock private ProductCurator mockProductCurator;
-    @Mock private ConsumerTypeCurator consumerTypeCurator;
-    @Mock private EnvironmentCurator environmentCurator;
+    @Mock
+    private Provider<JsRunnerRequestCache> cacheProvider;
+    @Mock
+    private JsRunnerRequestCache cache;
+    @Mock
+    private Configuration config;
+    @Mock
+    private RulesCurator rulesCurator;
+    @Mock
+    private OwnerCurator mockOwnerCurator;
+    @Mock
+    private ProductCurator mockProductCurator;
+    @Mock
+    private ConsumerTypeCurator consumerTypeCurator;
+    @Mock
+    private EnvironmentCurator environmentCurator;
 
     private ComplianceStatus compliance;
     private AutobindRules autobindRules; // TODO rename
@@ -119,11 +127,11 @@ public class AutobindRulesTest {
         doReturn(cache).when(this.cacheProvider).get();
 
         jsRules = new JsRunnerProvider(rulesCurator, cacheProvider).get();
-        mapper =  new RulesObjectMapper();
+        mapper = new RulesObjectMapper();
 
         translator = new StandardTranslator(consumerTypeCurator, environmentCurator, mockOwnerCurator);
         autobindRules = new AutobindRules(jsRules, mockProductCurator, consumerTypeCurator, mockOwnerCurator,
-           mapper, translator);
+            mapper, translator);
 
         owner = new Owner();
         owner.setId(TestUtil.randomString());
@@ -147,7 +155,6 @@ public class AutobindRulesTest {
         activeGuestAttrs.put("virtWhoType", "libvirt");
         activeGuestAttrs.put("active", "1");
     }
-
 
     @Test
     public void testFindBestWithSingleProductSinglePoolReturnsProvidedPool() {
@@ -264,8 +271,7 @@ public class AutobindRulesTest {
     }
 
     /*
-     * Create a pool with too much content for a V1 certificate, consumer must be V3
-     * capable.
+     * Create a pool with too much content for a V1 certificate, consumer must be V3 capable.
      */
     public Pool createV3OnlyPool() {
         Product mktProduct = TestUtil.createProduct(productId, "A test product");
@@ -333,7 +339,7 @@ public class AutobindRulesTest {
         Pool pool1 = TestUtil.createPool(owner, sku1)
             .setId("DEAD-BEEF1");
 
-        //only enforce cores on pool 2:
+        // only enforce cores on pool 2:
         Product sku2 = mockStackingProduct("prod2", "Test Stack product", "1", "1");
         sku2.setAttribute(Product.Attributes.CORES, "6");
         sku2.removeAttribute(Product.Attributes.RAM);
@@ -383,7 +389,7 @@ public class AutobindRulesTest {
             .setId("DEAD-BEEF1")
             .setAttribute(Product.Attributes.VIRT_ONLY, "true"); // Should this be on the product?
 
-        //only enforce cores on pool 2:
+        // only enforce cores on pool 2:
         Product sku2 = mockStackingProduct("prod2", "Test Stack product", "1", "1");
         sku2.setAttribute(Product.Attributes.CORES, "6");
         sku2.addProvidedProduct(provided);
@@ -400,7 +406,7 @@ public class AutobindRulesTest {
             Set.of(provided.getId()), pools, compliance, null, new HashSet<>(), false);
 
         assertEquals(2, bestPools.size());
-        //higher quantity from this pool, as it is virt_only
+        // higher quantity from this pool, as it is virt_only
         assertTrue(bestPools.contains(new PoolQuantity(pool1, 5)));
         assertTrue(bestPools.contains(new PoolQuantity(pool3, 3)));
     }
@@ -604,19 +610,17 @@ public class AutobindRulesTest {
     }
 
     /*
-     * This is a case that happens when:
-     * - We register with activation key, and the activation key has auto-attach set to true, and
-     * - The activation key specifies a product id that refers to a marketing product id
-     *   (Even though normally auto-attach only tries to find pools for engineering product ids), and
-     * - The consumer has an installed product that happens to be provided by the marketing product id
-     *   specified by the activation key, and
-     * - The candidate pools include: a pool that provides the marketing product specified by the
-     *   activation key (and thus, indirectly also provides the engineering product the consumer has
-     *   installed, and another pool that provides the required engineering product through some other
-     *   random marketing product (that is not required).
+     * This is a case that happens when: - We register with activation key, and the activation key has
+     * auto-attach set to true, and - The activation key specifies a product id that refers to a
+     * marketing product id (Even though normally auto-attach only tries to find pools for engineering
+     * product ids), and - The consumer has an installed product that happens to be provided by the
+     * marketing product id specified by the activation key, and - The candidate pools include: a pool
+     * that provides the marketing product specified by the activation key (and thus, indirectly also
+     * provides the engineering product the consumer has installed, and another pool that provides the
+     * required engineering product through some other random marketing product (that is not required).
      *
-     *  In this case, only the one pool that provides both the marketing and engineering product should be
-     *  chosen, not any extra pools.
+     * In this case, only the one pool that provides both the marketing and engineering product should
+     * be chosen, not any extra pools.
      */
     @Test
     public void testSelectBestPoolsShouldNotSelectExtraPoolWhenBothProvidedAndMarketingProductIsRequired() {
@@ -649,7 +653,6 @@ public class AutobindRulesTest {
         Pool pool2 = TestUtil.createPool(owner, nonRequiredMktProduct)
             .setId("pool2")
             .setQuantity(1L);
-
 
         List<Pool> pools = new ArrayList<>();
         pools.add(pool1);
@@ -797,7 +800,6 @@ public class AutobindRulesTest {
         Pool p3 = TestUtil.createPool(owner, prod3)
             .setId("p3");
 
-
         jsRules.reinitTo("test_name_space");
         JsonJsContext args = new JsonJsContext(mapper);
         args.put("log", log, false);
@@ -915,8 +917,8 @@ public class AutobindRulesTest {
     }
 
     /*
-     * This test demonstrates that a pool with no available quantity will not
-     * be selected even though it is a better match. In fact, it should not make it pass the filtering stage.
+     * This test demonstrates that a pool with no available quantity will not be selected even though it
+     * is a better match. In fact, it should not make it pass the filtering stage.
      */
     @SuppressWarnings("checkstyle:localvariablename")
     @Test
@@ -1320,8 +1322,8 @@ public class AutobindRulesTest {
     }
 
     /*
-     * This case demonstrates that between two otherwise equal products,
-     * if one product has the SLA defined and it matches the consumer, that product will be used.
+     * This case demonstrates that between two otherwise equal products, if one product has the SLA
+     * defined and it matches the consumer, that product will be used.
      */
     @SuppressWarnings("checkstyle:localvariablename")
     @Test
@@ -1363,8 +1365,8 @@ public class AutobindRulesTest {
     }
 
     /*
-     * The customer has made a typo in the usage. Since the pool that has a
-     * defined usage is a mismatch, we favor the pool that has usage undefined.
+     * The customer has made a typo in the usage. Since the pool that has a defined usage is a mismatch,
+     * we favor the pool that has usage undefined.
      */
     @SuppressWarnings("checkstyle:localvariablename")
     @Test
@@ -1560,8 +1562,8 @@ public class AutobindRulesTest {
     }
 
     /*
-     * The RH00009 pool matches the role, but everything else is a mismatch
-     * and the RH00008 pool doesn't match the role but matches everything else.
+     * The RH00009 pool matches the role, but everything else is a mismatch and the RH00008 pool doesn't
+     * match the role but matches everything else.
      */
     @SuppressWarnings("checkstyle:localvariablename")
     @Test
@@ -1707,9 +1709,9 @@ public class AutobindRulesTest {
     }
 
     /*
-     * This test demonstrates that a pool that provides a product that can satisfy the consumer's installed
-     * products, will be selected, even though there is a mismatch between
-     * the consumer's and the pool's roles.
+     * This test demonstrates that a pool that provides a product that can satisfy the consumer's
+     * installed products, will be selected, even though there is a mismatch between the consumer's and
+     * the pool's roles.
      */
     @SuppressWarnings("checkstyle:localvariablename")
     @Test
@@ -1745,9 +1747,9 @@ public class AutobindRulesTest {
     }
 
     /*
-     * This test demonstrates that a pool that provides a product that can satisfy the consumer's installed
-     * products, will be selected, even though there is a mismatch between
-     * the consumer's and the pool's addons.
+     * This test demonstrates that a pool that provides a product that can satisfy the consumer's
+     * installed products, will be selected, even though there is a mismatch between the consumer's and
+     * the pool's addons.
      */
     @SuppressWarnings("checkstyle:localvariablename")
     @Test
@@ -1783,8 +1785,8 @@ public class AutobindRulesTest {
     }
 
     /*
-     * This test demonstrates that a pool that provides certain role(s) will be selected
-     * during autoattach if at least one of those roles match the one that the consumer has specified.
+     * This test demonstrates that a pool that provides certain role(s) will be selected during
+     * autoattach if at least one of those roles match the one that the consumer has specified.
      */
     @SuppressWarnings("checkstyle:localvariablename")
     @Test
@@ -1821,8 +1823,8 @@ public class AutobindRulesTest {
     }
 
     /*
-     * This test demonstrates that a pool that provides certain addons(s) will be selected
-     * during autoattach if at least one of those addons match the one that the consumer has specified.
+     * This test demonstrates that a pool that provides certain addons(s) will be selected during
+     * autoattach if at least one of those addons match the one that the consumer has specified.
      */
     @SuppressWarnings("checkstyle:localvariablename")
     @Test
@@ -1859,9 +1861,9 @@ public class AutobindRulesTest {
     }
 
     /*
-     * This test demonstrates that a pool that provides no addons at all, will be selected
-     * during autoattach even if the consumer has addons specified
-     * (as long as the pool satisfies the consumer's installed product).
+     * This test demonstrates that a pool that provides no addons at all, will be selected during
+     * autoattach even if the consumer has addons specified (as long as the pool satisfies the
+     * consumer's installed product).
      */
     @SuppressWarnings("checkstyle:localvariablename")
     @Test
@@ -1898,9 +1900,9 @@ public class AutobindRulesTest {
     }
 
     /*
-     * This test demonstrates that a pool that provides no roles at all, will be selected
-     * during autoattach even if the consumer has a role specified
-     * (as long as the pool satisfies the consumer's installed product).
+     * This test demonstrates that a pool that provides no roles at all, will be selected during
+     * autoattach even if the consumer has a role specified (as long as the pool satisfies the
+     * consumer's installed product).
      */
     @SuppressWarnings("checkstyle:localvariablename")
     @Test
@@ -1937,9 +1939,9 @@ public class AutobindRulesTest {
     }
 
     /*
-     * This test demonstrates that a pool that provides at least one addon, will be selected
-     * during autoattach even if the consumer has no addons specified (addon coverage is not enforced)
-     * (as long as the pool satisfies the consumer's installed product).
+     * This test demonstrates that a pool that provides at least one addon, will be selected during
+     * autoattach even if the consumer has no addons specified (addon coverage is not enforced) (as long
+     * as the pool satisfies the consumer's installed product).
      */
     @SuppressWarnings("checkstyle:localvariablename")
     @Test
@@ -1976,9 +1978,9 @@ public class AutobindRulesTest {
     }
 
     /*
-     * This test demonstrates that a pool that provides at least one role, will be selected
-     * during autoattach even if the consumer has no role specified (role coverage is not enforced)
-     * (as long as the pool satisfies the consumer's installed product).
+     * This test demonstrates that a pool that provides at least one role, will be selected during
+     * autoattach even if the consumer has no role specified (role coverage is not enforced) (as long as
+     * the pool satisfies the consumer's installed product).
      */
     @SuppressWarnings("checkstyle:localvariablename")
     @Test
@@ -2015,8 +2017,8 @@ public class AutobindRulesTest {
     }
 
     /*
-     * This test demonstrates that autoattach should select both pools in the same stack, if one provides the
-     * consumer's installed product, and the other provides the consumer's specified role.
+     * This test demonstrates that autoattach should select both pools in the same stack, if one
+     * provides the consumer's installed product, and the other provides the consumer's specified role.
      */
     @SuppressWarnings("checkstyle:localvariablename")
     @Test
@@ -2070,8 +2072,8 @@ public class AutobindRulesTest {
     }
 
     /*
-     * This test demonstrates that autoattach should select both pools in the same stack, if one provides the
-     * consumer's installed product, and the other provides the consumer's specified addon.
+     * This test demonstrates that autoattach should select both pools in the same stack, if one
+     * provides the consumer's installed product, and the other provides the consumer's specified addon.
      */
     @SuppressWarnings("checkstyle:localvariablename")
     @Test
@@ -2125,8 +2127,8 @@ public class AutobindRulesTest {
     }
 
     /*
-     * This test demonstrates that autoattach should select both pools in the same stack, if one provides
-     * one of the consumer's specified addons, and the other provides the second.
+     * This test demonstrates that autoattach should select both pools in the same stack, if one
+     * provides one of the consumer's specified addons, and the other provides the second.
      */
     @SuppressWarnings("checkstyle:localvariablename")
     @Test
@@ -2174,8 +2176,9 @@ public class AutobindRulesTest {
     }
 
     /*
-     * This test demonstrates that autoattach should select both pools in the same stack, if one provides
-     * one of the consumer's specified addon, and the other provides the consumer's specified role.
+     * This test demonstrates that autoattach should select both pools in the same stack, if one
+     * provides one of the consumer's specified addon, and the other provides the consumer's specified
+     * role.
      */
     @SuppressWarnings("checkstyle:localvariablename")
     @Test
@@ -2218,10 +2221,10 @@ public class AutobindRulesTest {
     }
 
     /*
-     * This test demonstrates that a pool that provides a certain role, will be selected
-     * during autoattach if that role matches the one the consumer specified, even if
-     * no installed product is covered by that pool.(because roles, as well as addons, are special
-     * syspurpose attributes that are treated similar to products)
+     * This test demonstrates that a pool that provides a certain role, will be selected during
+     * autoattach if that role matches the one the consumer specified, even if no installed product is
+     * covered by that pool.(because roles, as well as addons, are special syspurpose attributes that
+     * are treated similar to products)
      */
     @SuppressWarnings("checkstyle:localvariablename")
     @Test
@@ -2256,11 +2259,11 @@ public class AutobindRulesTest {
         assertTrue(bestPools.contains(new PoolQuantity(MCT1650, 1)));
     }
 
-   /*
-     * This test demonstrates that a pool that provides a certain addon, will be selected
-     * during autoattach if that addon matches the one the consumer specified, even if
-     * no installed product is covered by that pool.(because addon, as well as roles, are special
-     * syspurpose attributes that are treated similar to products)
+    /*
+     * This test demonstrates that a pool that provides a certain addon, will be selected during
+     * autoattach if that addon matches the one the consumer specified, even if no installed product is
+     * covered by that pool.(because addon, as well as roles, are special syspurpose attributes that are
+     * treated similar to products)
      */
     @SuppressWarnings("checkstyle:localvariablename")
     @Test
@@ -2298,9 +2301,9 @@ public class AutobindRulesTest {
     }
 
     /*
-     * This test demonstrates that a pool that provides a certain usage, will NOT be selected
-     * during autoattach if that usage matches the one the consumer specified, when
-     * no installed product is covered by that pool.
+     * This test demonstrates that a pool that provides a certain usage, will NOT be selected during
+     * autoattach if that usage matches the one the consumer specified, when no installed product is
+     * covered by that pool.
      */
     @SuppressWarnings("checkstyle:localvariablename")
     @Test
@@ -2335,9 +2338,9 @@ public class AutobindRulesTest {
     }
 
     /*
-     * This test demonstrates that a pool that provides a certain SLA, will NOT be selected
-     * during autoattach if that SLA matches the one the consumer specified, when
-     * no installed product is covered by that pool.
+     * This test demonstrates that a pool that provides a certain SLA, will NOT be selected during
+     * autoattach if that SLA matches the one the consumer specified, when no installed product is
+     * covered by that pool.
      */
     @SuppressWarnings("checkstyle:localvariablename")
     @Test
@@ -2374,8 +2377,8 @@ public class AutobindRulesTest {
     /*
      * This test demonstrates that from a series of non-stacked pools, all those (and ONLY those) that
      * provide either a) an installed product, b) an addon, or c) a role that the consumer has specified
-     * will be selected. Pools that provide only an SLA, a Usage or service type (and no installed product),
-     * will not be selected.
+     * will be selected. Pools that provide only an SLA, a Usage or service type (and no installed
+     * product), will not be selected.
      */
     @SuppressWarnings("checkstyle:localvariablename")
     @Test
@@ -2463,9 +2466,8 @@ public class AutobindRulesTest {
     /*
      * This test demonstrates that from a series of non-stacked pools, all those (and ONLY those) that
      * provide either a) an installed product, b) an addon, or c) a role that the consumer has specified
-     * will be selected. Pools that provide only an SLA, a Usage or a service type that
-     * the consumer specified, and an installed product that the consumer has not specified,
-     * will not be selected.
+     * will be selected. Pools that provide only an SLA, a Usage or a service type that the consumer
+     * specified, and an installed product that the consumer has not specified, will not be selected.
      */
     @SuppressWarnings("checkstyle:localvariablename")
     @Test
@@ -2562,9 +2564,9 @@ public class AutobindRulesTest {
     }
 
     /*
-     * This test demonstrates that a pool that satisfies the consumer's SLA will be selected
-     * during autoattach even if all other syspurpose attributes and the sockets, cores & ram mismatch,
-     * and that the sockets, cores & ram mismatch will not have a higher impact than the SLA match.
+     * This test demonstrates that a pool that satisfies the consumer's SLA will be selected during
+     * autoattach even if all other syspurpose attributes and the sockets, cores & ram mismatch, and
+     * that the sockets, cores & ram mismatch will not have a higher impact than the SLA match.
      */
     @SuppressWarnings("checkstyle:localvariablename")
     @Test
@@ -2614,9 +2616,9 @@ public class AutobindRulesTest {
     }
 
     /*
-     * This test demonstrates that a pool that satisfies the consumer's role will be selected
-     * during autoattach even if all other syspurpose attributes and the sockets, cores & ram mismatch,
-     * and that the sockets, cores & ram mismatch will not have a higher impact than the role match.
+     * This test demonstrates that a pool that satisfies the consumer's role will be selected during
+     * autoattach even if all other syspurpose attributes and the sockets, cores & ram mismatch, and
+     * that the sockets, cores & ram mismatch will not have a higher impact than the role match.
      */
     @SuppressWarnings("checkstyle:localvariablename")
     @Test
@@ -2666,9 +2668,9 @@ public class AutobindRulesTest {
     }
 
     /*
-     * This test demonstrates that a pool that satisfies the consumer's addons will be selected
-     * during autoattach even if all other syspurpose attributes and the sockets, cores & ram mismatch,
-     * and that the sockets, cores & ram mismatch will not have a higher impact than the addons match.
+     * This test demonstrates that a pool that satisfies the consumer's addons will be selected during
+     * autoattach even if all other syspurpose attributes and the sockets, cores & ram mismatch, and
+     * that the sockets, cores & ram mismatch will not have a higher impact than the addons match.
      */
     @SuppressWarnings("checkstyle:localvariablename")
     @Test
@@ -2718,9 +2720,9 @@ public class AutobindRulesTest {
     }
 
     /*
-     * This test demonstrates that a pool that satisfies the consumer's SLA will be selected
-     * during autoattach even if all other syspurpose attributes and the vcpu & ram mismatch,
-     * and that the vcpu & ram mismatch will not have a higher impact than the SLA match.
+     * This test demonstrates that a pool that satisfies the consumer's SLA will be selected during
+     * autoattach even if all other syspurpose attributes and the vcpu & ram mismatch, and that the vcpu
+     * & ram mismatch will not have a higher impact than the SLA match.
      */
     @SuppressWarnings("checkstyle:localvariablename")
     @Test
@@ -2768,10 +2770,10 @@ public class AutobindRulesTest {
     }
 
     /*
-     * This test demonstrates that a pool that satisfies the consumer's usage will be selected
-     * during autoattach even if it provides a role, and the consumer did not specify a role,
-     * and even if another pool benefits from not having a role specified but does not provide the usage
-     * the consumer requires.
+     * This test demonstrates that a pool that satisfies the consumer's usage will be selected during
+     * autoattach even if it provides a role, and the consumer did not specify a role, and even if
+     * another pool benefits from not having a role specified but does not provide the usage the
+     * consumer requires.
      *
      * (Alternatively: The 'null rule' score on a pool, should not overpower the 'match rule' of another
      * pool in a different syspurpose attribute.
@@ -2822,8 +2824,8 @@ public class AutobindRulesTest {
     }
 
     /*
-     * This test demonstrates that autoattach should select only one pool from the same stack, if there are
-     * more than one identical pools that can support the consumers product and role in that stack.
+     * This test demonstrates that autoattach should select only one pool from the same stack, if there
+     * are more than one identical pools that can support the consumers product and role in that stack.
      */
     @SuppressWarnings("checkstyle:localvariablename")
     @Test
@@ -2873,8 +2875,9 @@ public class AutobindRulesTest {
     }
 
     /*
-     * This test demonstrates that autoattach should select only one pool from the same stack, if there are
-     * more than one identical pools that can support the consumers product and addons in that stack.
+     * This test demonstrates that autoattach should select only one pool from the same stack, if there
+     * are more than one identical pools that can support the consumers product and addons in that
+     * stack.
      */
     @SuppressWarnings("checkstyle:localvariablename")
     @Test
@@ -2926,9 +2929,9 @@ public class AutobindRulesTest {
     }
 
     /*
-     * This test demonstrates that autoattach should select only one pool from the same stack, if there is
-     * only one pool in that stack that provides the specified consumer addon, while another pool in the
-     * stack only provides addons that the consumer has not specified.
+     * This test demonstrates that autoattach should select only one pool from the same stack, if there
+     * is only one pool in that stack that provides the specified consumer addon, while another pool in
+     * the stack only provides addons that the consumer has not specified.
      */
     @SuppressWarnings("checkstyle:localvariablename")
     @Test
@@ -2971,9 +2974,9 @@ public class AutobindRulesTest {
     }
 
     /*
-     * This test demonstrates that autoattach should select only one pool from the same stack, if there is
-     * only one pool in that stack that provides the specified consumer role, while another pool in the
-     * stack only provides a role that the consumer has not specified.
+     * This test demonstrates that autoattach should select only one pool from the same stack, if there
+     * is only one pool in that stack that provides the specified consumer role, while another pool in
+     * the stack only provides a role that the consumer has not specified.
      */
     @SuppressWarnings("checkstyle:localvariablename")
     @Test
@@ -3013,8 +3016,9 @@ public class AutobindRulesTest {
     }
 
     /*
-     * This tests that a pool with a usage match and all other syspurpose attributes mismatched, will still
-     * be chosen by auto-attach against a pool that does not provide any of the syspurpose attributes.
+     * This tests that a pool with a usage match and all other syspurpose attributes mismatched, will
+     * still be chosen by auto-attach against a pool that does not provide any of the syspurpose
+     * attributes.
      */
     @SuppressWarnings("checkstyle:localvariablename")
     @Test
@@ -3061,8 +3065,9 @@ public class AutobindRulesTest {
     }
 
     /*
-     * This tests that a pool with a sla match and all other syspurpose attributes mismatched, will still
-     * be chosen by auto-attach against a pool that does not provide any of the syspurpose attributes.
+     * This tests that a pool with a sla match and all other syspurpose attributes mismatched, will
+     * still be chosen by auto-attach against a pool that does not provide any of the syspurpose
+     * attributes.
      */
     @SuppressWarnings("checkstyle:localvariablename")
     @Test
@@ -3109,8 +3114,9 @@ public class AutobindRulesTest {
     }
 
     /*
-     * This tests that a pool with an addon match and all other syspurpose attributes mismatched, will still
-     * be chosen by auto-attach against a pool that does not provide any of the syspurpose attributes.
+     * This tests that a pool with an addon match and all other syspurpose attributes mismatched, will
+     * still be chosen by auto-attach against a pool that does not provide any of the syspurpose
+     * attributes.
      */
     @SuppressWarnings("checkstyle:localvariablename")
     @Test
@@ -3157,8 +3163,9 @@ public class AutobindRulesTest {
     }
 
     /*
-     * This tests that a pool with a role match and all other syspurpose attributes mismatched, will still
-     * be chosen by auto-attach against a pool that does not provide any of the syspurpose attributes.
+     * This tests that a pool with a role match and all other syspurpose attributes mismatched, will
+     * still be chosen by auto-attach against a pool that does not provide any of the syspurpose
+     * attributes.
      */
     @SuppressWarnings("checkstyle:localvariablename")
     @Test
@@ -3206,8 +3213,8 @@ public class AutobindRulesTest {
     }
 
     /*
-     * This test checks that during autoattach, when removing all pools from a stack group due to them having
-     * attributes that will not support the consumer, should not cause an error.
+     * This test checks that during autoattach, when removing all pools from a stack group due to them
+     * having attributes that will not support the consumer, should not cause an error.
      */
     @Test
     public void testSelectBestPoolsShouldNotFailWhenAllPoolsFromStackGroupAreRemoved() {
@@ -3243,8 +3250,8 @@ public class AutobindRulesTest {
     }
 
     /*
-     * Tests that during auto-attach, Role values between what the consumer specified and pool attributes
-     * are compared case insensitively.
+     * Tests that during auto-attach, Role values between what the consumer specified and pool
+     * attributes are compared case insensitively.
      */
     @Test
     public void selectBestPoolsMatchesRoleValueCaseInsensitively() {
@@ -3268,8 +3275,8 @@ public class AutobindRulesTest {
     }
 
     /*
-     * Tests that during auto-attach, Addon values between what the consumer specified and pool attributes
-     * are compared case insensitively.
+     * Tests that during auto-attach, Addon values between what the consumer specified and pool
+     * attributes are compared case insensitively.
      */
     @Test
     public void selectBestPoolsMatchesAddonValueCaseInsensitively() {
@@ -3295,8 +3302,8 @@ public class AutobindRulesTest {
     }
 
     /*
-     * Tests that during auto-attach, Usage values between what the consumer specified and pool attributes
-     * are compared case insensitively.
+     * Tests that during auto-attach, Usage values between what the consumer specified and pool
+     * attributes are compared case insensitively.
      */
     @Test
     public void selectBestPoolsMatchesUsageValueCaseInsensitively() {
@@ -3474,7 +3481,7 @@ public class AutobindRulesTest {
         pool2.setId("DEAD-BEEF2");
 
         List<Pool> pools = new LinkedList<>();
-        //pools.add(pool1);
+        // pools.add(pool1);
         pools.add(pool2);
 
         Entitlement entitlement = TestUtil.createEntitlement();
@@ -3596,8 +3603,8 @@ public class AutobindRulesTest {
     }
 
     /*
-     * Test an autobind where we're asking to give the host entitlements that will
-     * help cover the guest. Host has no actual need for the pool otherwise
+     * Test an autobind where we're asking to give the host entitlements that will help cover the guest.
+     * Host has no actual need for the pool otherwise
      */
     @Test
     public void autobindHostToDerivedPoolForGuest() {
@@ -3678,7 +3685,7 @@ public class AutobindRulesTest {
         assertEquals(4, q.getQuantity());
     }
 
-     // Simple utility to simulate a pre-existing entitlement for a pool.
+    // Simple utility to simulate a pre-existing entitlement for a pool.
     private Entitlement mockEntitlement(Pool p, int quantity) {
         Entitlement e = TestUtil.createEntitlement(owner, consumer, p, null);
         e.setQuantity(quantity);
@@ -3826,8 +3833,8 @@ public class AutobindRulesTest {
     }
 
     /*
-     * Expect nothing to happen. We cannot bind the hypervisor in order to make
-     * the guests compliant, but that'd be a nice feature in the future.
+     * Expect nothing to happen. We cannot bind the hypervisor in order to make the guests compliant,
+     * but that'd be a nice feature in the future.
      */
     @Test
     public void guestLimitAutobindNeitherAttached() {
@@ -3856,8 +3863,8 @@ public class AutobindRulesTest {
     }
 
     /*
-     * If the hypervisor is already installed, and at least partially
-     * subscribed, autobind will be able to cover the server subscription
+     * If the hypervisor is already installed, and at least partially subscribed, autobind will be able
+     * to cover the server subscription
      */
     @Test
     public void guestLimitAutobindServerAttached() {
@@ -3895,8 +3902,8 @@ public class AutobindRulesTest {
     }
 
     /*
-     * If the hypervisor is already installed, and at least partially
-     * subscribed, autobind will be able to cover the server subscription
+     * If the hypervisor is already installed, and at least partially subscribed, autobind will be able
+     * to cover the server subscription
      */
     @Test
     public void guestLimitAutobindServerAttachedNonStackable() {
@@ -3935,8 +3942,7 @@ public class AutobindRulesTest {
 
     @Test
     public void testPoolQuantityCompare() {
-        Product prod =
-            mockProduct(productId, "some prod", "2");
+        Product prod = mockProduct(productId, "some prod", "2");
         Pool pool1 = TestUtil.createPool(owner, prod, 10);
         pool1.setId("1234");
         PoolQuantity pq1 = new PoolQuantity(pool1, 5);
@@ -4026,7 +4032,7 @@ public class AutobindRulesTest {
             false);
 
         // Should always pick the 3 socket subscription, becuase 3*3 gives 1 socket over-coverage,
-        // and 2*5 provides 2 extra sockets.  using 1 quantity is worth .5 sockets
+        // and 2*5 provides 2 extra sockets. using 1 quantity is worth .5 sockets
         assertEquals(1, bestPools.size());
         PoolQuantity q = bestPools.get(0);
         assertEquals(3, q.getQuantity());
@@ -4097,7 +4103,7 @@ public class AutobindRulesTest {
             false);
 
         // Should always pick the 3 socket subscription, becuase 3*3 gives 1 socket over-coverage,
-        // and 2*5 provides 2 extra sockets.  using 1 quantity is worth .5 sockets
+        // and 2*5 provides 2 extra sockets. using 1 quantity is worth .5 sockets
         assertEquals(1, bestPools.size());
         PoolQuantity q = bestPools.get(0);
         assertEquals(3, q.getQuantity());
@@ -4123,8 +4129,8 @@ public class AutobindRulesTest {
     }
 
     /*
-     * Tests that during auto-attach, Role values between what the consumer specified and pool attributes
-     * are compared irrespective of the white-spaces in roles.
+     * Tests that during auto-attach, Role values between what the consumer specified and pool
+     * attributes are compared irrespective of the white-spaces in roles.
      */
     @Test
     public void selectBestPoolsMatchesRoleValueWithWhiteSpaces() {
@@ -4147,8 +4153,8 @@ public class AutobindRulesTest {
     }
 
     /*
-     * Tests that during auto-attach, Addon values between what the consumer specified and pool attributes
-     * are compared irrespective of the white-spaces in addons.
+     * Tests that during auto-attach, Addon values between what the consumer specified and pool
+     * attributes are compared irrespective of the white-spaces in addons.
      */
     @Test
     public void selectBestPoolsMatchesAddonsValueWithWhiteSpaces() {
@@ -4172,8 +4178,8 @@ public class AutobindRulesTest {
     }
 
     /*
-     * The customer has made a typo in the service type. Since the pool that has a
-     * defined service type is a mismatch, we favor the pool that has service type undefined.
+     * The customer has made a typo in the service type. Since the pool that has a defined service type
+     * is a mismatch, we favor the pool that has service type undefined.
      */
     @SuppressWarnings("checkstyle:localvariablename")
     @Test
@@ -4373,8 +4379,8 @@ public class AutobindRulesTest {
     }
 
     /*
-     * Tests that during auto-attach, Usage values between what the consumer specified and pool attributes
-     * are compared case insensitively.
+     * Tests that during auto-attach, Usage values between what the consumer specified and pool
+     * attributes are compared case insensitively.
      */
     @Test
     public void selectBestPoolsMatchesServiceTypeValueCaseInsensitively() {
@@ -4417,9 +4423,9 @@ public class AutobindRulesTest {
 
     /*
      * This test demonstrates that a pool that satisfies the consumer's service type will be selected
-     * during autoattach even if it provides a role, and the consumer did not specify a role,
-     * and even if another pool benefits from not having a role specified but does not provide
-     * the service type the consumer requires.
+     * during autoattach even if it provides a role, and the consumer did not specify a role, and even
+     * if another pool benefits from not having a role specified but does not provide the service type
+     * the consumer requires.
      *
      * (Alternatively: The 'null rule' score on a pool, should not overpower the 'match rule' of another
      * pool in a different syspurpose attribute.
@@ -4469,8 +4475,8 @@ public class AutobindRulesTest {
 
     /*
      * This tests that a pool with a service type match and all other syspurpose attributes mismatched,
-     * will still be chosen by auto-attach against a pool that does not provide any of
-     * the syspurpose attributes.
+     * will still be chosen by auto-attach against a pool that does not provide any of the syspurpose
+     * attributes.
      */
     @SuppressWarnings("checkstyle:localvariablename")
     @Test
@@ -4521,8 +4527,8 @@ public class AutobindRulesTest {
 
     /*
      * This test demonstrates that a pool that provides a certain service type, will NOT be selected
-     * during autoattach if that service type matches the one the consumer specified, when
-     * no installed product is covered by that pool.
+     * during autoattach if that service type matches the one the consumer specified, when no installed
+     * product is covered by that pool.
      */
     @SuppressWarnings("checkstyle:localvariablename")
     @Test
@@ -4555,10 +4561,9 @@ public class AutobindRulesTest {
     }
 
     /*
-     * This test demonstrates that a pool that satisfies the consumer's Usage should be selected
-     * during autoattach even if all other attributes below it (service_type, sockets,
-     * cores & ram, etc.) mismatch, instead of a pool that has a matching service_type,
-     * but no other mismatches.
+     * This test demonstrates that a pool that satisfies the consumer's Usage should be selected during
+     * autoattach even if all other attributes below it (service_type, sockets, cores & ram, etc.)
+     * mismatch, instead of a pool that has a matching service_type, but no other mismatches.
      */
     @SuppressWarnings("checkstyle:localvariablename")
     @Test
@@ -4582,7 +4587,8 @@ public class AutobindRulesTest {
 
         // Candidate pools:
 
-        // This pool covers the system's usage attribute, but most other attributes below usage (service_type,
+        // This pool covers the system's usage attribute, but most other attributes below usage
+        // (service_type,
         // cores, ram, etc.) are mismatched.
         Product prodMCT1650 = createSysPurposeProduct(null, null, null,
             null, "myusage", "random_service_type");

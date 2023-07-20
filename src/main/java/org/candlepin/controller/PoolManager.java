@@ -17,16 +17,13 @@ package org.candlepin.controller;
 import org.candlepin.model.CandlepinQuery;
 import org.candlepin.model.Consumer;
 import org.candlepin.model.Entitlement;
-import org.candlepin.model.Owner;
 import org.candlepin.model.Pool;
 import org.candlepin.model.PoolFilterBuilder;
 import org.candlepin.model.PoolQuantity;
-import org.candlepin.model.Product;
 import org.candlepin.model.activationkeys.ActivationKey;
 import org.candlepin.paging.Page;
 import org.candlepin.paging.PageRequest;
 import org.candlepin.policy.EntitlementRefusedException;
-import org.candlepin.policy.js.pool.PoolUpdate;
 import org.candlepin.resource.dto.AutobindData;
 import org.candlepin.service.model.SubscriptionInfo;
 
@@ -37,9 +34,8 @@ import java.util.Map;
 import java.util.Set;
 
 
-public interface PoolManager {
 
-    Pool createPool(Pool p);
+public interface PoolManager {
 
     /**
      * @param sub
@@ -57,8 +53,6 @@ public interface PoolManager {
 
     Pool createAndEnrichPools(Pool pool, List<Pool> existingPools);
 
-    Pool convertToPrimaryPool(SubscriptionInfo subscription);
-
     /**
      * Applies changes to the given pool to itself and any of its derived pools. This may result in
      * a deletion of the pool if it has been expired as a result of the changes.
@@ -75,13 +69,6 @@ public interface PoolManager {
      *  A collection of subscription IDs used to lookup and delete pools
      */
     void deletePoolsForSubscriptions(Collection<String> subscriptionIds);
-
-    /**
-     * Cleanup entitlements and safely delete the given pool.
-     *
-     * @param pool
-     */
-    void deletePool(Pool pool);
 
     /**
      * Request an entitlement by poolid and quantity
@@ -114,23 +101,7 @@ public interface PoolManager {
         Date entitleDate, String ownerId, String serviceLevelOverride, Collection<String> fromPools)
         throws EntitlementRefusedException;
 
-    Pool get(String poolId);
-
-    List<Pool> secureGet(Collection<String> poolId);
-
     List<String> listEntitledConsumerUuids(String poolId);
-
-    List<Pool> getBySubscriptionId(Owner owner, String id);
-
-    List<Pool> getBySubscriptionIds(String ownerId, Collection<String> id);
-
-    int revokeAllEntitlements(Consumer consumer);
-    int revokeAllEntitlements(Consumer consumer, boolean regenCertsAndStatuses);
-
-    Set<Pool> revokeEntitlements(List<Entitlement> ents);
-    void revokeEntitlement(Entitlement entitlement);
-
-    Pool setPoolQuantity(Pool pool, long set);
 
     void regenerateDirtyEntitlements(Consumer consumer);
 
@@ -144,7 +115,6 @@ public interface PoolManager {
      * entitlements, and the pool itself.
      */
     void cleanupExpiredPools();
-
 
     /**
      * List entitlement pools.
@@ -180,32 +150,6 @@ public interface PoolManager {
      * @return Set of levels based on exempt flag.
      */
     Set<String> retrieveServiceLevelsForOwner(String ownerId, boolean exempt);
-
-    /**
-     * Lists the pools for the specified Owner.
-     *
-     * @param owner the Owner to get the pools for
-     * @return a list of pools for the specified Owner
-     */
-    CandlepinQuery<Pool> listPoolsByOwner(Owner owner);
-
-    /**
-     * Updates the pool based on the entitlements in the specified stack.
-     * @param pool
-     * @param changedProducts
-     *
-     * @return pool update specifics
-     */
-    PoolUpdate updatePoolFromStack(Pool pool, Map<String, Product> changedProducts);
-
-    /**
-     * Updates the pools based on the entitlements in the specified stack.
-     *
-     * @param consumer
-     * @param pool
-     */
-    void updatePoolsFromStackWithoutDeletingStack(Consumer consumer,
-        List<Pool> pool, Collection<Entitlement> entitlements);
 
     /**
      * @param guest products we want to provide for
@@ -252,10 +196,6 @@ public interface PoolManager {
      *  a list of known primary pools
      */
     CandlepinQuery<Pool> getPrimaryPools();
-
-    void deletePools(Collection<Pool> pools);
-
-    void deletePools(Collection<Pool> pools, Collection<String> alreadyDeletedPools);
 
     void checkBonusPoolQuantities(String ownerId,
         Map<String, Entitlement> entitlements);

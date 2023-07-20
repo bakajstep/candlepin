@@ -27,6 +27,7 @@ import org.candlepin.auth.Access;
 import org.candlepin.auth.ConsumerPrincipal;
 import org.candlepin.auth.Principal;
 import org.candlepin.controller.CandlepinPoolManager;
+import org.candlepin.controller.PoolService;
 import org.candlepin.dto.api.server.v1.EntitlementDTO;
 import org.candlepin.dto.api.server.v1.PoolDTO;
 import org.candlepin.exceptions.BadRequestException;
@@ -53,6 +54,10 @@ import java.time.ZoneOffset;
 import java.util.Date;
 import java.util.List;
 
+import javax.inject.Inject;
+
+
+
 public class PoolResourceTest extends DatabaseTestFixture {
     // private static final OffsetDateTime START_DATE = OffsetDateTime.now().minusYears(5);
     private static final OffsetDateTime START_DATE = OffsetDateTime
@@ -61,6 +66,8 @@ public class PoolResourceTest extends DatabaseTestFixture {
     private static final String PRODUCT_CPULIMITED = "CPULIMITED001";
 
     private CandlepinPoolManager poolManager;
+    @Inject
+    private PoolService poolService;
 
     private Owner owner1;
     private Owner owner2;
@@ -101,7 +108,7 @@ public class PoolResourceTest extends DatabaseTestFixture {
         adminPrincipal = setupPrincipal(owner1, Access.ALL);
 
         poolResource = new PoolResource(consumerCurator, ownerCurator, i18n,
-            poolManager, attrUtil, this.modelTranslator, principalProvider);
+            poolManager, attrUtil, this.modelTranslator, principalProvider, poolService);
 
         // Consumer system with too many cpu cores:
         failConsumer = this.createConsumer(createOwner());

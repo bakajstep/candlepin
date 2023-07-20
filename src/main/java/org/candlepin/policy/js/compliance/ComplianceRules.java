@@ -62,30 +62,30 @@ import javax.inject.Inject;
  * A class used to check consumer compliance status.
  */
 public class ComplianceRules {
-    private static Logger log = LoggerFactory.getLogger(ComplianceRules.class);
+    private static final Logger log = LoggerFactory.getLogger(ComplianceRules.class);
 
-    private JsRunner jsRules;
-    private EntitlementCurator entCurator;
-    private StatusReasonMessageGenerator generator;
-    private EventSink eventSink;
-    private ConsumerCurator consumerCurator;
-    private ConsumerTypeCurator consumerTypeCurator;
-    private RulesObjectMapper mapper;
-    private ModelTranslator translator;
+    private final JsRunner jsRules;
+    private final EntitlementCurator entCurator;
+    private final StatusReasonMessageGenerator generator;
+    private final EventSink eventSink;
+    private final ConsumerCurator consumerCurator;
+    private final ConsumerTypeCurator consumerTypeCurator;
+    private final RulesObjectMapper mapper;
+    private final ModelTranslator translator;
 
     @Inject
     public ComplianceRules(JsRunner jsRules, EntitlementCurator entCurator,
         StatusReasonMessageGenerator generator, EventSink eventSink, ConsumerCurator consumerCurator,
         ConsumerTypeCurator consumerTypeCurator, RulesObjectMapper mapper, ModelTranslator translator) {
 
-        this.jsRules = jsRules;
-        this.entCurator = entCurator;
-        this.generator = generator;
-        this.eventSink = eventSink;
-        this.consumerCurator = consumerCurator;
-        this.consumerTypeCurator = consumerTypeCurator;
-        this.mapper = mapper;
-        this.translator = translator;
+        this.jsRules = Objects.requireNonNull(jsRules);
+        this.entCurator = Objects.requireNonNull(entCurator);
+        this.generator = Objects.requireNonNull(generator);
+        this.eventSink = Objects.requireNonNull(eventSink);
+        this.consumerCurator = Objects.requireNonNull(consumerCurator);
+        this.consumerTypeCurator = Objects.requireNonNull(consumerTypeCurator);
+        this.mapper = Objects.requireNonNull(mapper);
+        this.translator = Objects.requireNonNull(translator);
 
         jsRules.init("compliance_name_space");
     }
@@ -170,12 +170,11 @@ public class ComplianceRules {
         Stream<EntitlementDTO> entStream = Stream.concat(
             newEntitlements != null ? newEntitlements.stream() : Stream.empty(),
             consumer.getEntitlements() != null ? consumer.getEntitlements().stream() : Stream.empty())
-                .map(this.translator.getStreamMapper(Entitlement.class, EntitlementDTO.class));
+            .map(this.translator.getStreamMapper(Entitlement.class, EntitlementDTO.class));
 
         Stream<GuestIdDTO> guestIdStream = consumer.getGuestIds() == null ? Stream.empty() :
             consumer.getGuestIds().stream()
                 .map(this.translator.getStreamMapper(GuestId.class, GuestIdDTO.class));
-
 
         // Status can only be 'disabled' when in golden ticket mode
         if (consumer.getOwner() != null && consumer.getOwner().isUsingSimpleContentAccess()) {
@@ -301,7 +300,6 @@ public class ComplianceRules {
         ComplianceStatusHasher hasher = new ComplianceStatusHasher(consumer, status);
         return hasher.hash();
     }
-
 
     /**
      * Populates an entity that is to be created with data from the provided DTO.

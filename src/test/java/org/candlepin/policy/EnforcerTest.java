@@ -22,7 +22,7 @@ import static org.mockito.Mockito.when;
 
 import org.candlepin.config.ConfigProperties;
 import org.candlepin.config.Configuration;
-import org.candlepin.controller.PoolManager;
+import org.candlepin.controller.PoolService;
 import org.candlepin.dto.StandardTranslator;
 import org.candlepin.model.Consumer;
 import org.candlepin.model.Entitlement;
@@ -64,6 +64,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+
+
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 public class EnforcerTest extends DatabaseTestFixture {
@@ -81,7 +83,7 @@ public class EnforcerTest extends DatabaseTestFixture {
     @Mock
     private EnvironmentCurator mockEnvironmentCurator;
     @Mock
-    private PoolManager poolManager;
+    private PoolService poolService;
 
     private Enforcer enforcer;
     private Owner owner;
@@ -119,7 +121,7 @@ public class EnforcerTest extends DatabaseTestFixture {
 
         enforcer = new EntitlementRules(
             new DateSourceForTesting(2010, 1, 1), jsRules, i18n, config, consumerCurator,
-            consumerTypeCurator, new RulesObjectMapper(), modelTranslator, poolManager);
+            consumerTypeCurator, new RulesObjectMapper(), modelTranslator, poolService);
     }
 
     @Test
