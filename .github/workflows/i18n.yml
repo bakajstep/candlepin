@@ -17,14 +17,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        branch: [main, candlepin-4.1-HOTFIX, candlepin-4.2-HOTFIX]
+        branch: [jalbrech/2213261]
         include:
-          - branch: main
+          - branch: jalbrech/2213261
             java-version: 17
-          - branch: candlepin-4.1-HOTFIX
-            java-version: 11
-          - branch: candlepin-4.2-HOTFIX
-            java-version: 11
 
     steps:
       - name: Mask secrets
