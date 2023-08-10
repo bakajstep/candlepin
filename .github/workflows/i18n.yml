@@ -4,6 +4,7 @@ on:
   schedule:
     - cron: '0 7 * * 0,4'
   workflow_dispatch:
+  merge_group:
 
 env:
   JAVA_DISTRIBUTION: 'temurin'
@@ -17,14 +18,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        branch: [main, candlepin-4.1-HOTFIX, candlepin-4.2-HOTFIX]
+        branch: [wottop/protection-test]
         include:
-          - branch: main
+          - branch: wottop/protection-test
             java-version: 17
-          - branch: candlepin-4.1-HOTFIX
-            java-version: 11
-          - branch: candlepin-4.2-HOTFIX
-            java-version: 11
 
     steps:
       - name: Mask secrets

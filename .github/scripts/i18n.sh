@@ -23,6 +23,6 @@ if [ ! -z "$files" ]; then
   git -c "user.name=$GIT_AUTHOR_NAME" -c "user.email=$GIT_AUTHOR_EMAIL" commit -m "updated po/keys.pot template"
   evalrc $? " <== System return for git commit for branch $GIT_BRANCH."
 
-  git push https://candlepin:${I18N_TOKEN}@github.com/candlepin/candlepin $GIT_BRANCH
+  git push https://candlepin-bot:${I18N_TOKEN}@github.com/candlepin/candlepin $GIT_BRANCH
   evalrc $? " <== System return for git push for branch $GIT_BRANCH."
 fi
