@@ -195,7 +195,7 @@ public class VerifyAuthorizationFilter extends AbstractAuthorizationFilter {
             List<Persisted> accessedObjects = new ArrayList<>();
             Object obj = entry.getValue();
             Verify verify = entry.getKey();
-            Class<? extends Persisted>[] verifyTypes = verify.values();
+            Class<? extends Persisted>[] verifyTypes = verify.value();
 
             accessedObjects.addAll(getAccessedEntities(verify, obj));
 
@@ -252,7 +252,7 @@ public class VerifyAuthorizationFilter extends AbstractAuthorizationFilter {
 
         List<Persisted> entities = new ArrayList<>();
 
-        Class<? extends Persisted>[] verifyTypes = verify.values();
+        Class<? extends Persisted>[] verifyTypes = verify.value();
 
         // TODO: There is probably a better way of handling this
         for (Class<? extends Persisted> verifyType : verifyTypes) {
