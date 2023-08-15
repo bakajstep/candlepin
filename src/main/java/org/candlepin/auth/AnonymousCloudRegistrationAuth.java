@@ -139,12 +139,14 @@ public class AnonymousCloudRegistrationAuth implements AuthProvider {
         return null;
     }
 
-    private UserPrincipal createCloudUserPrincipal(String subject, String consumerUuid) {
+    private AnonymousCloudConsumerPrincipal createCloudUserPrincipal(String subject, String consumerUuid) {
         AnonymousCloudConsumer consumer = anonymousCloudConsumerCurator.getByUuid(consumerUuid);
+        if (consumer == null) {
+            log.debug("Anonymous cloud consumer with UUID {} could not be found", consumerUuid);
+            return null;
+        }
 
-        // TODO: Handle as part of CANDLEPIN-625
-
-        return null;
+        return new AnonymousCloudConsumerPrincipal(consumer);
     }
 
 }

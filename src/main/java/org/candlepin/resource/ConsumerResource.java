@@ -71,6 +71,7 @@ import org.candlepin.exceptions.GoneException;
 import org.candlepin.exceptions.IseException;
 import org.candlepin.exceptions.NotFoundException;
 import org.candlepin.guice.PrincipalProvider;
+import org.candlepin.model.AnonymousCloudConsumer;
 import org.candlepin.model.AsyncJobStatus;
 import org.candlepin.model.CandlepinQuery;
 import org.candlepin.model.Certificate;
@@ -689,8 +690,9 @@ public class ConsumerResource implements ConsumerApi {
         return this.translator.translate(consumer, ConsumerDTO.class);
     }
 
+    // TODO: also accept anonymous cloud consumer class
     @Override
-    public ContentAccessDTO getContentAccessForConsumer(@Verify(Consumer.class) String uuid) {
+    public ContentAccessDTO getContentAccessForConsumer(@Verify(value = {Consumer.class, AnonymousCloudConsumer.class}) String uuid) {
         Consumer consumer = consumerCurator.verifyAndLookupConsumer(uuid);
 
         Predicate<String> predicate = (str) -> str != null && !str.isEmpty();
