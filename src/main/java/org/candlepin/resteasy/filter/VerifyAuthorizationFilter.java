@@ -195,7 +195,9 @@ public class VerifyAuthorizationFilter extends AbstractAuthorizationFilter {
             List<Persisted> accessedObjects = new ArrayList<>();
             Object obj = entry.getValue();
             Verify verify = entry.getKey();
-            Class<? extends Persisted> verifyType = verify.value();
+            // TODO: Fix
+            // Class<? extends Persisted> verifyType = verify.value();
+            Class<? extends Persisted> verifyType = null;
 
             accessedObjects.addAll(getAccessedEntities(verify, obj));
 
@@ -251,7 +253,10 @@ public class VerifyAuthorizationFilter extends AbstractAuthorizationFilter {
         }
 
         List<Persisted> entities = new ArrayList<>();
-        Class<? extends Persisted> verifyType = verify.value();
+
+        // TODO: Fix
+        // Class<? extends Persisted> verifyType = verify.value();
+        Class<? extends Persisted> verifyType = null;
 
         if (requestValue instanceof String) {
             String verifyParam = (String) requestValue;
