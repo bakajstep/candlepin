@@ -218,8 +218,6 @@ public class VerifyAuthorizationFilter extends AbstractAuthorizationFilter {
                     break;
                 }
 
-                // TODO: I don't think we can do this because entity.class could be entities that arent in the factory.
-                // I think that we need to have a map of entity to verifyTypes
                 Owner entityOwner = ((EntityStore) storeFactory.getFor(entity.getClass())).getOwner(entity);
                 if (entityOwner != null) {
                     if (owner != null && !owner.equals(entityOwner)) {
