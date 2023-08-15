@@ -30,7 +30,7 @@ import java.lang.annotation.Target;
 @Target({ElementType.PARAMETER})
 @Documented
 public @interface Verify {
-    Class<? extends Persisted>[] value();
+    Class<? extends Persisted>[] values();
     Access require() default Access.NONE;
     boolean nullable() default false;
     SubResource subResource() default SubResource.NONE;

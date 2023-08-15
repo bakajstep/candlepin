@@ -15,6 +15,8 @@
 package org.candlepin.resteasy.filter;
 
 import org.candlepin.exceptions.GoneException;
+import org.candlepin.model.AnonymousCloudConsumer;
+import org.candlepin.model.AnonymousCloudConsumerCurator;
 import org.candlepin.model.AsyncJobStatus;
 import org.candlepin.model.AsyncJobStatusCurator;
 import org.candlepin.model.Consumer;
@@ -59,6 +61,7 @@ public class StoreFactory {
         storeMap.put(Owner.class, injector.getInstance(OwnerStore.class));
         storeMap.put(Environment.class, injector.getInstance(EnvironmentStore.class));
         storeMap.put(Consumer.class, injector.getInstance(ConsumerStore.class));
+        storeMap.put(AnonymousCloudConsumer.class, injector.getInstance(AnonymousCloudConsumerStore.class));
         storeMap.put(Entitlement.class, injector.getInstance(EntitlementStore.class));
         storeMap.put(Pool.class, injector.getInstance(PoolStore.class));
         storeMap.put(User.class, new UserStore());
@@ -174,6 +177,39 @@ public class StoreFactory {
         public Owner getOwner(Consumer entity) {
             return ownerCurator.findOwnerById(entity.getOwnerId());
         }
+    }
+
+    private static class AnonymousCloudConsumerStore implements EntityStore<AnonymousCloudConsumer> {
+        private AnonymousCloudConsumerCurator consumerCurator;
+
+        @Inject
+        public AnonymousCloudConsumerStore(AnonymousCloudConsumerCurator consumerCurator) {
+            this.consumerCurator = consumerCurator;
+        }
+
+        @Override
+        public AnonymousCloudConsumer lookup(String consumerUuid) {
+            if (consumerUuid == null || consumerUuid.isBlank()) {
+                return null;
+            }
+
+            return consumerCurator.getByUuid(consumerUuid);
+        }
+
+        @Override
+        public Collection<AnonymousCloudConsumer> lookup(
+            Collection<String> keys) {
+            // TODO: Implement. Add a method in the curator for uuids 
+            // TODO Auto-generated method stub
+            throw new UnsupportedOperationException("Unimplemented method 'lookup'");
+        }
+
+        @Override
+        public Owner getOwner(AnonymousCloudConsumer entity) {
+            // TODO: I think this should always be null as there is no owner for anonymous cloud consumer
+            return null;
+        }
+
     }
 
     private static class EntitlementStore implements EntityStore<Entitlement> {

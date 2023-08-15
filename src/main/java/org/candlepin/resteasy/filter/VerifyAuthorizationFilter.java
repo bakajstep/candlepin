@@ -195,9 +195,7 @@ public class VerifyAuthorizationFilter extends AbstractAuthorizationFilter {
             List<Persisted> accessedObjects = new ArrayList<>();
             Object obj = entry.getValue();
             Verify verify = entry.getKey();
-            // TODO: Fix
-            // Class<? extends Persisted> verifyType = verify.value();
-            Class<? extends Persisted> verifyType = null;
+            Class<? extends Persisted>[] verifyTypes = verify.values();
 
             accessedObjects.addAll(getAccessedEntities(verify, obj));
 
@@ -206,7 +204,7 @@ public class VerifyAuthorizationFilter extends AbstractAuthorizationFilter {
                 requiredAccess = verify.require();
             }
 
-            log.debug("Verifying {} access to {}: {}", requiredAccess, verifyType, obj);
+            log.debug("Verifying {} access to {}: {}", requiredAccess, verifyTypes, obj);
 
             SubResource subResource = verify.subResource();
             for (Persisted entity : accessedObjects) {
@@ -217,7 +215,7 @@ public class VerifyAuthorizationFilter extends AbstractAuthorizationFilter {
 
                 hasAccess = true;
 
-                Owner entityOwner = ((EntityStore) storeFactory.getFor(verifyType)).getOwner(entity);
+                Owner entityOwner = ((EntityStore) storeFactory.getFor(entity.getClass())).getOwner(entity);
                 if (entityOwner != null) {
                     if (owner != null && !owner.equals(entityOwner)) {
                         log.error("Found entities from multiple orgs in a single request");
@@ -254,41 +252,42 @@ public class VerifyAuthorizationFilter extends AbstractAuthorizationFilter {
 
         List<Persisted> entities = new ArrayList<>();
 
-        // TODO: Fix
-        // Class<? extends Persisted> verifyType = verify.value();
-        Class<? extends Persisted> verifyType = null;
+        Class<? extends Persisted>[] verifyTypes = verify.values();
 
-        if (requestValue instanceof String) {
-            String verifyParam = (String) requestValue;
-            Persisted entity = null;
+        // TODO: There is probably a better way of handling this
+        for (Class<? extends Persisted> verifyType : verifyTypes) {
+            if (requestValue instanceof String) {
+                String verifyParam = (String) requestValue;
+                Persisted entity = null;
 
-            entity = storeFactory.getFor(verifyType).lookup(verifyParam);
+                entity = storeFactory.getFor(verifyType).lookup(verifyParam);
 
-            // If the request is just for a single item, throw an exception
-            // if it is not found.
-            if (entity == null) {
-                // This is bad, we're verifying a parameter with an ID which
-                // doesn't seem to exist in the DB. Error will be thrown in
-                // invoke though.
-                String typeName = Util.getClassName(verifyType);
-                if (typeName.equals("Owner")) {
-                    typeName = i18nProvider.get().tr("Organization");
+                // If the request is just for a single item, throw an exception
+                // if it is not found.
+                if (entity == null) {
+                    // This is bad, we're verifying a parameter with an ID which
+                    // doesn't seem to exist in the DB. Error will be thrown in
+                    // invoke though.
+                    String typeName = Util.getClassName(verifyType);
+                    if (typeName.equals("Owner")) {
+                        typeName = i18nProvider.get().tr("Organization");
+                    }
+                    String msg = i18nProvider.get().tr("{0} with id {1} could not be found.",
+                        typeName, verifyParam);
+                    log.info("No such entity: {}, id: {}", typeName, verifyParam);
+                    throw new NotFoundException(msg);
                 }
-                String msg = i18nProvider.get().tr("{0} with id {1} could not be found.",
-                    typeName, verifyParam);
-                log.info("No such entity: {}, id: {}", typeName, verifyParam);
-                throw new NotFoundException(msg);
+
+                entities.add(entity);
             }
+            else if (requestValue instanceof Collection) {
+                Collection<String> verifyParams = (Collection<String>) requestValue;
 
-            entities.add(entity);
-        }
-        else if (requestValue instanceof Collection) {
-            Collection<String> verifyParams = (Collection<String>) requestValue;
-
-            // If the request is for a list of items, we'll leave it
-            // up to the requester to determine if something is missing or not.
-            if (verifyParams != null && !verifyParams.isEmpty()) {
-                entities.addAll(storeFactory.getFor(verifyType).lookup(verifyParams));
+                // If the request is for a list of items, we'll leave it
+                // up to the requester to determine if something is missing or not.
+                if (verifyParams != null && !verifyParams.isEmpty()) {
+                    entities.addAll(storeFactory.getFor(verifyType).lookup(verifyParams));
+                }
             }
         }
 
