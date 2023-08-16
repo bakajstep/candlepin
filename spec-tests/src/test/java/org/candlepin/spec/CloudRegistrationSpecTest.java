@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import org.candlepin.dto.api.client.v1.CloudAuthenticationResultDTO;
 import org.candlepin.dto.api.client.v1.CloudRegistrationDTO;
 import org.candlepin.dto.api.client.v1.ConsumerDTO;
+import org.candlepin.dto.api.client.v1.ContentAccessDTO;
 import org.candlepin.dto.api.client.v1.OwnerDTO;
 import org.candlepin.dto.api.client.v1.ProductDTO;
 import org.candlepin.invoker.client.ApiException;
@@ -148,20 +149,15 @@ class CloudRegistrationSpecTest {
     }
 
     @Test
-    public void shouldAllowRegistrationWithAnonymousToken() throws Exception {
+    public void shouldAllowContentAccessWithAnonymousToken() throws Exception {
         ApiClient adminClient = ApiClients.admin();
         OwnerDTO owner = adminClient.owners().createOwner(Owners.random());
         adminClient.hosted().createOwner(owner);
-        ProductDTO prod = adminClient.ownerProducts().createProductByOwner(owner.getKey(), Products.random());
-        adminClient.hosted().createProduct(prod);
-        adminClient.owners().createPool(owner.getKey(), Pools.random(prod));
-        adminClient.hosted().createSubscription(Subscriptions.random(owner, prod));
-
         String accountId = StringUtil.random("cloud-account-id-");
         String instanceId = StringUtil.random("cloud-instance-id-");
         String offerId = StringUtil.random("cloud-offer-");
 
-        associateProductIdToCloudOffer(adminClient, offerId, prod.getId());
+        associateProductIdToCloudOffer(adminClient, offerId, StringUtil.random("prod-"));
         associateOwnerToCloudAccount(adminClient, accountId, owner.getKey());
 
         String metadata = buildMetadataJson(adminClient.MAPPER, accountId, instanceId, offerId);
@@ -169,17 +165,18 @@ class CloudRegistrationSpecTest {
         CloudAuthenticationResultDTO result = adminClient.cloudAuthorization()
             .cloudAuthorizeV2(generateToken(metadata, "test-type", ""));
 
-        assertTokenType(adminClient.MAPPER, result.getToken(), TOKEN_TYPE);
+        assertTokenType(adminClient.MAPPER, result.getToken(), ANON_TOKEN_TYPE);
         assertThat(result)
             .isNotNull()
             .returns(owner.getKey(), CloudAuthenticationResultDTO::getOwnerKey)
-            .returns(null, CloudAuthenticationResultDTO::getAnonymousConsumerUuid)
-            .returns(TOKEN_TYPE, CloudAuthenticationResultDTO::getTokenType);
+            .doesNotReturn(null, CloudAuthenticationResultDTO::getAnonymousConsumerUuid)
+            .returns(ANON_TOKEN_TYPE, CloudAuthenticationResultDTO::getTokenType);
 
-        ConsumerDTO consumer = ApiClients.bearerToken(result.getToken()).consumers()
-            .createConsumer(Consumers.random(owner));
-        assertNotNull(consumer);
+        ContentAccessDTO content = ApiClients.bearerToken(result.getToken()).consumers()
+            .getContentAccessForConsumer(result.getAnonymousConsumerUuid());
+        assertNotNull(content);
     }
+
 
     @Test
     public void shouldReceiveAnonTokenForV2AuthWithExistingOwnerForCloudAccountIdAndNoEntitlement()
