@@ -148,6 +148,40 @@ class CloudRegistrationSpecTest {
     }
 
     @Test
+    public void shouldAllowRegistrationWithAnonymousToken() throws Exception {
+        ApiClient adminClient = ApiClients.admin();
+        OwnerDTO owner = adminClient.owners().createOwner(Owners.random());
+        adminClient.hosted().createOwner(owner);
+        ProductDTO prod = adminClient.ownerProducts().createProductByOwner(owner.getKey(), Products.random());
+        adminClient.hosted().createProduct(prod);
+        adminClient.owners().createPool(owner.getKey(), Pools.random(prod));
+        adminClient.hosted().createSubscription(Subscriptions.random(owner, prod));
+
+        String accountId = StringUtil.random("cloud-account-id-");
+        String instanceId = StringUtil.random("cloud-instance-id-");
+        String offerId = StringUtil.random("cloud-offer-");
+
+        associateProductIdToCloudOffer(adminClient, offerId, prod.getId());
+        associateOwnerToCloudAccount(adminClient, accountId, owner.getKey());
+
+        String metadata = buildMetadataJson(adminClient.MAPPER, accountId, instanceId, offerId);
+
+        CloudAuthenticationResultDTO result = adminClient.cloudAuthorization()
+            .cloudAuthorizeV2(generateToken(metadata, "test-type", ""));
+
+        assertTokenType(adminClient.MAPPER, result.getToken(), TOKEN_TYPE);
+        assertThat(result)
+            .isNotNull()
+            .returns(owner.getKey(), CloudAuthenticationResultDTO::getOwnerKey)
+            .returns(null, CloudAuthenticationResultDTO::getAnonymousConsumerUuid)
+            .returns(TOKEN_TYPE, CloudAuthenticationResultDTO::getTokenType);
+
+        ConsumerDTO consumer = ApiClients.bearerToken(result.getToken()).consumers()
+            .createConsumer(Consumers.random(owner));
+        assertNotNull(consumer);
+    }
+
+    @Test
     public void shouldReceiveAnonTokenForV2AuthWithExistingOwnerForCloudAccountIdAndNoEntitlement()
         throws Exception {
         ApiClient adminClient = ApiClients.admin();
