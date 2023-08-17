@@ -177,7 +177,6 @@ class CloudRegistrationSpecTest {
         assertNotNull(content);
     }
 
-
     @Test
     public void shouldReceiveAnonTokenForV2AuthWithExistingOwnerForCloudAccountIdAndNoEntitlement()
         throws Exception {

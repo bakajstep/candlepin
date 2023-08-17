@@ -50,6 +50,8 @@ import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Provider;
 
+
+
 /**
  * This class should be bound to an instance
  */
@@ -180,11 +182,11 @@ public class StoreFactory {
     }
 
     private static class AnonymousCloudConsumerStore implements EntityStore<AnonymousCloudConsumer> {
-        private AnonymousCloudConsumerCurator consumerCurator;
+        private AnonymousCloudConsumerCurator anonymousConsumerCurator;
 
         @Inject
-        public AnonymousCloudConsumerStore(AnonymousCloudConsumerCurator consumerCurator) {
-            this.consumerCurator = consumerCurator;
+        public AnonymousCloudConsumerStore(AnonymousCloudConsumerCurator anonymousConsumerCurator) {
+            this.anonymousConsumerCurator = anonymousConsumerCurator;
         }
 
         @Override
@@ -193,20 +195,17 @@ public class StoreFactory {
                 return null;
             }
 
-            return consumerCurator.getByUuid(consumerUuid);
+            return anonymousConsumerCurator.getByUuid(consumerUuid);
         }
 
         @Override
         public Collection<AnonymousCloudConsumer> lookup(
             Collection<String> keys) {
-            // TODO: Implement. Add a method in the curator for uuids 
-            // TODO Auto-generated method stub
-            throw new UnsupportedOperationException("Unimplemented method 'lookup'");
+            return this.anonymousConsumerCurator.getByUuids(keys);
         }
 
         @Override
         public Owner getOwner(AnonymousCloudConsumer entity) {
-            // TODO: I think this should always be null as there is no owner for anonymous cloud consumer
             return null;
         }
 

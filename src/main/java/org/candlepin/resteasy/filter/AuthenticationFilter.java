@@ -59,6 +59,7 @@ import javax.ws.rs.core.SecurityContext;
 import javax.ws.rs.ext.Provider;
 
 
+
 /**
  * The AuthenticationFilter is responsible for populating the JAXRS SecurityContext
  */

@@ -254,10 +254,8 @@ public class VerifyAuthorizationFilter extends AbstractAuthorizationFilter {
         }
 
         List<Persisted> entities = new ArrayList<>();
-
         Class<? extends Persisted>[] verifyTypes = verify.value();
 
-        // TODO: There is probably a better way of handling this
         for (Class<? extends Persisted> verifyType : verifyTypes) {
             if (requestValue instanceof String) {
                 String verifyParam = (String) requestValue;
@@ -265,20 +263,15 @@ public class VerifyAuthorizationFilter extends AbstractAuthorizationFilter {
 
                 entity = storeFactory.getFor(verifyType).lookup(verifyParam);
 
-                // If the request is just for a single item, throw an exception
-                // if it is not found.
                 if (entity == null) {
-                    // This is bad, we're verifying a parameter with an ID which
-                    // doesn't seem to exist in the DB. Error will be thrown in
-                    // invoke though.
                     String typeName = Util.getClassName(verifyType);
                     if (typeName.equals("Owner")) {
                         typeName = i18nProvider.get().tr("Organization");
                     }
-                    String msg = i18nProvider.get().tr("{0} with id {1} could not be found.",
-                        typeName, verifyParam);
+
                     log.info("No such entity: {}, id: {}", typeName, verifyParam);
-                    throw new NotFoundException(msg);
+
+                    continue;
                 }
 
                 entities.add(entity);
@@ -292,6 +285,13 @@ public class VerifyAuthorizationFilter extends AbstractAuthorizationFilter {
                     entities.addAll(storeFactory.getFor(verifyType).lookup(verifyParams));
                 }
             }
+        }
+
+        // TODO: Can we log this out better?
+        if (entities.isEmpty()) {
+            String msg = i18nProvider.get().tr("{0} with id(s) {1} could not be found.",
+                verifyTypes, requestValue);
+            throw new NotFoundException(msg);
         }
 
         return entities;

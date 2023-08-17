@@ -184,6 +184,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 
+
 /**
  * API Gateway for Consumers
  */
@@ -237,7 +238,7 @@ public class ConsumerResource implements ConsumerApi {
     private final Pattern consumerPersonNamePattern;
 
     @Inject
-    @SuppressWarnings({"checkstyle:parameternumber"})
+    @SuppressWarnings({ "checkstyle:parameternumber" })
     public ConsumerResource(ConsumerCurator consumerCurator,
         ConsumerTypeCurator consumerTypeCurator,
         SubscriptionServiceAdapter subAdapter,
@@ -690,9 +691,10 @@ public class ConsumerResource implements ConsumerApi {
         return this.translator.translate(consumer, ConsumerDTO.class);
     }
 
-    // TODO: also accept anonymous cloud consumer class
     @Override
-    public ContentAccessDTO getContentAccessForConsumer(@Verify(value = {Consumer.class, AnonymousCloudConsumer.class}) String uuid) {
+    public ContentAccessDTO getContentAccessForConsumer(
+        @Verify(value = { Consumer.class, AnonymousCloudConsumer.class }) String uuid) {
+        log.info("Entered getContentAccessForConsumer with uuid: {}", uuid);
         Consumer consumer = consumerCurator.verifyAndLookupConsumer(uuid);
 
         Predicate<String> predicate = (str) -> str != null && !str.isEmpty();
@@ -700,13 +702,11 @@ public class ConsumerResource implements ConsumerApi {
         String caMode = Util.firstOf(predicate,
             consumer.getContentAccessMode(),
             consumer.getOwner().getContentAccessMode(),
-            ContentAccessManager.ContentAccessMode.getDefault().toDatabaseValue()
-        );
+            ContentAccessManager.ContentAccessMode.getDefault().toDatabaseValue());
 
         String caList = Util.firstOf(predicate,
             consumer.getOwner().getContentAccessModeList(),
-            ContentAccessManager.getListDefaultDatabaseValue()
-        );
+            ContentAccessManager.getListDefaultDatabaseValue());
 
         return new ContentAccessDTO()
             .contentAccessMode(caMode)
@@ -1544,7 +1544,8 @@ public class ConsumerResource implements ConsumerApi {
 
         if (updated.getReleaseVer() != null && updated.getReleaseVer().getReleaseVer() != null) {
             String releaseVer = toUpdate.getReleaseVer() == null ?
-                null : toUpdate.getReleaseVer().getReleaseVer();
+                null :
+                toUpdate.getReleaseVer().getReleaseVer();
             if (!updated.getReleaseVer().getReleaseVer().equals(releaseVer)) {
                 log.info("   Updating consumer releaseVer setting.");
                 toUpdate.setReleaseVer(new Release(updated.getReleaseVer().getReleaseVer()));
@@ -2144,9 +2145,9 @@ public class ConsumerResource implements ConsumerApi {
             since = zonedDateTime.toOffsetDateTime();
         }
 
-
         if (!this.contentAccessManager.hasCertChangedSince(consumer, since != null ?
-            Util.toDate(since) : new Date(0))) {
+            Util.toDate(since) :
+            new Date(0))) {
 
             return Response.status(Response.Status.NOT_MODIFIED)
                 .entity("Not modified since date supplied.")
@@ -2279,11 +2280,10 @@ public class ConsumerResource implements ConsumerApi {
     }
 
     @Override
-    @SuppressWarnings({"checkstyle:indentation", "checkstyle:methodlength"})
+    @SuppressWarnings({ "checkstyle:indentation", "checkstyle:methodlength" })
     public Response bind(
         @Verify(Consumer.class) String consumerUuid,
-        @Verify(value = Pool.class, nullable = true, subResource = SubResource.ENTITLEMENTS)
-        String poolIdString,
+        @Verify(value = Pool.class, nullable = true, subResource = SubResource.ENTITLEMENTS) String poolIdString,
         List<String> productIds,
         Integer quantity,
         String email,
@@ -2398,20 +2398,18 @@ public class ConsumerResource implements ConsumerApi {
                 if (owner.isUsingSimpleContentAccess()) {
                     log.debug("Ignoring request to auto-attach. " +
                         "Attaching subscriptions is disabled for org \"{}\" " +
-                        "because simple content access is enabled."
-                        , owner.getKey(), e);
+                        "because simple content access is enabled.", owner.getKey(), e);
                     return Response.status(Response.Status.OK).build();
                 }
                 else {
                     throw new BadRequestException(i18n.tr("Ignoring request to auto-attach. " +
-                        "It is disabled for org \"{0}\"."
-                        , owner.getKey()), e);
+                        "It is disabled for org \"{0}\".", owner.getKey()), e);
                 }
             }
             catch (AutobindHypervisorDisabledException e) {
                 throw new BadRequestException(i18n.tr("Ignoring request to auto-attach. " +
-                        "It is disabled for org \"{0}\" because of the hypervisor autobind setting."
-                    , owner.getKey()), e);
+                    "It is disabled for org \"{0}\" because of the hypervisor autobind setting.",
+                    owner.getKey()), e);
             }
         }
 
@@ -2573,8 +2571,7 @@ public class ConsumerResource implements ConsumerApi {
         }
 
         throw new NotFoundException(i18n.tr(
-            "Entitlement with ID \"{0}\" could not be found.", dbid
-        ));
+            "Entitlement with ID \"{0}\" could not be found.", dbid));
     }
 
     @Override
@@ -2946,11 +2943,10 @@ public class ConsumerResource implements ConsumerApi {
         deletedConsumerCurator.delete(dc);
     }
 
-
     private void addCalculatedAttributes(Entitlement ent) {
         // With no consumer/date, this will not build suggested quantity
-        Map<String, String> calculatedAttributes =
-            calculatedAttributesUtil.buildCalculatedAttributes(ent.getPool(), null);
+        Map<String, String> calculatedAttributes = calculatedAttributesUtil
+            .buildCalculatedAttributes(ent.getPool(), null);
         ent.getPool().setCalculatedAttributes(calculatedAttributes);
     }
 
@@ -2960,8 +2956,6 @@ public class ConsumerResource implements ConsumerApi {
         }
         return null;
     }
-
-
 
     /**
      * Populates the specified entities with data from the provided guestIds.
