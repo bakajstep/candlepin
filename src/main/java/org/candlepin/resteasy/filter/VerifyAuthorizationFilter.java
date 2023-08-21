@@ -289,8 +289,8 @@ public class VerifyAuthorizationFilter extends AbstractAuthorizationFilter {
 
         // TODO: Can we log this out better?
         if (entities.isEmpty()) {
-            String msg = i18nProvider.get().tr("{0} with id(s) {1} could not be found.",
-                verifyTypes, requestValue);
+            String msg = i18nProvider.get().tr("Requested value(s) {0} with id(s) {1} could not be found.",
+                verifyTypesToString(verifyTypes), requestValue);
             throw new NotFoundException(msg);
         }
 
@@ -318,5 +318,15 @@ public class VerifyAuthorizationFilter extends AbstractAuthorizationFilter {
             // Other annotations are GET, HEAD, and OPTIONS. assume read only for those.
         }
         return minimumLevel;
+    }
+
+    // TODO: Better way of handling this?
+    private String verifyTypesToString(Class<? extends Persisted>[] verifyTypes) {
+        String str = "[";
+        for (Class<? extends Persisted> klass : verifyTypes) {
+            str = str + Util.getClassName(klass);
+        }
+
+        return str + "]";
     }
 }

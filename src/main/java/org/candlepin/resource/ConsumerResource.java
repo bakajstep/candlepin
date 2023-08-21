@@ -692,9 +692,7 @@ public class ConsumerResource implements ConsumerApi {
     }
 
     @Override
-    public ContentAccessDTO getContentAccessForConsumer(
-        @Verify(value = { Consumer.class, AnonymousCloudConsumer.class }) String uuid) {
-        log.info("Entered getContentAccessForConsumer with uuid: {}", uuid);
+    public ContentAccessDTO getContentAccessForConsumer(@Verify(Consumer.class) String uuid) {
         Consumer consumer = consumerCurator.verifyAndLookupConsumer(uuid);
 
         Predicate<String> predicate = (str) -> str != null && !str.isEmpty();
@@ -2175,7 +2173,7 @@ public class ConsumerResource implements ConsumerApi {
     }
 
     @Override
-    public Object exportCertificates(@Verify(Consumer.class) String consumerUuid, String serials) {
+    public Object exportCertificates(@Verify(value = { Consumer.class }) String consumerUuid, String serials) {
         HttpRequest httpRequest = ResteasyContext.getContextData(HttpRequest.class);
 
         if (httpRequest.getHttpHeaders().getRequestHeader("accept").contains("application/json")) {
