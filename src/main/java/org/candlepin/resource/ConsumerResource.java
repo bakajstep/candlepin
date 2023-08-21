@@ -2173,7 +2173,7 @@ public class ConsumerResource implements ConsumerApi {
     }
 
     @Override
-    public Object exportCertificates(@Verify(value = { Consumer.class }) String consumerUuid, String serials) {
+    public Object exportCertificates(@Verify(value = { AnonymousCloudConsumer.class, Consumer.class }) String consumerUuid, String serials) {
         HttpRequest httpRequest = ResteasyContext.getContextData(HttpRequest.class);
 
         if (httpRequest.getHttpHeaders().getRequestHeader("accept").contains("application/json")) {
