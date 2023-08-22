@@ -88,7 +88,7 @@ public class AnonymousCloudRegistrationAuth implements AuthProvider {
 
         String auth = AuthUtil.getHeader(httpRequest, "Authorization");
         if (auth.isEmpty()) {
-            log.debug("Authorization header is missing in http request");
+            log.debug("Header with key value \"Authorization\" is missing in http request");
             return null;
         }
 

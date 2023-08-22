@@ -21,7 +21,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import org.candlepin.auth.AnonymousCloudConsumerPrincipal;
-import org.candlepin.auth.AnonymousCloudRegistrationAuth;
 import org.candlepin.auth.Principal;
 import org.candlepin.auth.SSLAuth;
 import org.candlepin.auth.Verify;
@@ -30,7 +29,6 @@ import org.candlepin.exceptions.ForbiddenException;
 import org.candlepin.exceptions.NotFoundException;
 import org.candlepin.model.AnonymousCloudConsumer;
 import org.candlepin.model.Consumer;
-import org.candlepin.resource.util.CloudAuthTokenUtil;
 import org.candlepin.test.DatabaseTestFixture;
 import org.candlepin.util.Util;
 
@@ -55,11 +53,9 @@ import org.mockito.quality.Strictness;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Method;
-import java.net.http.HttpHeaders;
 import java.security.cert.X509Certificate;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 
 import javax.security.auth.x500.X500Principal;
 import javax.ws.rs.GET;
@@ -76,7 +72,6 @@ import javax.ws.rs.core.UriInfo;
 public class VerifyAuthorizationFilterTest extends DatabaseTestFixture {
     private StoreFactory storeFactory;
     private SSLAuth sslAuth;
-    private AnonymousCloudRegistrationAuth cloudRegAuth;
 
     @Mock
     private CandlepinSecurityContext mockSecurityContext;
@@ -99,7 +94,6 @@ public class VerifyAuthorizationFilterTest extends DatabaseTestFixture {
     public void setUp() throws NoSuchMethodException, SecurityException {
         storeFactory = injector.getInstance(StoreFactory.class);
         sslAuth = injector.getInstance(SSLAuth.class);
-        cloudRegAuth = injector.getInstance(AnonymousCloudRegistrationAuth.class);
 
         // Turn logger to INFO level to disable HttpServletRequest logging.
         LoggerContext lc = (LoggerContext) LoggerFactory.getILoggerFactory();
@@ -206,7 +200,7 @@ public class VerifyAuthorizationFilterTest extends DatabaseTestFixture {
     }
 
     @Test
-    public void testAccessForMultiValueVerifyWithExistingConsumer() throws Exception {
+    public void testAccessForMultiValueVerifyParameterWithExistingConsumer() throws Exception {
         configureResourceClass(FakeResource.class, "multiValueVerify");
 
         Consumer consumer = createConsumer(createOwner());
@@ -214,27 +208,24 @@ public class VerifyAuthorizationFilterTest extends DatabaseTestFixture {
         ResteasyContext.pushContext(HttpRequest.class, mockReq);
         mockReq.setAttribute(ResteasyProviderFactory.class.getName(), ResteasyProviderFactory.getInstance());
 
-        X500Principal dn = new X500Principal("CN=" + consumer.getUuid() + ", C=US, L=Raleigh");
-
-        this.mockPathParameters.add("uuid", consumer.getUuid());
+        mockPathParameters.add("uuid", consumer.getUuid());
 
         // create mock certs to trigger SSLAuth provider
-        X509Certificate[] certs = new X509Certificate[1];
         X509Certificate cert = mock(X509Certificate.class);
-        when(cert.getSubjectX500Principal()).thenReturn(dn);
-
+        doReturn(new X500Principal("CN=" + consumer.getUuid() + ", C=US, L=Raleigh"))
+            .when(cert).getSubjectX500Principal();
+        X509Certificate[] certs = new X509Certificate[1];
         certs[0] = cert;
         mockReq.setAttribute("javax.servlet.request.X509Certificate", certs);
 
-        Principal p = sslAuth.getPrincipal(mockReq);
-        when(mockSecurityContext.getUserPrincipal()).thenReturn(p);
+        doReturn(sslAuth.getPrincipal(mockReq)).when(mockSecurityContext).getUserPrincipal();
 
         // Expect no errors
         interceptor.filter(mockRequestContext);
     }
 
     @Test
-    public void testAccessForMultiValueVerifyWithExistingAnonymousCloudConsumer() throws Exception {
+    public void testAccessForMultiValueVerifyParameterWithExistingAnonymousCloudConsumer() throws Exception {
         configureResourceClass(FakeResource.class, "multiValueVerify");
 
         AnonymousCloudConsumer consumer = new AnonymousCloudConsumer()
@@ -248,15 +239,11 @@ public class VerifyAuthorizationFilterTest extends DatabaseTestFixture {
         ResteasyContext.pushContext(HttpRequest.class, mockReq);
         mockReq.setAttribute(ResteasyProviderFactory.class.getName(), ResteasyProviderFactory.getInstance());
 
-        X500Principal dn = new X500Principal("CN=" + consumer.getUuid() + ", C=US, L=Raleigh");
+        mockPathParameters.add("uuid", consumer.getUuid());
 
-        this.mockPathParameters.add("uuid", consumer.getUuid());
-
-        // create mock certs to trigger SSLAuth provider
-        X509Certificate[] certs = new X509Certificate[1];
         X509Certificate cert = mock(X509Certificate.class);
-        when(cert.getSubjectX500Principal()).thenReturn(dn);
-
+        doReturn(new X500Principal("CN=123, C=US, L=Raleigh")).when(cert).getSubjectX500Principal();
+        X509Certificate[] certs = new X509Certificate[1];
         certs[0] = cert;
         mockReq.setAttribute("javax.servlet.request.X509Certificate", certs);
 
@@ -267,7 +254,7 @@ public class VerifyAuthorizationFilterTest extends DatabaseTestFixture {
     }
 
     @Test
-    public void testAccessForMultiValueVerifyWithUnknownUuid() throws Exception {
+    public void testAccessForMultiValueVerifyParameterWithUnknownUuid() throws Exception {
         configureResourceClass(FakeResource.class, "multiValueVerify");
 
         String uuid = Util.generateUUID();
@@ -275,20 +262,15 @@ public class VerifyAuthorizationFilterTest extends DatabaseTestFixture {
         ResteasyContext.pushContext(HttpRequest.class, mockReq);
         mockReq.setAttribute(ResteasyProviderFactory.class.getName(), ResteasyProviderFactory.getInstance());
 
-        X500Principal dn = new X500Principal("CN=" + uuid + ", C=US, L=Raleigh");
+        mockPathParameters.add("uuid", uuid);
 
-        this.mockPathParameters.add("uuid", uuid);
-
-        // create mock certs to trigger SSLAuth provider
-        X509Certificate[] certs = new X509Certificate[1];
         X509Certificate cert = mock(X509Certificate.class);
-        when(cert.getSubjectX500Principal()).thenReturn(dn);
-
+        doReturn(new X500Principal("CN=123, C=US, L=Raleigh")).when(cert).getSubjectX500Principal();
+        X509Certificate[] certs = new X509Certificate[1];
         certs[0] = cert;
         mockReq.setAttribute("javax.servlet.request.X509Certificate", certs);
 
-        Principal p = sslAuth.getPrincipal(mockReq);
-        when(mockSecurityContext.getUserPrincipal()).thenReturn(p);
+        doReturn(sslAuth.getPrincipal(mockReq)).when(mockSecurityContext).getUserPrincipal();
 
         assertThrows(NotFoundException.class, () -> interceptor.filter(mockRequestContext));
     }
@@ -297,26 +279,21 @@ public class VerifyAuthorizationFilterTest extends DatabaseTestFixture {
     public void testAccessForCollectionWithExistingValue() throws Exception {
         configureResourceClass(FakeResource.class, "multiValueVerify");
 
+        mockReq = MockHttpRequest.create("GET", "http://localhost/candlepin/fake");
+        ResteasyContext.pushContext(HttpRequest.class, mockReq);
+        mockReq.setAttribute(ResteasyProviderFactory.class.getName(), ResteasyProviderFactory.getInstance());
+
         AnonymousCloudConsumer consumer = new AnonymousCloudConsumer()
             .setCloudAccountId("account-id")
             .setCloudInstanceId("instance-id")
             .setCloudProviderShortName("short-name")
             .setProductId("product-id");
         consumer = this.anonymousCloudConsumerCurator.create(consumer);
+        mockPathParameters.addAll("uuid", List.of(consumer.getUuid(), Util.generateUUID()));
 
-        mockReq = MockHttpRequest.create("GET", "http://localhost/candlepin/fake");
-        ResteasyContext.pushContext(HttpRequest.class, mockReq);
-        mockReq.setAttribute(ResteasyProviderFactory.class.getName(), ResteasyProviderFactory.getInstance());
-
-        X500Principal dn = new X500Principal("CN=123, C=US, L=Raleigh");
-
-        this.mockPathParameters.addAll("uuid", List.of(consumer.getUuid(), Util.generateUUID()));
-
-        // create mock certs to trigger SSLAuth provider
-        X509Certificate[] certs = new X509Certificate[1];
         X509Certificate cert = mock(X509Certificate.class);
-        when(cert.getSubjectX500Principal()).thenReturn(dn);
-
+        doReturn(new X500Principal("CN=123, C=US, L=Raleigh")).when(cert).getSubjectX500Principal();
+        X509Certificate[] certs = new X509Certificate[1];
         certs[0] = cert;
         mockReq.setAttribute("javax.servlet.request.X509Certificate", certs);
 

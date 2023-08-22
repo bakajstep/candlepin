@@ -259,10 +259,7 @@ public class VerifyAuthorizationFilter extends AbstractAuthorizationFilter {
         for (Class<? extends Persisted> verifyType : verifyTypes) {
             if (requestValue instanceof String) {
                 String verifyParam = (String) requestValue;
-                Persisted entity = null;
-
-                entity = storeFactory.getFor(verifyType).lookup(verifyParam);
-
+                Persisted entity = storeFactory.getFor(verifyType).lookup(verifyParam);
                 if (entity == null) {
                     String typeName = Util.getClassName(verifyType);
                     if (typeName.equals("Owner")) {
@@ -270,7 +267,6 @@ public class VerifyAuthorizationFilter extends AbstractAuthorizationFilter {
                     }
 
                     log.info("No such entity: {} for id: {}", typeName, verifyParam);
-
                     continue;
                 }
 
@@ -287,9 +283,8 @@ public class VerifyAuthorizationFilter extends AbstractAuthorizationFilter {
             }
         }
 
-        // TODO: Can we log this out better?
         if (entities.isEmpty()) {
-            String msg = i18nProvider.get().tr("Requested value(s) {0} with id(s) {1} could not be found.",
+            String msg = i18nProvider.get().tr("Requested entities {0} with ID(s) {1} could not be found.",
                 verifyTypesToString(verifyTypes), requestValue);
             throw new NotFoundException(msg);
         }
@@ -320,13 +315,12 @@ public class VerifyAuthorizationFilter extends AbstractAuthorizationFilter {
         return minimumLevel;
     }
 
-    // TODO: Better way of handling this?
     private String verifyTypesToString(Class<? extends Persisted>[] verifyTypes) {
-        String str = "[";
+        StringBuilder builder = new StringBuilder("[");
         for (Class<? extends Persisted> klass : verifyTypes) {
-            str = str + Util.getClassName(klass);
+            builder.append(Util.getClassName(klass));
         }
 
-        return str + "]";
+        return builder.append("]").toString();
     }
 }
