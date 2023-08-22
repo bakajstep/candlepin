@@ -269,7 +269,7 @@ public class VerifyAuthorizationFilter extends AbstractAuthorizationFilter {
                         typeName = i18nProvider.get().tr("Organization");
                     }
 
-                    log.info("No such entity: {}, id: {}", typeName, verifyParam);
+                    log.info("No such entity: {} for id: {}", typeName, verifyParam);
 
                     continue;
                 }

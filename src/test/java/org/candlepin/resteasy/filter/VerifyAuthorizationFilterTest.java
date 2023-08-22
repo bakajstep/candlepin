@@ -20,6 +20,8 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import org.candlepin.auth.AnonymousCloudConsumerPrincipal;
+import org.candlepin.auth.AnonymousCloudRegistrationAuth;
 import org.candlepin.auth.Principal;
 import org.candlepin.auth.SSLAuth;
 import org.candlepin.auth.Verify;
@@ -28,6 +30,7 @@ import org.candlepin.exceptions.ForbiddenException;
 import org.candlepin.exceptions.NotFoundException;
 import org.candlepin.model.AnonymousCloudConsumer;
 import org.candlepin.model.Consumer;
+import org.candlepin.resource.util.CloudAuthTokenUtil;
 import org.candlepin.test.DatabaseTestFixture;
 import org.candlepin.util.Util;
 
@@ -52,8 +55,11 @@ import org.mockito.quality.Strictness;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Method;
+import java.net.http.HttpHeaders;
 import java.security.cert.X509Certificate;
 import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
 import javax.security.auth.x500.X500Principal;
 import javax.ws.rs.GET;
@@ -68,10 +74,9 @@ import javax.ws.rs.core.UriInfo;
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 public class VerifyAuthorizationFilterTest extends DatabaseTestFixture {
-    private static final String MULTI_VALUE_PATH = "/multiValueVerify/{uuid}";
-
     private StoreFactory storeFactory;
     private SSLAuth sslAuth;
+    private AnonymousCloudRegistrationAuth cloudRegAuth;
 
     @Mock
     private CandlepinSecurityContext mockSecurityContext;
@@ -94,6 +99,7 @@ public class VerifyAuthorizationFilterTest extends DatabaseTestFixture {
     public void setUp() throws NoSuchMethodException, SecurityException {
         storeFactory = injector.getInstance(StoreFactory.class);
         sslAuth = injector.getInstance(SSLAuth.class);
+        cloudRegAuth = injector.getInstance(AnonymousCloudRegistrationAuth.class);
 
         // Turn logger to INFO level to disable HttpServletRequest logging.
         LoggerContext lc = (LoggerContext) LoggerFactory.getILoggerFactory();
@@ -227,7 +233,6 @@ public class VerifyAuthorizationFilterTest extends DatabaseTestFixture {
         interceptor.filter(mockRequestContext);
     }
 
-    // TODO: Not working
     @Test
     public void testAccessForMultiValueVerifyWithExistingAnonymousCloudConsumer() throws Exception {
         configureResourceClass(FakeResource.class, "multiValueVerify");
@@ -255,8 +260,7 @@ public class VerifyAuthorizationFilterTest extends DatabaseTestFixture {
         certs[0] = cert;
         mockReq.setAttribute("javax.servlet.request.X509Certificate", certs);
 
-        Principal p = sslAuth.getPrincipal(mockReq);
-        when(mockSecurityContext.getUserPrincipal()).thenReturn(p);
+        doReturn(new AnonymousCloudConsumerPrincipal(consumer)).when(mockSecurityContext).getUserPrincipal();
 
         // Expect no errors
         interceptor.filter(mockRequestContext);
@@ -289,36 +293,38 @@ public class VerifyAuthorizationFilterTest extends DatabaseTestFixture {
         assertThrows(NotFoundException.class, () -> interceptor.filter(mockRequestContext));
     }
 
-    // TODO: Finish
-    // @Test
-    // public void testAccessForCollectionWithKnownValue() throws Exception {
-    //     configureResourceClass(FakeResource.class, "getCollection");
+    @Test
+    public void testAccessForCollectionWithExistingValue() throws Exception {
+        configureResourceClass(FakeResource.class, "multiValueVerify");
 
-    //     Consumer consumer = createConsumer(createOwner());
-    //     mockReq = MockHttpRequest.create("GET", "http://localhost/candlepin/fake/getCollection/");
-    //     ResteasyContext.pushContext(HttpRequest.class, mockReq);
-    //     mockReq.setAttribute(ResteasyProviderFactory.class.getName(), ResteasyProviderFactory.getInstance());
+        AnonymousCloudConsumer consumer = new AnonymousCloudConsumer()
+            .setCloudAccountId("account-id")
+            .setCloudInstanceId("instance-id")
+            .setCloudProviderShortName("short-name")
+            .setProductId("product-id");
+        consumer = this.anonymousCloudConsumerCurator.create(consumer);
 
-    //     X500Principal dn = new X500Principal("CN=" + consumer.getUuid() + ", C=US, L=Raleigh");
+        mockReq = MockHttpRequest.create("GET", "http://localhost/candlepin/fake");
+        ResteasyContext.pushContext(HttpRequest.class, mockReq);
+        mockReq.setAttribute(ResteasyProviderFactory.class.getName(), ResteasyProviderFactory.getInstance());
 
-    //     this.mockPathParameters.add("uuid", consumer.getUuid());
+        X500Principal dn = new X500Principal("CN=123, C=US, L=Raleigh");
 
-    //     // create mock certs to trigger SSLAuth provider
-    //     X509Certificate[] certs = new X509Certificate[1];
-    //     X509Certificate cert = mock(X509Certificate.class);
-    //     when(cert.getSubjectX500Principal()).thenReturn(dn);
+        this.mockPathParameters.addAll("uuid", List.of(consumer.getUuid(), Util.generateUUID()));
 
-    //     certs[0] = cert;
-    //     mockReq.setAttribute("javax.servlet.request.X509Certificate", certs);
+        // create mock certs to trigger SSLAuth provider
+        X509Certificate[] certs = new X509Certificate[1];
+        X509Certificate cert = mock(X509Certificate.class);
+        when(cert.getSubjectX500Principal()).thenReturn(dn);
 
-    //     Principal p = sslAuth.getPrincipal(mockReq);
-    //     when(mockSecurityContext.getUserPrincipal()).thenReturn(p);
-    // }
+        certs[0] = cert;
+        mockReq.setAttribute("javax.servlet.request.X509Certificate", certs);
 
-    // @Test
-    // public void testAccessForCollectionWithUnknownValue() throws Exception {
-        
-    // }
+        doReturn(new AnonymousCloudConsumerPrincipal(consumer)).when(mockSecurityContext).getUserPrincipal();
+
+        // Expect no errors
+        interceptor.filter(mockRequestContext);
+    }
 
     /**
      * FakeResource simply to create a Method object to pass down into the interceptor.
@@ -337,7 +343,7 @@ public class VerifyAuthorizationFilterTest extends DatabaseTestFixture {
         }
 
         @GET
-        @Path(MULTI_VALUE_PATH)
+        @Path("/multiValueVerify/{uuid}")
         public String multiValueVerify(@PathParam("uuid") @Verify(value = { AnonymousCloudConsumer.class, Consumer.class }) String uuid) {
             return uuid;
         }
@@ -353,7 +359,7 @@ public class VerifyAuthorizationFilterTest extends DatabaseTestFixture {
 
         public String getCollection(@Verify(Consumer.class) Collection<String> uuids);
 
-        @Path(MULTI_VALUE_PATH)
+        @Path("/multiValueVerify/{uuid}")
         public String multiValueVerify(@PathParam("uuid") @Verify(value = { AnonymousCloudConsumer.class, Consumer.class }) String uuid);
     }
 

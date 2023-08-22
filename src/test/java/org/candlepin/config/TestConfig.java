@@ -57,6 +57,7 @@ public final class TestConfig {
         defaults.put(DatabaseConfigFactory.CASE_OPERATOR_BLOCK_SIZE, "10");
         defaults.put(DatabaseConfigFactory.BATCH_BLOCK_SIZE, "10");
         defaults.put(DatabaseConfigFactory.QUERY_PARAMETER_LIMIT, "32000");
+        defaults.put(ConfigProperties.CLOUD_AUTHENTICATION, "true");
 
         return defaults;
     }

@@ -82,19 +82,20 @@ public class AnonymousCloudRegistrationAuth implements AuthProvider {
     @Override
     public Principal getPrincipal(HttpRequest httpRequest) {
         if (!this.enabled) {
-            // If cloud auth isn't enabled, don't even attempt to validate anything
+            log.debug("Cloud authentication is disabled");
             return null;
         }
 
         String auth = AuthUtil.getHeader(httpRequest, "Authorization");
         if (auth.isEmpty()) {
-            // Auth header is empty; no type or token provided
+            log.debug("Authorization header is missing in http request");
             return null;
         }
 
         String[] authChunks = auth.split(" ");
         if (!AUTH_TYPE.equalsIgnoreCase(authChunks[0]) || authChunks.length != 2) {
             // Not a type we handle; ignore it and hope another auth filter picks it up
+            log.debug("Header is not Bearer token or unable to parse token");
             return null;
         }
 
