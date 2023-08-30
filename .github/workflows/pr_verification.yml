@@ -311,10 +311,6 @@ jobs:
         with:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
           java-version: ${{ env.JAVA_VERSION }}
-          
-      - name: Call init endpoint
-        shell: bash
-        run: docker exec candlepin wget -qO- http://localhost:8080/candlepin/admin/init
 
       - name: Run Spec tests
         uses: gradle/gradle-build-action@v2

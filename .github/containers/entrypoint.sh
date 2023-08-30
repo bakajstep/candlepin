@@ -21,6 +21,9 @@ CONF_FILE=/etc/candlepin/candlepin.conf
 # Declare an associative array of Candlepin configuration
 declare -A conf_candlepin
 
+# Number of attempts to call endpoint status
+MAX_TRIES=10
+
 # Add key-value pairs(ENV_VARIABLE-ACTUAL_CONFIG_NAME)
 conf_candlepin["JPA_CONFIG_HIBERNATE_CONNECTION_DRIVER_CLASS"]="jpa.config.hibernate.connection.driver_class"
 conf_candlepin["JPA_CONFIG_HIBERNATE_CONNECTION_URL"]="jpa.config.hibernate.connection.url"
@@ -49,6 +52,17 @@ write_config() {
     done
 }
 
+call_init_endpoint() {
+    while true; do
+        wget -qO- http://localhost:8080/candlepin/admin/init
+        if [ $? -eq 0 ]; then
+            echo "Calling init endpoint succeed."
+            break
+        fi
+        sleep 1
+    done
+}
+
 # Write the configuration to the file
 write_config
 
@@ -64,5 +78,8 @@ java -jar "$LIQUIBASE_HOME/lib/$liquibase" \
   --password="$JPA_CONFIG_HIBERNATE_CONNECTION_PASSWORD" \
   update
 
+call_init_endpoint &
+
 # Start tomcat
 /opt/tomcat/bin/catalina.sh run
+
