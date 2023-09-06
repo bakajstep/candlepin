@@ -45,7 +45,16 @@ jobs:
       - name: Run unit tests
         uses: gradle/gradle-build-action@v2
         with:
-          arguments: coverage test --tests JobManagerTest
+          arguments: coverage test --tests PersonTest
+
+      - name: Save PR number to file
+        run: echo ${{ github.event.number }} > PR_NUMBER.txt
+
+      - name: Archive PR number
+        uses: actions/upload-artifact@v3
+        with:
+          name: pr_number
+          path: PR_NUMBER.txt
 
       - name: Save PR number to file
         run: echo ${{ github.event.number }} > PR_NUMBER.txt
