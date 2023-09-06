@@ -11,11 +11,6 @@ env:
   JAVA_DISTRIBUTION: 'temurin'
   JAVA_VERSION: '17'
 
-# Cancel in-progress PR verification workflows. We only care about verifying the latest commit.
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
-
 jobs:
   sonar:
     name: Sonar
@@ -24,54 +19,68 @@ jobs:
       image: fedora:38
     if: github.event.workflow_run.conclusion == 'success'
     steps:
+      - name: echo event
+        run: cat $GITHUB_EVENT_PATH
+
       - name: Mask secrets
         shell: bash
         run: |
           echo "::add-mask::${{ secrets.GITHUB_TOKEN }}"
           echo "::add-mask::${{ secrets.SONAR_TOKEN }}"
 
+      - name: Download PR number artifact
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: unit_tests.yml
+          run_id: ${{ github.event.workflow_run.id }}
+          name: pr_number
+
+      - name: Read PR_NUMBER.txt
+        id: pr_number
+        uses: juliangruber/read-file-action@v1
+        with:
+          path: ./PR_NUMBER.txt
+
       - name: Install dependencies
         shell: bash
-        run: dnf --setopt install_weak_deps=False install -y gettext jss git-core
+        run: dnf --setopt install_weak_deps=False install -y gettext jss git-core unzip
 
-      - name: Check out repository
-        uses: actions/checkout@v4
+      - name: Request GitHub API for PR data
+        uses: octokit/request-action@v2.x
+        id: get_pr_data
         with:
+          route: GET /repos/{full_name}/pulls/{number}
+          number: ${{ steps.pr_number.outputs.content }}
+          full_name: ${{ github.event.repository.full_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/checkout@v3
+        with:
+          repository: ${{ github.event.workflow_run.head_repository.full_name }}
+          ref: ${{ github.event.workflow_run.head_branch }}
           fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.sha }}
 
-      - name: Rebase
-        uses: ./.github/actions/rebase
-
+      - name: Checkout base branch
+        run: |
+          git config --global --add safe.directory $GITHUB_WORKSPACE
+          git remote add upstream ${{ github.event.repository.clone_url }}
+          git fetch upstream
+          git checkout -B ${{ fromJson(steps.get_pr_data.outputs.data).base.ref }} upstream/${{ fromJson(steps.get_pr_data.outputs.data).base.ref }}
+          git checkout ${{ github.event.workflow_run.head_branch }}
+          git clean -ffdx && git reset --hard HEAD
       - name: Set up Java
         uses: actions/setup-java@v3
         with:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
           java-version: ${{ env.JAVA_VERSION }}
 
-      - name: 'Download code coverage'
-        uses: actions/github-script@v6
+      - name: Download PR number artifact
+        uses: dawidd6/action-download-artifact@v2
         with:
-          script: |
-            let allArtifacts = await github.rest.actions.listWorkflowRunArtifacts({
-               owner: context.repo.owner,
-               repo: context.repo.repo,
-               run_id: context.payload.workflow_run.id,
-            });
-            let matchArtifact = allArtifacts.data.artifacts.filter((artifact) => {
-              return artifact.name == "unit_test_reports"
-            })[0];
-            let download = await github.rest.actions.downloadArtifact({
-               owner: context.repo.owner,
-               repo: context.repo.repo,
-               artifact_id: matchArtifact.id,
-               archive_format: 'zip',
-            });
-            let fs = require('fs');
-            fs.writeFileSync(`${process.env.GITHUB_WORKSPACE}/unit_test_reports.zip`, Buffer.from(download.data));
-
-      - name: 'Unzip code coverage'
-        run: unzip unit_test_reports.zip -d coverage
+          workflow: unit_tests.yml
+          run_id: ${{ github.event.workflow_run.id }}
+          name: unit_test_reports
 
       - name: Analyze
         uses: gradle/gradle-build-action@v2
@@ -81,7 +90,8 @@ jobs:
         with:
           arguments: sonar -x coverage
             -Dsonar.scm.provider=git
-            -Dsonar.pullrequest.key=${{ github.event.workflow_run.pull_requests[0].number }}
-            -Dsonar.pullrequest.base=${{ github.event.workflow_run.pull_requests[0].base.ref }}
-            -Dsonar.pullrequest.branch=${{ github.event.workflow_run.pull_requests[0].head.ref }}
+            -Dsonar.scm.revision=${{ github.event.workflow_run.head_sha }}
+            -Dsonar.pullrequest.key=${{ fromJson(steps.get_pr_data.outputs.data).number }}
+            -Dsonar.pullrequest.base=${{ fromJson(steps.get_pr_data.outputs.data).base.ref }}
+            -Dsonar.pullrequest.branch=${{ fromJson(steps.get_pr_data.outputs.data).head.ref }}
             -Dorg.gradle.jvmargs=-Xmx1g
