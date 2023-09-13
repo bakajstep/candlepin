@@ -45,7 +45,7 @@ jobs:
       - name: Run unit tests
         uses: gradle/gradle-build-action@v2
         with:
-          arguments: coverage test --tests JobManagerTest
+          arguments: coverage test
 
       - name: Archive reports
         uses: actions/upload-artifact@v3
@@ -62,3 +62,11 @@ jobs:
         with:
           name: PR_NUMBER
           path: PR_NUMBER.txt
+
+      - name: Test Report
+        uses: dorny/test-reporter@v1
+        if: success() || failure()    # run this step even if previous step failed
+        with:
+          name: Unit Tests Report          # Name of the check run which will be created
+          path: '**/build/test-results/test/TEST-*.xml'    # Path to test results
+          reporter: java-junit        # Format of test results

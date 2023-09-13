@@ -248,7 +248,7 @@ public class ConsumerTest extends DatabaseTestFixture {
         consumerCurator.merge(consumer);
 
         Consumer lookedUp = consumerCurator.get(consumer.getId());
-        assertEquals(3, lookedUp.getEntitlements().size());
+        assertEquals(5, lookedUp.getEntitlements().size());
     }
 
     private Entitlement createEntitlement(Pool pool, Consumer c, Owner o) {

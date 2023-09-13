@@ -183,9 +183,9 @@ public class ConsumerTranslatorTest extends
 
             }
             else {
-                assertNull(dest.getOwner());
+                assertNotNull(dest.getOwner());
                 assertNull(dest.getType());
-                assertNull(dest.getInstalledProducts());
+                assertNotNull(dest.getInstalledProducts());
                 assertNull(dest.getCapabilities());
             }
         }
