@@ -32,15 +32,18 @@ jobs:
           # List affected PRs exclude dependabots, weblate and draft PRs
           pr_head_shas=$(gh api \
           -H "Accept: application/vnd.github+json" \
-          /repos/candlepin/candlepin/pulls | \
+          /repos/bakajstep/candlepin/pulls | \
           jq --arg base "$base_branch" -r '.[] | select(.base.ref == $base and .draft == false and .user.login != "weblate" and .user.login != "dependabot[bot]") | .head.sha')
 
           # List runner ids from PRs(only for pr_verification.yml)
           for head_sha in $pr_head_shas; do
             runner_id=$(gh api \
             -H "Accept: application/vnd.github+json" \
-            /repos/candlepin/candlepin/actions/workflows/pr_verification.yml/runs?head_sha=$head_sha | \
+            /repos/bakajstep/candlepin/actions/workflows/spec_tests.yml/runs?head_sha=$head_sha | \
             jq -r '.workflow_runs[] | .id')
+            echo "runner_id"
+            echo $runner_id
+            echo "runner_id"
             runner_ids+=($runner_id)
           done
           
@@ -49,32 +52,39 @@ jobs:
             # Get status of running workflow
             status=$(gh api \
             -H "Accept: application/vnd.github+json" \
-            /repos/candlepin/candlepin/actions/runs/$id | \
+            /repos/bakajstep/candlepin/actions/runs/$id | \
             jq -r '.status')
           
             # Cancel workflow if it in progress or in queue
             if [ "$status" = "in_progress" ] || [ "$status" = "queued" ]; then
               cancelled_ids+=($id)
+              echo "id"
+              echo $id
+              echo "id"
               gh api \
               --method POST \
               -H "Accept: application/vnd.github+json" \
-              /repos/candlepin/candlepin/actions/runs/$id/cancel
+              /repos/bakajstep/candlepin/actions/runs/$id/cancel
             fi
           done
+          
+          echo "here1"
           
           # We need to wait here because canceling workflows take some time
           for id in "${cancelled_ids[@]}"; do
             while : ; do
               status=$(gh api \
               -H "Accept: application/vnd.github+json" \
-              /repos/candlepin/candlepin/actions/runs/$id | \
+              /repos/bakajstep/candlepin/actions/runs/$id | \
               jq -r '.status')
-              echo "-------------"
+              echo "--------------"
               echo $status
-              echo "-------------"
-              [[ status = "cancelled" ]] || break
+              echo "--------------"
+              [[ $status = "completed" ]] && break
             done
           done
+          
+          echo "here2"
           
           # Rerun workflows
           for id in "${runner_ids[@]}"; do 
@@ -82,7 +92,7 @@ jobs:
             --method POST \
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
-            /repos/candlepin/candlepin/actions/runs/$id/rerun
+            /repos/bakajstep/candlepin/actions/runs/$id/rerun
           done
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
