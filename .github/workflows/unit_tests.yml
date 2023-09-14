@@ -47,18 +47,13 @@ jobs:
         with:
           arguments: coverage test --tests JobManagerTest
 
+      - name: Save PR number to file
+        run: echo ${{ github.event.number }} > PR_NUMBER.txt
+
       - name: Archive reports
         uses: actions/upload-artifact@v3
         with:
           name: unit_test_reports
           path: |
             **/build/**/jacoco*.xml
-
-      - name: Save PR number to file
-        run: echo ${{ github.event.number }} > PR_NUMBER.txt
-
-      - name: Archive PR number
-        uses: actions/upload-artifact@v3
-        with:
-          name: PR_NUMBER
-          path: PR_NUMBER.txt
+            PR_NUMBER.txt

@@ -31,9 +31,9 @@ jobs:
       - name: Download PR number artifact
         uses: dawidd6/action-download-artifact@v2
         with:
-          workflow: Java CI
+          workflow: unit_tests.yml
           run_id: ${{ github.event.workflow_run.id }}
-          name: PR_NUMBER
+          name: unit_test_reports
           
       - name: Read PR_NUMBER.txt
         id: pr_number
@@ -75,30 +75,6 @@ jobs:
         with:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
           java-version: ${{ env.JAVA_VERSION }}
-
-      - name: 'Download code coverage'
-        uses: actions/github-script@v6
-        with:
-          script: |
-            let allArtifacts = await github.rest.actions.listWorkflowRunArtifacts({
-               owner: context.repo.owner,
-               repo: context.repo.repo,
-               run_id: context.payload.workflow_run.id,
-            });
-            let matchArtifact = allArtifacts.data.artifacts.filter((artifact) => {
-              return artifact.name == "unit_test_reports"
-            })[0];
-            let download = await github.rest.actions.downloadArtifact({
-               owner: context.repo.owner,
-               repo: context.repo.repo,
-               artifact_id: matchArtifact.id,
-               archive_format: 'zip',
-            });
-            let fs = require('fs');
-            fs.writeFileSync(`${process.env.GITHUB_WORKSPACE}/unit_test_reports.zip`, Buffer.from(download.data));
-
-      - name: 'Unzip code coverage'
-        run: unzip unit_test_reports.zip
 
       - name: Analyze
         uses: gradle/gradle-build-action@v2
