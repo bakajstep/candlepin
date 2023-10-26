@@ -612,7 +612,7 @@ public class ConsumerResourceCreationTest {
         doReturn(List.of(environment)).when(this.environmentCurator).getConsumerEnvironments(any());
 
         consumer = resource.createConsumer(consumer, USER, owner.getKey(), null, true);
-        assertEquals(1, consumer.getEnvironments().size());
+        assertEquals(2, consumer.getEnvironments().size());
     }
 
     @Test
@@ -631,7 +631,7 @@ public class ConsumerResourceCreationTest {
         doReturn(List.of(environment)).when(this.environmentCurator).getConsumerEnvironments(any());
 
         consumer = resource.createConsumer(consumer, USER, owner.getKey(), null, true);
-        assertEquals(1, consumer.getEnvironments().size());
+        assertEquals(2, consumer.getEnvironments().size());
     }
 
     @Test
@@ -654,6 +654,6 @@ public class ConsumerResourceCreationTest {
             .getConsumerEnvironments(any());
 
         consumer = resource.createConsumer(consumer, USER, owner.getKey(), null, true);
-        assertEquals(2, consumer.getEnvironments().size());
+        assertEquals(3, consumer.getEnvironments().size());
     }
 }

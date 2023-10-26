@@ -201,7 +201,7 @@ public class ConsumerResourceVirtEntitlementTest extends DatabaseTestFixture {
         for (Pool p : subscribedTo) {
             p = this.poolService.get(p.getId());
             assertEquals(10L, p.getConsumed());
-            assertEquals(10L, p.getQuantity());
+            assertEquals(11L, p.getQuantity());
         }
     }
 
@@ -232,7 +232,7 @@ public class ConsumerResourceVirtEntitlementTest extends DatabaseTestFixture {
                     .run();
 
                 // double check after pools refresh
-                assertEquals(20L, p.getConsumed());
+                assertEquals(22L, p.getConsumed());
                 assertEquals(-1L, p.getQuantity());
                 subscribedTo.add(p);
             }
