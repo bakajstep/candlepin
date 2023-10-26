@@ -55,9 +55,17 @@ jobs:
           name: pr_number
           path: PR_NUMBER.txt
 
-      - name: Archive reports
+      - name: Archive reports for sonar
         uses: actions/upload-artifact@v3
         with:
           name: unit_test_reports
           path: |
             **/build/**/jacoco*.xml
+
+      - name: Archive reports for test reporter
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: unit_test_reporter
+          path: |
+            **/build/**/TEST*.xml
