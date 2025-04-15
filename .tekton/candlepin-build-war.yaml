@@ -1,0 +1,23 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: build-war-gradle
+spec:
+  workspaces:
+    - name: source
+      description: "Workspace obsahující naklonovaný repozitář"
+  params:
+    - name: gradle-project-path
+      description: "Relativní cesta k projektu uvnitř repozitáře, kde se nachází gradlew"
+      type: string
+      default: "."
+  steps:
+    - name: build-war
+      image: openjdk:17
+      workingDir: "$(workspaces.source.path)/$(params.gradle-project-path)"
+      script: |
+        echo "Spouštím build WAR souboru..."
+        # Ujistíme se, že gradlew má spustitelná práva
+        chmod +x ./gradlew
+        # Provedeme build (předpokládá se, že váš projekt obsahuje úlohu war nebo assemble)
+        ./gradlew clean war
