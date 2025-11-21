@@ -15,7 +15,7 @@ dependencies {
 // to use google-collections instead of guava.
 configurations.checkstyle {
     resolutionStrategy.capabilitiesResolution.withCapability("com.google.collections:google-collections") {
-        select("com.google.guava:guava:0")
+        select("com.google.guava:guava:33.5.0-jre")
     }
 }
 
